@@ -1,9 +1,17 @@
 ﻿# include <Siv3D.hpp> // OpenSiv3D v0.6.9
 # include "Field.hpp"
+# include "Actor.hpp"
 
 void Main(){
 
-	Field tmp(3, 4);
+	Scene::SetBackground(Palette::Lightsteelblue);
+	Window::Resize(1280, 720);
+
+	Field tmp(25, 25);
+	Actor actor(25, 25, 4, 3, Texture{ U"👷"_emoji });
+
+	Craftsman craftman(25, 25, 2, 3, Texture{ U"👷"_emoji });
+
 	while (System::Update()){
 		tmp.DisplayGrid();
 	}
