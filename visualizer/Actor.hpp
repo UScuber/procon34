@@ -1,33 +1,39 @@
-﻿# include <Siv3D.hpp> // OpenSiv3D v0.6.9
+﻿# pragma once
+# include <Siv3D.hpp> // OpenSiv3D v0.6.9
 
 
-class Actor {
+extern size_t HEIGHT;
+extern size_t WIDTH;
+extern size_t CELL_SIZE;
+
+class Actor{
 public:
-	Actor(size_t y, size_t x, size_t h, size_t w, Texture image);
-private:
+	Actor(size_t y, size_t x, Texture image);
+	void Draw(void);
+protected:
 	size_t y_coordinate;
 	size_t x_coordinate;
-	size_t height;
-	size_t width;
 	Texture image;
 };
 
-class Craftsman : Actor {
+
+class Craftsman : public Actor {
 public:
+	Craftsman(size_t y, size_t x, Texture image) : Actor(y, x, image) {};
 	bool Build(size_t y, size_t x);
 	bool Break(size_t y, size_t x);
 	bool Move(int dy, int dx);
 };
 
-class Wall : Actor {
+class Wall : public Actor {
 
 };
 
-class Pond : Actor {
+class Pond : public Actor {
 
 };
 
-class Castle : Actor {
+class Castle : public Actor {
 
 };
 

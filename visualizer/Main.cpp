@@ -1,19 +1,38 @@
-﻿# include <Siv3D.hpp> // OpenSiv3D v0.6.9
+﻿# pragma once
+# include <Siv3D.hpp> // OpenSiv3D v0.6.9
 # include "Field.hpp"
 # include "Actor.hpp"
 
-void Main(){
+enum CELL{
+	POND = 1 << 0,
+	WALL_ENEM = 1 << 1,
+	WALL_ALLY = 1 << 2,
+	AREA_ENEM = 1 << 3,
+	AREA_ALLY = 1 << 4,
+	ENEM = 1 << 5,
+	ALLY = 1 << 6,
+	CASTLE = 1 << 7
+};
 
+// フィールドの縦横
+size_t HEIGHT;
+size_t WIDTH;
+size_t CELL_SIZE;
+
+void Main(){
 	Scene::SetBackground(Palette::Lightsteelblue);
 	Window::Resize(1280, 720);
 
-	Field tmp(25, 25);
-	Actor actor(25, 25, 4, 3, Texture{ U"👷"_emoji });
+	HEIGHT = 25;
+	WIDTH = 25;
+	CELL_SIZE = 20;
 
-	Craftsman craftman(25, 25, 2, 3, Texture{ U"👷"_emoji });
-
-	while (System::Update()){
-		tmp.DisplayGrid();
+	Field field;
+	
+	while (System::Update()) {
+		field.DisplayGrid();
+		field.SetCraftsman();
+		field.DrawCraftman();
 	}
 }
 
