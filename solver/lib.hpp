@@ -65,6 +65,10 @@ struct Point {
     y += p.y; x += p.x; return *this;
   }
   inline constexpr Point operator+(const Point &p) const{ return Point(*this) += p; }
+  inline constexpr bool operator<(const Point &p) const{
+    if(y != p.y) return y < p.y;
+    return x < p.x;
+  }
   friend std::istream &operator>>(std::istream &is, Point &p){
     return is >> p.y >> p.x;
   }

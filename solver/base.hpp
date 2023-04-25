@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include "field.hpp"
 
 std::vector<Action> enumerate_next_agent_acts(const Point &agent, const Field &field){
@@ -31,20 +32,27 @@ std::vector<Action> enumerate_next_agent_acts(const Point &agent, const Field &f
   return actions;
 }
 
-/*
-std::vector<std::vector<Action>> enumerate_next_all_agents_acts(const std::vector<Point> &agents, const Field &field){
-  const int agents_num = agents.size();
-  std::vector<std::vector<Action>> acts;
-  for(const Point &agent : agents) acts.emplace_back(enumerate_next_agent_acts(agent, field));
 
-}
-*/
-
+// 適当に選ぶ
 std::vector<Action> select_random_next_agents_acts(const std::vector<Point> &agents, const Field &field){
   std::vector<Action> result;
+  std::set<Action> cnt;
   for(const Point &agent : agents){
     const auto acts = enumerate_next_agent_acts(agent, field);
     int idx = rnd(acts.size());
+    while(cnt.count(acts[idx])) idx = rnd(acts.size());
+    cnt.insert(acts[idx]);
+    result.emplace_back(acts[idx]);
+    result.back().agent_idx = (int)result.size() - 1;
   }
   return result;
+}
+
+// 後でちゃんと書きます...
+std::vector<std::vector<Action>> enumerate_next_all_agents_acts(const std::vector<Point> &agents, const Field &field){
+  std::vector<std::vector<Action>> acts;
+  for(int i = 0; i < 100; i++){
+    acts.emplace_back(select_random_next_agents_acts(agents, field));
+  }
+  return acts;
 }
