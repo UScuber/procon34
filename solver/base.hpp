@@ -5,6 +5,7 @@
 
 std::vector<Action> enumerate_next_agent_acts(const Point &agent, const Field &field){
   const State ally = field.get_state(agent) & State::Human; // agentから見た味方
+  assert((ally == State::Enemy) == (field.current_turn & 1));
   //const State enem = ally ^ State::Human; // agentから見た敵
   assert(ally == State::Ally || ally == State::Enemy);
 
@@ -20,13 +21,13 @@ std::vector<Action> enumerate_next_agent_acts(const Point &agent, const Field &f
     if(st & State::Human) continue;
     if(dir < 4){
       // break (自陣の壁の破壊は考慮しない)
-      if(st & enemy_wall) actions.push_back(Action(nxt, Action::Break));
+      if(st & enemy_wall) actions.emplace_back(Action(nxt, Action::Break));
       // build
-      if(!(st & State::Wall)) actions.push_back(Action(nxt, Action::Build));
+      if(!(st & (State::Wall | State::Castle))) actions.emplace_back(Action(nxt, Action::Build));
     }
     // can move to nxt
     if(!(st & enemy_wall)){
-      actions.push_back(Action(nxt, Action::Move));
+      actions.emplace_back(Action(nxt, Action::Move));
     }
   }
   return actions;
@@ -38,9 +39,16 @@ std::vector<Action> select_random_next_agents_acts(const std::vector<Point> &age
   std::vector<Action> result;
   std::set<Action> cnt;
   for(const Point &agent : agents){
-    const auto acts = enumerate_next_agent_acts(agent, field);
+    assert(((field.get_state(agent) & State::Human) == State::Enemy) == (field.current_turn & 1));
+    auto acts = enumerate_next_agent_acts(agent, field);
+    if(acts.empty()) acts.emplace_back(Action(agent, Action::None));
+    int num = 0;
     int idx = rnd(acts.size());
-    while(cnt.count(acts[idx])) idx = rnd(acts.size());
+    while(num++ < 10 && cnt.count(acts[idx])) idx = rnd(acts.size());
+    if(num >= 10){
+      acts.emplace_back(Action(agent, Action::None));
+      idx = (int)acts.size() - 1;
+    }
     cnt.insert(acts[idx]);
     result.emplace_back(acts[idx]);
     result.back().agent_idx = (int)result.size() - 1;
@@ -48,11 +56,14 @@ std::vector<Action> select_random_next_agents_acts(const std::vector<Point> &age
   return result;
 }
 
+#include <algorithm>
 // 後でちゃんと書きます...
 std::vector<std::vector<Action>> enumerate_next_all_agents_acts(const std::vector<Point> &agents, const Field &field){
   std::vector<std::vector<Action>> acts;
   for(int i = 0; i < 100; i++){
     acts.emplace_back(select_random_next_agents_acts(agents, field));
   }
+  std::sort(acts.begin(), acts.end());
+  acts.erase(std::unique(acts.begin(), acts.end()), acts.end());
   return acts;
 }

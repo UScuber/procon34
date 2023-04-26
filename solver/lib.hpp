@@ -41,6 +41,8 @@ struct State {
   inline constexpr State operator^(const State s) const noexcept{ return State(*this) ^= s; }
   inline constexpr State operator~() const noexcept{ return State(~val); }
   inline constexpr operator bool() const noexcept{ return val; }
+  inline constexpr bool operator==(const State s) const noexcept{ return val == s.val; }
+  friend std::ostream &operator<<(std::ostream &os, const State s){ return os << (int)s.val; }
 
 protected:
   uchar val;
@@ -69,6 +71,7 @@ struct Point {
     if(y != p.y) return y < p.y;
     return x < p.x;
   }
+  inline constexpr bool operator==(const Point &p) const{ return y == p.y && x == p.x; }
   friend std::istream &operator>>(std::istream &is, Point &p){
     return is >> p.y >> p.x;
   }
@@ -102,7 +105,9 @@ constexpr Point dmove[] = {
 
 
 inline uint randxor32() noexcept{
-  static uint y = (uint)rand() | (uint)rand() << 16;
+  //static uint y = (uint)rand() | (uint)rand() << 16;
+  static uint y = 1210253353;
+  //std::cerr << y << " ";
   y = y ^ (y << 13); y = y ^ (y >> 17);
   return y = y ^ (y << 5);
 }

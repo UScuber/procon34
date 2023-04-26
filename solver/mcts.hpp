@@ -4,15 +4,17 @@
 namespace Montecarlo {
 
 constexpr double C = 1;
-constexpr int max_expand = 10;
+constexpr int max_expand = 20;
 
 
 double random_playout(Field field){
+  const bool side = field.current_turn & 1;
   while(!field.is_finished()){
     const auto acts = select_random_next_agents_acts(field.get_now_turn_agents(), field);
     field.update_turn(acts);
   }
-  const int final_score = field.calc_final_score();
+  int final_score = field.calc_final_score();
+  if(!side) final_score = -final_score;
   if(final_score > 0) return 1.0;
   if(final_score < 0) return 0.0;
   return 0.5;
@@ -34,26 +36,27 @@ struct Node {
       return value;
     }
     if(child_nodes.empty()){
-      Field field_copy = field;
       const double value = random_playout(field);
       w += value;
       n++;
-      if(n == max_expand) expand();
+      if(n >= max_expand) expand();
       return value;
     }else{
-      double value = nextChildNode().evaluate();
+      const double value = nextChildNode().evaluate();
       w += value;
       n++;
       return value;
     }
   }
 
-  void expand(){
+  std::vector<std::vector<Action>> expand(){
     child_nodes.clear();
-    for(const auto &acts : enumerate_next_all_agents_acts(field.get_now_turn_agents(), field)){
+    const auto legal_actions = enumerate_next_all_agents_acts(field.get_now_turn_agents(), field);
+    for(const auto &acts : legal_actions){
       child_nodes.emplace_back(field);
       child_nodes.back().field.update_turn(acts);
     }
+    return legal_actions;
   }
   Node &nextChildNode(){
     double t = 0;
@@ -82,11 +85,11 @@ private:
 
 std::vector<Action> montecarlo_tree_search(const Field &field, const int search_num){
   Node root_node = Node(field);
-  root_node.expand();
+  const auto legal_actions = root_node.expand();
   for(int i = 0; i < search_num; i++){
     root_node.evaluate();
   }
-  auto legal_actions = enumerate_next_all_agents_acts(field.get_now_turn_agents(), field);
+  //const auto legal_actions = enumerate_next_all_agents_acts(field.get_now_turn_agents(), field);
   int best_act_searched_idx = -1;
   int best_act_idx = -1;
   assert(legal_actions.size() == root_node.child_nodes.size());

@@ -21,8 +21,13 @@ struct Action {
     if(command != act.command) return command < act.command;
     return pos < act.pos;
   }
+  inline constexpr bool operator==(const Action &act) const{
+    return command == act.command && agent_idx == act.agent_idx && pos == act.pos;
+  }
 };
 
+struct Field;
+void debug_field(const Field &field);
 
 struct Field {
 
@@ -184,6 +189,7 @@ struct Field {
   // side: 味方:0, 敵:1
   void update_field(const std::vector<Action> &acts, const bool side){
     assert(acts.size() == ally_agents.size());
+    assert(side == (current_turn & 1));
     std::vector<Action> act_list[4];
     for(const auto &act : acts){
       act_list[act.command].emplace_back(act);
@@ -198,7 +204,11 @@ struct Field {
       // build
       for(const auto &act : act_list[Action::Build]){
         const State st = get_state(act.pos);
-        assert(!(st & (State::Wall | State::Enemy)));
+        assert(!(st & (State::WallEnemy | State::Enemy | State::Castle)));
+        if(st & State::WallAlly){ // someone already built
+          std::cout << "AAA";
+          continue;
+        }
         set_state(act.pos, st | State::WallAlly);
       }
       // move
@@ -220,7 +230,10 @@ struct Field {
       // build
       for(const auto &act : act_list[Action::Build]){
         const State st = get_state(act.pos);
-        assert(!(st & (State::Wall | State::Ally)));
+        assert(!(st & (State::WallAlly | State::Ally | State::Castle)));
+        if(st & State::WallEnemy){ // someone already built
+          continue;
+        }
         set_state(act.pos, st | State::WallEnemy);
       }
       // move
@@ -252,6 +265,41 @@ struct Field {
   }
   bool is_finished() const{ return current_turn == final_turn; }
 };
+
+void debug_field(const Field &field){
+  std::vector<std::string> board(height), wall(height), region(height);
+  for(int i = 0; i < height; i++){
+    for(int j = 0; j < width; j++){
+      const State s = field.get_state(i, j);
+      //  board
+      char c = '.';
+      if(s & State::Pond) c = '#';
+      else if(s & State::Ally) c = '@';
+      else if(s & State::Enemy) c = '%';
+      else if(s & State::Castle) c = '$';
+      board[i] += c;
+      // wall
+      c = '.';
+      if((s & State::WallAlly) && (s & State::WallEnemy)) c = '$';
+      else if(s & State::WallAlly) c = '@';
+      else if(s & State::WallEnemy) c = '%';
+      else if(s & State::Castle) c = '$';
+      wall[i] += c;
+      // region
+      c = '.';
+      if((s & State::AreaAlly) && (s & State::AreaEnemy)) c = '$';
+      else if(s & State::AreaAlly) c = '@';
+      else if(s & State::AreaEnemy) c = '%';
+      else if(s & State::Castle) c = '$';
+      region[i] += c;
+    }
+  }
+  std::cout << "board" << std::string(width-4, ' ') << ": walls" << std::string(width-4, ' ') << ": region\n";
+  for(int i = 0; i < height; i++){
+    std::cout << board[i] << " : " << wall[i] << " : " << region[i] << "\n";
+  }
+  std::cout << "\n";
+}
 
 // side: 先攻後攻
 Field create_random_field(const int h, const int w, int agents_num=-1, int castles_num=-1, int final_turn=-1, int side=0){
