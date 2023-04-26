@@ -25,7 +25,14 @@ Actor::Actor(size_t y, size_t x) :
 
 
 bool Craftsman::Build(Field& field, size_t y, size_t x) {
-	if (field[y][x] = 0 or field[y][x] & CELL::ENEM or field[y][x] & CELL::ALLY) {
-
+	if (AbsDiff(y, this->y_coordinate) + AbsDiff(x, this->x_coordinate) > 1) {
+		return false;
+	}
+	if (not field[y][x] & CELL::POND and
+		not field[y][x] & CELL::WALL_ENEM and
+		not field[y][x] & CELL::WALL_ALLY and
+		not field[y][x] & CELL::ENEM and
+		not field[y][x] & CELL::CASTLE) {
+		field[y][x] |= CELL::WALL_ALLY;
 	}
 }
