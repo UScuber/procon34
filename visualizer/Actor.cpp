@@ -79,7 +79,7 @@ bool Craftsman::Move(Field& field, int dy, int dx) {
 		return false;
 	}
 	// 座標変化とbit変化
-	field.grid[x_coordinate][y_coordinate] &= ~CELL::ALLY;
+	field.grid[y_coordinate][x_coordinate] &= ~CELL::ALLY;
 	this->y_coordinate = next_y;
 	this->x_coordinate = next_x;
 	field.grid[next_y][next_x] |= CELL::ALLY;

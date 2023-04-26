@@ -2,7 +2,6 @@
 # include <Siv3D.hpp> // OpenSiv3D v0.6.9
 # include "Field.hpp"
 
-
 enum CELL{
 	POND = 1 << 0,
 	WALL_ENEM = 1 << 1,
@@ -32,7 +31,7 @@ void Field::DisplayGrid(void) {
 
 void Field::DrawActors(void) {
 	for (size_t i = 0; i < (HEIGHT * WIDTH); i++) {
-		char TargetCell = grid[i % WIDTH][i / WIDTH];
+		char TargetCell = grid[i / WIDTH][i % WIDTH];
 		if (TargetCell & CELL::POND) {
 			Rect((i % WIDTH) * CELL_SIZE + 100, (i / WIDTH) * CELL_SIZE + 100, CELL_SIZE).draw(Palette::Black);
 		}
@@ -59,3 +58,61 @@ void Field::DrawActors(void) {
 		}
 	}
 }
+
+
+
+const Array<std::pair<int, int>> d_ary = { {0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1},{1,0},{1,1} };
+void WallDFS(size_t y, size_t x, Array<Array<bool>> &flgs, Array<std::pair<size_t, size_t>> &ary, Array<Array<char>> &grid) {
+	ary.push_back({y, x});
+	flgs[y][x] = true;
+	for (auto &d: d_ary) {
+		int next_y = y + d.first;
+		int next_x = x + d.second;
+		if (next_y < 0 or HEIGHT <= next_y	or	next_x < 0 or HEIGHT <= next_x) {
+			continue;
+		}
+		if (not flgs[next_y][next_x] and grid[next_y][next_x] & WALL_ALLY) {
+			WallDFS(next_y, next_x, flgs, ary, grid);
+		}
+	}
+}
+
+Array<Array<std::pair<size_t, size_t>>> SearchWall(Array<Array<char>>& grid) {
+	Array<Array<std::pair<size_t, size_t>>> res;
+	Array<Array<bool>> flgs(HEIGHT, Array<bool>(WIDTH, false));
+	for (size_t i = 0; i < HEIGHT; i++) {
+		for (size_t j = 0; j < WIDTH; j++) {
+			if (not flgs[i][j] and grid[i][j] & WALL_ALLY) {
+				Array<std::pair<size_t, size_t>> ary;
+				WallDFS(i, j, flgs, ary, grid);
+				res.push_back(ary);
+			}
+		}
+	}
+	return res;
+}
+
+size_t Field::SearchArea(void) {
+	Array<Array<std::pair<size_t, size_t>>> WallArays = SearchWall(this->grid);
+	for (auto& ary : WallArays) {
+		Array<Array<size_t>> EachRowWalls(HEIGHT);
+		for (auto& wall : ary) {
+			EachRowWalls[wall.first].push_back(wall.second);
+		}
+		for (size_t y = 0; y < HEIGHT; y++) {
+			Array<size_t>& walls = EachRowWalls[y];
+			if (walls.size() == 0) {
+				continue;
+			}
+			auto iters = std::minmax_element(walls.begin(), walls.end());
+			for (size_t x = *iters.first; x <= *iters.second; x++) {
+				Print << x;
+				if (not (this->grid[y][x] & CELL::WALL_ALLY)) {
+					this->grid[y][x] |= AREA_ALLY;
+				}
+			}
+		}
+	}
+	return 67;
+}
+

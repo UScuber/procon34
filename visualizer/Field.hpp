@@ -7,6 +7,7 @@ public:
 	Field(void);
 	void DisplayGrid(void);
 	void DrawActors(void);
+	size_t SearchArea(void);
 //private:
 	Array<Array<char>> grid;
 };

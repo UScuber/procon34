@@ -45,16 +45,46 @@ void Main(){
 	
 	Craftsman craftsman(field, 3, 5);
 
+
+	field.grid[5][7] |= WALL_ALLY;
+	field.grid[5][8] |= WALL_ALLY;
+	field.grid[5][9] |= WALL_ALLY;
+	field.grid[5][10] |= WALL_ALLY;
+	field.grid[6][6] |= WALL_ALLY;
+	field.grid[6][11] |= WALL_ALLY;
+	field.grid[7][5] |= WALL_ALLY;
+	field.grid[7][8] |= WALL_ALLY;
+	field.grid[7][10] |= WALL_ALLY;
+	field.grid[8][4] |= WALL_ALLY;
+	field.grid[8][11] |= WALL_ALLY;
+	field.grid[9][5] |= WALL_ALLY;
+	field.grid[9][6] |= WALL_ALLY;
+	field.grid[9][7] |= WALL_ALLY;
+	field.grid[9][8] |= WALL_ALLY;
+	field.grid[9][9] |= WALL_ALLY;
+	field.grid[9][10] |= WALL_ALLY;
+	
+
+	field.grid[12][4] |= WALL_ALLY;
+	field.grid[12][5] |= WALL_ALLY;
+
 	while (System::Update()) {
-		if (SimpleGUI::Button(U"移動", { 900, 300 })) {
+		if (SimpleGUI::Button(U"移動", { 900, 100 })) {
 			MODE = 0;
-		}else if (SimpleGUI::Button(U"建設", { 900, 100 })) {
+		}else if (SimpleGUI::Button(U"建設", { 900, 200 })) {
 			MODE = 1;
-		}else if (SimpleGUI::Button(U"破壊", { 900, 200 })) {
+		}else if (SimpleGUI::Button(U"破壊", { 900, 300 })) {
 			MODE = 2;
 		}
 		if (SimpleGUI::Button(U"ターン終了", { 900, 500 })) {
 			TURN ^= true;
+		}
+
+		if (SimpleGUI::Button(U"Debug", { 900, 600 })) {
+			for (auto& ary : field.grid) {
+				Console << ary;
+			}
+			field.SearchArea();
 		}
 
 		switch (MODE){
@@ -66,7 +96,6 @@ void Main(){
 			case OPERATION_MODE::BREAK:
 				break;
 		}
-
 		field.DisplayGrid();
 		field.DrawActors();
 	}
