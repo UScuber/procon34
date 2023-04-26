@@ -7,8 +7,6 @@ extern size_t WIDTH;
 extern size_t CELL_SIZE;
 
 class Actor{
-public:
-	Actor(size_t y, size_t x);
 protected:
 	size_t y_coordinate;
 	size_t x_coordinate;
@@ -17,10 +15,10 @@ protected:
 
 class Craftsman : public Actor {
 public:
-	Craftsman(size_t y, size_t x) : Actor(y, x) {};
-	bool Build(Field &field, size_t y, size_t x);
-	bool Break(size_t y, size_t x);
-	bool Move(int dy, int dx);
+	Craftsman(Field& field, size_t y, size_t x);
+	bool Build(Field& field, size_t y, size_t x);
+	bool Break(Field& field, size_t y, size_t x);
+	bool Move(Field& field, int dy, int dx);
 };
 
 class Wall : public Actor {

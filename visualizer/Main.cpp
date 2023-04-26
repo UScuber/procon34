@@ -43,7 +43,7 @@ void Main(){
 	bool TURN = true;
 
 	
-
+	Craftsman craftsman(field, 3, 5);
 
 	while (System::Update()) {
 		if (SimpleGUI::Button(U"移動", { 900, 300 })) {
