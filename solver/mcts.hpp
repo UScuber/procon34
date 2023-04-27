@@ -3,21 +3,21 @@
 
 namespace Montecarlo {
 
-constexpr double C = 1;
-constexpr int max_expand = 20;
+constexpr double C = 0;
+constexpr int max_expand = 16;
+constexpr int max_playout_num = 4;
 
+bool is_searching_ally = false;
 
 double random_playout(Field field){
   const bool side = field.current_turn & 1;
-  while(!field.is_finished()){
+  int cnt = 0;
+  while(!field.is_finished() && cnt++ < max_playout_num){
     const auto acts = select_random_next_agents_acts(field.get_now_turn_agents(), field);
     field.update_turn(acts);
   }
   int final_score = field.calc_final_score();
-  if(!side) final_score = -final_score;
-  if(final_score > 0) return 1.0;
-  if(final_score < 0) return 0.0;
-  return 0.5;
+  return final_score;
 }
 
 struct Node {
@@ -27,13 +27,10 @@ struct Node {
 
   double evaluate(){
     if(field.is_finished()){
-      double value = 0.5;
       const int score = field.calc_final_score();
-      if(score > 0) value = 1.0;
-      else if(score < 0) value = 0.0;
-      w += value;
+      w += score;
       n++;
-      return value;
+      return score;
     }
     if(child_nodes.empty()){
       const double value = random_playout(field);
@@ -64,12 +61,12 @@ struct Node {
       if(!child_node.n) return child_node;
       t += child_node.n;
     }
-    double best_value = -1e18;
+    double best_value = -1e18 * (is_searching_ally ? 1 : -1);
     int best_action_idx = -1;
     for(int i = 0; i < (int)child_nodes.size(); i++){
       const auto &child_node = child_nodes[i];
-      const double ucb1_val = 1.0 - child_node.w / child_node.n + C * std::sqrt(2.0*std::log(t) / child_node.n);
-      if(ucb1_val > best_value){
+      const double ucb1_val = child_node.w / child_node.n + C * std::sqrt(2.0*std::log(t) / child_node.n);
+      if((ucb1_val > best_value) ^ !is_searching_ally){
         best_value = ucb1_val;
         best_action_idx = i;
       }
@@ -89,7 +86,6 @@ std::vector<Action> montecarlo_tree_search(const Field &field, const int search_
   for(int i = 0; i < search_num; i++){
     root_node.evaluate();
   }
-  //const auto legal_actions = enumerate_next_all_agents_acts(field.get_now_turn_agents(), field);
   int best_act_searched_idx = -1;
   int best_act_idx = -1;
   assert(legal_actions.size() == root_node.child_nodes.size());

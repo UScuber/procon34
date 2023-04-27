@@ -6,13 +6,13 @@ int main(){
   area_coef = 10;
   wall_coef = 1;
   //std::cin >> height >> width;
-  height = width = 8;
+  height = width = 10;
   int side, vs_same;
   std::cout << "side(0/1): ";
   std::cin >> side;
   std::cout << "auto ? ";
   std::cin >> vs_same;
-  Field field = create_random_field(height, width, 2, 1, 20*2);
+  Field field = create_random_field(height, width, 2+2, 1, 20*2);
   debug_field(field);
   while(!field.is_finished()){
     if((field.current_turn & 1) != side && !vs_same){
@@ -37,7 +37,8 @@ int main(){
       field.update_turn(res);
       debug_field(field);
     }else{
-      const auto res = montecarlo_tree_search(field, 4096);
+      Montecarlo::is_searching_ally = !(field.current_turn & 1);
+      const auto res = montecarlo_tree_search(field, 1 << 12);
       const int m = res.size();
       std::vector<int> dirs(m);
       std::vector<std::string> cmd(m, "none");

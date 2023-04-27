@@ -98,46 +98,32 @@ struct Field {
     static constexpr uchar Area = 1;
     static constexpr uchar Neutral = 2;
 
+    static std::queue<Point> que;
+
     auto calc_region = [&](const State my_wall) -> std::vector<std::vector<uchar>> {
       std::vector<std::vector<uchar>> used(height, std::vector<uchar>(width, NotSeen));
-      std::queue<Point> que;
 
-      // pを始点にstateで移動する
-      auto fill_region = [&](const Point &p, const uchar value){
-        assert(que.empty());
-        que.push(p);
-        used[p.y][p.x] = value;
-        while(!que.empty()){
-          const Point pos = que.front();
-          que.pop();
-          for(int dir = 0; dir < 4; dir++){
-            const Point nxt = pos + dmove[dir];
-            if(!is_valid(nxt)) continue;
-            if(used[nxt.y][nxt.x] == NotSeen && !(get_state(nxt) & my_wall)){
-              used[nxt.y][nxt.x] = value;
-              que.push(nxt);
-            }
-          }
-        }
-      };
       // fill Neutral
       for(int i = 0; i < height; i++){
         if(!(get_state(i, 0) & my_wall)){
-          fill_region(Point(i, 0), Neutral);
+          que.push(Point(i, 0));
+          used[i][0] = Neutral;
         }
         if(!(get_state(i, width-1) & my_wall)){
-          fill_region(Point(i, width-1), Neutral);
+          que.push(Point(i, width-1));
+          used[i][width-1] = Neutral;
         }
       }
       for(int j = 0; j < width; j++){
         if(!(get_state(0, j) & my_wall)){
-          fill_region(Point(0, j), Neutral);
+          que.push(Point(0, j));
+          used[0][j] = Neutral;
         }
         if(!(get_state(height-1, j) & my_wall)){
-          fill_region(Point(height-1, j), Neutral);
+          que.push(Point(height-1, j));
+          used[height-1][j] = Neutral;
         }
       }
-      // fill ally or enemy 's area
       while(!que.empty()){
         const Point pos = que.front();
         que.pop();
@@ -145,15 +131,16 @@ struct Field {
           const Point nxt = pos + dmove[dir];
           if(!is_valid(nxt)) continue;
           if(used[nxt.y][nxt.x] == NotSeen && !(get_state(nxt) & my_wall)){
-            used[nxt.y][nxt.x] = used[pos.y][pos.x];
+            used[nxt.y][nxt.x] = Neutral;
             que.push(nxt);
           }
         }
       }
+      // fill ally or enemy 's area
       for(int i = 1; i < height-1; i++){
         for(int j = 1; j < width-1; j++){
           if(used[i][j] == NotSeen && !(get_state(i, j) & my_wall)){
-            fill_region(Point(i, j), Area);
+            used[i][j] = Area;
           }
         }
       }
@@ -181,6 +168,8 @@ struct Field {
         }else if(enemy_reg[i][j] == Area){
           set_state(i, j, (st | State::AreaEnemy) & ~State::AreaAlly);
         }
+        if(st & State::WallAlly) set_state(i, j, st & ~State::AreaAlly);
+        if(st & State::WallEnemy) set_state(i, j, st & ~State::AreaEnemy);
       }
     }
   }
