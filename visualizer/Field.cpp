@@ -61,7 +61,29 @@ void Field::DrawActors(void) {
 
 
 
-const Array<std::pair<int, int>> d_ary = { {0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1},{1,0},{1,1} };
+const Array<std::pair<int, int>> d_ary = { {0,1},{-1,0},{0,-1},{1,0} };
+void WallBFS(size_t y, size_t x, Array<Array<bool>>& visited, Array<Array<char>>& grid) {
+	std::queue<std::pair<size_t, size_t>> que;
+	que.push({ y, x });
+	visited[y][x] = true;
+	while (not que.empty()) {
+		std::pair<size_t, size_t> now = que.front();
+		que.pop();
+		for (auto& d : d_ary) {
+			std::pair<int, int> next = { now.first + d.first , now.second + d.second };
+			if (next.first < 0 or HEIGHT <= next.first or next.second < 0 or WIDTH <= next.second) {
+				continue;
+			}
+			if (grid[next.first][next.second] & WALL_ALLY or visited[next.first][next.second]) {
+				continue;
+			}
+			que.push(next);
+			visited[next.first][next.second] = true;
+		}
+	}
+}
+
+/*
 void WallDFS(size_t y, size_t x, Array<Array<bool>> &flgs, Array<std::pair<size_t, size_t>> &ary, Array<Array<char>> &grid) {
 	ary.push_back({y, x});
 	flgs[y][x] = true;
@@ -76,40 +98,25 @@ void WallDFS(size_t y, size_t x, Array<Array<bool>> &flgs, Array<std::pair<size_
 		}
 	}
 }
+*/
 
-Array<Array<std::pair<size_t, size_t>>> SearchWall(Array<Array<char>>& grid) {
-	Array<Array<std::pair<size_t, size_t>>> res;
-	Array<Array<bool>> flgs(HEIGHT, Array<bool>(WIDTH, false));
-	for (size_t i = 0; i < HEIGHT; i++) {
-		for (size_t j = 0; j < WIDTH; j++) {
-			if (not flgs[i][j] and grid[i][j] & WALL_ALLY) {
-				Array<std::pair<size_t, size_t>> ary;
-				WallDFS(i, j, flgs, ary, grid);
-				res.push_back(ary);
+size_t Field::SearchArea(void) {
+	Array<Array<bool>> visited(HEIGHT, Array<bool>(WIDTH, false));
+	for (size_t h = 0; h < HEIGHT; h++) {
+		for (size_t w = 0; w < WIDTH; w++) {
+			if ((h == 0 or h == HEIGHT - 1 or w == 0 or w == WIDTH - 1) and not(this->grid[h][w] & WALL_ALLY)) {
+				WallBFS(h, w, visited, this->grid);
 			}
 		}
 	}
-	return res;
-}
 
-size_t Field::SearchArea(void) {
-	Array<Array<std::pair<size_t, size_t>>> WallArays = SearchWall(this->grid);
-	for (auto& ary : WallArays) {
-		Array<Array<size_t>> EachRowWalls(HEIGHT);
-		for (auto& wall : ary) {
-			EachRowWalls[wall.first].push_back(wall.second);
-		}
-		for (size_t y = 0; y < HEIGHT; y++) {
-			Array<size_t>& walls = EachRowWalls[y];
-			if (walls.size() == 0) {
-				continue;
+	for (size_t h = 0; h < HEIGHT ; h++) {
+		for (size_t w = 0; w < WIDTH; w++) {
+			if (not(visited[h][w]) and not(this->grid[h][w] & WALL_ALLY)) {
+				this->grid[h][w] |= AREA_ALLY;
 			}
-			auto iters = std::minmax_element(walls.begin(), walls.end());
-			for (size_t x = *iters.first; x <= *iters.second; x++) {
-				Print << x;
-				if (not (this->grid[y][x] & CELL::WALL_ALLY)) {
-					this->grid[y][x] |= AREA_ALLY;
-				}
+			else if (this->grid[h][w] & WALL_ALLY) {
+				this->grid[h][w] &= ~AREA_ALLY;
 			}
 		}
 	}

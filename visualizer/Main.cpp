@@ -42,31 +42,7 @@ void Main(){
 	// trueなら青チーム, falseなら赤チーム
 	bool TURN = true;
 
-	
 	Craftsman craftsman(field, 3, 5);
-
-
-	field.grid[5][7] |= WALL_ALLY;
-	field.grid[5][8] |= WALL_ALLY;
-	field.grid[5][9] |= WALL_ALLY;
-	field.grid[5][10] |= WALL_ALLY;
-	field.grid[6][6] |= WALL_ALLY;
-	field.grid[6][11] |= WALL_ALLY;
-	field.grid[7][5] |= WALL_ALLY;
-	field.grid[7][8] |= WALL_ALLY;
-	field.grid[7][10] |= WALL_ALLY;
-	field.grid[8][4] |= WALL_ALLY;
-	field.grid[8][11] |= WALL_ALLY;
-	field.grid[9][5] |= WALL_ALLY;
-	field.grid[9][6] |= WALL_ALLY;
-	field.grid[9][7] |= WALL_ALLY;
-	field.grid[9][8] |= WALL_ALLY;
-	field.grid[9][9] |= WALL_ALLY;
-	field.grid[9][10] |= WALL_ALLY;
-	
-
-	field.grid[12][4] |= WALL_ALLY;
-	field.grid[12][5] |= WALL_ALLY;
 
 	while (System::Update()) {
 		if (SimpleGUI::Button(U"移動", { 900, 100 })) {
@@ -87,13 +63,42 @@ void Main(){
 			field.SearchArea();
 		}
 
+		Array<Craftsman> craftsmen;
+		craftsmen << Craftsman(field, 0, 0);
+		craftsmen << Craftsman(field, 24, 24);
+		craftsmen << Craftsman(field, 6, 7);
+		craftsmen << Craftsman(field, 7, 6);
+		craftsmen << Craftsman(field, 10, 15);
+		craftsmen << Craftsman(field, 2, 20);
+
+
 		switch (MODE){
 			case OPERATION_MODE::MOVE:
+				for (int i = 0; i < HEIGHT; i++) {
+					for (int j = 0; j < WIDTH; j++) {
+						if (Rect{ j * CELL_SIZE + 100, i * CELL_SIZE + 100, CELL_SIZE }.leftPressed()) {
 
+						}
+					}
+				}
 				break;
 			case OPERATION_MODE::BUILD:
+				for (int i = 0; i < HEIGHT; i++) {
+					for (int j = 0; j < WIDTH; j++) {
+						if (Rect{ j * CELL_SIZE + 100, i * CELL_SIZE + 100, CELL_SIZE }.leftPressed()) {
+							field.grid[i][j] |= CELL::WALL_ALLY;
+						}
+					}
+				}
 				break;
 			case OPERATION_MODE::BREAK:
+				for (int i = 0; i < HEIGHT; i++) {
+					for (int j = 0; j < WIDTH; j++) {
+						if (Rect{ j * CELL_SIZE + 100, i * CELL_SIZE + 100, CELL_SIZE }.leftPressed()) {
+							field.grid[i][j] &= ~CELL::WALL_ALLY;
+						}
+					}
+				}
 				break;
 		}
 		field.DisplayGrid();

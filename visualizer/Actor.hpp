@@ -16,6 +16,7 @@ protected:
 class Craftsman : public Actor {
 public:
 	Craftsman(Field& field, size_t y, size_t x);
+	bool isActed = false;
 	bool Build(Field& field, size_t y, size_t x);
 	bool Break(Field& field, size_t y, size_t x);
 	bool Move(Field& field, int dy, int dx);
