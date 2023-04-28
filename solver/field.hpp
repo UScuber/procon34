@@ -311,10 +311,20 @@ Field create_random_field(const int h, const int w, int agents_num=-1, int castl
   if(castles_num == -1) castles_num = rnd(1, area/125+2);
   if(agents_num == -1) agents_num = rnd(2, 7);
   if(final_turn == -1) final_turn = rnd(15, 100) * 2;
+  std::vector<Point> castles(castles_num);
+  for(int i = 0; i < castles_num; i++){
+    int posy = rnd(1, h-1), posx = rnd(1, w-1);
+    while(used[posy][posx]){
+      posy = rnd(1, h-1);
+      posx = rnd(1, w-1);
+    }
+    castles[i] = Point(posy, posx);
+    used[posy][posx] = 1;
+  }
   return Field(
     h, w,
     gen_rnd_poses(ponds_num),
-    gen_rnd_poses(castles_num),
+    castles,
     gen_rnd_poses(agents_num),
     gen_rnd_poses(agents_num),
     side,

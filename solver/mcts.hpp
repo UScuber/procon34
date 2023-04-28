@@ -16,7 +16,8 @@ double random_playout(Field field){
     const auto acts = select_random_next_agents_acts(field.get_now_turn_agents(), field);
     field.update_turn(acts);
   }
-  int final_score = field.calc_final_score();
+  //int final_score = field.calc_final_score();
+  const double final_score = Evaluate::evaluate_field(field);
   return final_score;
 }
 
@@ -27,7 +28,8 @@ struct Node {
 
   double evaluate(){
     if(field.is_finished()){
-      const int score = field.calc_final_score();
+      //const int score = field.calc_final_score();
+      const double score = Evaluate::evaluate_field(field);
       w += score;
       n++;
       return score;

@@ -88,8 +88,16 @@ inline constexpr bool is_valid(const Point &p) noexcept{
   return 0 <= p.y && p.y < height && 0 <= p.x && p.x < width;
 }
 
+inline constexpr int manh_dist(const Point &p, const Point &q) noexcept{
+  return abs(p.y - q.y) + abs(p.x - q.x);
+}
+
+inline constexpr int manche_dist(const Point &p, const Point &q) noexcept{
+  return manh_dist(p, q) + std::max(abs(p.y-q.y), abs(p.x-q.y));
+}
+
 inline constexpr bool is_neighbor(const Point &p, const Point &q) noexcept{
-  return abs(p.y - q.y) + abs(p.x - q.x) <= 1;
+  return manh_dist(p, q) <= 1;
 }
 
 constexpr Point dmove[] = {

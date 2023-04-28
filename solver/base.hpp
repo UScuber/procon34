@@ -67,3 +67,119 @@ std::vector<std::vector<Action>> enumerate_next_all_agents_acts(const std::vecto
   acts.erase(std::unique(acts.begin(), acts.end()), acts.end());
   return acts;
 }
+
+
+namespace Evaluate {
+
+int calc_agent_min_dist(const Field &field, const std::vector<Point> &ally_agents){
+  int dc = 0;
+  for(const auto &agent : ally_agents){
+    int min_dist = 1000;
+    for(const auto &castle : field.castles){
+      const int d = manche_dist(agent, castle);
+      if(min_dist > d) min_dist = d;
+    }
+    dc += min_dist * min_dist;
+  }
+  return dc;
+}
+
+int calc_wall_min_dist(const Field &field, const State wall){
+  int dw = 0;
+  for(int i = 0; i < height; i++){
+    for(int j = 0; j < width; j++) if(field.get_state(i, j) & wall){
+      int min_dist = 1000;
+      for(const auto &castle : field.castles){
+        const int d = manche_dist(Point(i, j), castle);
+        if(min_dist > d) min_dist = d;
+      }
+      dw += min_dist * min_dist;
+    }
+  }
+  return dw;
+}
+
+std::vector<std::vector<int>> calc_castle_min_dist(const Field &field){
+  std::vector<std::vector<int>> res(height, std::vector<int>(width));
+  for(int i = 0; i < height; i++){
+    for(int j = 0; j < width; j++){
+      int min_dist = 1000;
+      for(const auto &castle : field.castles){
+        const int d = manche_dist(Point(i, j), castle);
+        if(min_dist > d) min_dist = d;
+      }
+      res[i][j] = min_dist;
+    }
+  }
+  return res;
+}
+
+double calc_around_wall(const Field &field, const State wall, const int C){
+  static std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field);
+  int wall_num = 0, mass = 0;
+  for(int i = 0; i < height; i++){
+    for(int j = 0; j < width; j++) if(dist_table[i][j] <= C){
+      if(field.get_state(i, j) & wall) wall_num++;
+      mass++;
+    }
+  }
+  return (double)wall_num / mass;
+}
+
+double calc_nearest_wall(const Field &field, const State wall){
+  static std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field);
+  double res = 0;
+  for(int i = 0; i < height; i++){
+    for(int j = 0; j < width; j++) if(field.get_state(i, j) & wall){
+      res += 1.0 / dist_table[i][j];
+    }
+  }
+  return res;
+}
+
+int calc_wall_by_enemy(const Field &field, const std::vector<Point> &enemy_agents, const State wall){
+  int res = 0;
+  for(const auto &agent : enemy_agents){
+    for(int dir = 0; dir < 4; dir++){
+      const auto nxt = agent + dmove[dir];
+      if(!is_valid(nxt)) continue;
+      if(field.get_state(nxt) & wall) res++;
+    }
+  }
+  return res;
+}
+
+double evaluate_field(const Field &field){
+  static constexpr int C = 5;
+  // eval: 1
+  const int dc = calc_agent_min_dist(field, field.ally_agents) - calc_agent_min_dist(field, field.enemy_agents);
+  // eval: 2
+  const int dw = calc_wall_min_dist(field, State::WallAlly) - calc_wall_min_dist(field, State::WallEnemy);
+  // eval: 3
+  const double pw = calc_around_wall(field, State::WallAlly, C) - calc_around_wall(field, State::WallEnemy, C);
+  // eval: 4
+  const int wd = calc_nearest_wall(field, State::WallAlly) - calc_nearest_wall(field, State::WallEnemy);
+  // eval: 5
+
+  // eval: 6
+  const int n = field.calc_final_score();
+  // eval: 7
+  const int wn = calc_wall_by_enemy(field, field.enemy_agents, State::WallAlly) - calc_wall_by_enemy(field, field.ally_agents, State::WallEnemy);
+
+  static constexpr double a = 0.006;
+  static constexpr double b = 0.003;
+  static constexpr double c = 0.9;
+  static constexpr double d = 1.0;
+  static constexpr double e = 0;
+  static constexpr double f = 0.1;
+  double res = 0;
+  res -= dc * a;
+  res -= dw * b;
+  res += pw * c;
+  res += wd * d;
+  res += n * 0.2;
+  res -= wn * f;
+  return res * 1;
+}
+
+}
