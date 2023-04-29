@@ -42,15 +42,22 @@ void Main(){
 	// trueなら青チーム, falseなら赤チーム
 	bool TURN = true;
 
-	Craftsman craftsman(field, 3, 5);
+	Array<Craftsman> craftsmen;
+	craftsmen << Craftsman(field, 0, 0);
+	craftsmen << Craftsman(field, 24, 24);
+	craftsmen << Craftsman(field, 6, 7);
+	craftsmen << Craftsman(field, 7, 6);
+	craftsmen << Craftsman(field, 10, 15);
+	craftsmen << Craftsman(field, 2, 20);
 
 	while (System::Update()) {
+
 		if (SimpleGUI::Button(U"移動", { 900, 100 })) {
-			MODE = 0;
+			MODE = OPERATION_MODE::MOVE;
 		}else if (SimpleGUI::Button(U"建設", { 900, 200 })) {
-			MODE = 1;
+			MODE = OPERATION_MODE::BUILD;
 		}else if (SimpleGUI::Button(U"破壊", { 900, 300 })) {
-			MODE = 2;
+			MODE = OPERATION_MODE::BREAK;
 		}
 		if (SimpleGUI::Button(U"ターン終了", { 900, 500 })) {
 			TURN ^= true;
@@ -62,14 +69,6 @@ void Main(){
 			}
 			field.SearchArea();
 		}
-
-		Array<Craftsman> craftsmen;
-		craftsmen << Craftsman(field, 0, 0);
-		craftsmen << Craftsman(field, 24, 24);
-		craftsmen << Craftsman(field, 6, 7);
-		craftsmen << Craftsman(field, 7, 6);
-		craftsmen << Craftsman(field, 10, 15);
-		craftsmen << Craftsman(field, 2, 20);
 
 
 		switch (MODE){
