@@ -148,6 +148,21 @@ size_t Field::SearchArea(bool team) {
 			}
 		}
 	}
-	return 67;
+
+	size_t cnt = 0;
+	for (size_t h = 0; h < HEIGHT; h++) {
+		for (size_t w = 0; w < WIDTH; w++) {
+			if (this->grid[h][w] & SwitchCELL(U"AREA", team)) {
+				cnt++;
+			}
+		}
+	}
+	return cnt;
 }
 
+void Field::GetGrid(Array<Array<char>> grid) {
+	this->grid = grid;	
+}
+Array<Array<char>> Field::GiveGrid(void) {
+	return this->grid;
+}

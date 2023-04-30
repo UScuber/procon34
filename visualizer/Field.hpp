@@ -14,6 +14,8 @@ public:
 	void DisplayGrid(void);
 	void DrawActors(void);
 	size_t SearchArea(bool team);
+	void GetGrid(Array<Array<char>> grid);
+	Array<Array<char>> GiveGrid(void);
 //private:
 	Array<Array<char>> grid;
 };

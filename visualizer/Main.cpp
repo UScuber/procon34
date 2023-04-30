@@ -54,33 +54,39 @@ void Main() {
 	Field field;
 
 	size_t NumCraftsman = 6;
-	size_t NumTurn = 200;
 	size_t MODE = 0;
+
+
+	size_t NumTurn = 0;
+	size_t BlueArea = 0;
+	size_t RedArea = 0;
 
 	// trueなら味方(青)チーム, falseなら敵(赤)チーム
 	bool TURN = TEAM::BLUE;
 
-	Array<Craftsman> craftsmen;
-	craftsmen << Craftsman(field, 0, 0, TEAM::BLUE);
-	craftsmen << Craftsman(field, 24, 24, TEAM::BLUE);
-	craftsmen << Craftsman(field, 6, 7, TEAM::BLUE);
-	craftsmen << Craftsman(field, 7, 6, TEAM::BLUE);
-	craftsmen << Craftsman(field, 10, 15, TEAM::BLUE);
-	craftsmen << Craftsman(field, 2, 20, TEAM::BLUE);
+	Array<Craftsman> craftsmen_blue;
+	Array<Craftsman> craftsmen_red;
+	craftsmen_blue << Craftsman(field, 0, 0, TEAM::BLUE);
+	craftsmen_blue << Craftsman(field, 24, 24, TEAM::BLUE);
+	craftsmen_blue << Craftsman(field, 6, 7, TEAM::BLUE);
+	craftsmen_blue << Craftsman(field, 7, 6, TEAM::BLUE);
+	craftsmen_blue << Craftsman(field, 10, 15, TEAM::BLUE);
+	craftsmen_blue << Craftsman(field, 2, 20, TEAM::BLUE);
 
-	craftsmen << Craftsman(field, 3, 6, TEAM::RED);
-	craftsmen << Craftsman(field, 3, 12, TEAM::RED);
-	craftsmen << Craftsman(field, 20, 21, TEAM::RED);
-	craftsmen << Craftsman(field, 15, 6, TEAM::RED);
-	craftsmen << Craftsman(field, 11, 17, TEAM::RED);
-	craftsmen << Craftsman(field, 22, 9, TEAM::RED);
+	craftsmen_red << Craftsman(field, 3, 6, TEAM::RED);
+	craftsmen_red << Craftsman(field, 3, 12, TEAM::RED);
+	craftsmen_red << Craftsman(field, 20, 21, TEAM::RED);
+	craftsmen_red << Craftsman(field, 15, 6, TEAM::RED);
+	craftsmen_red << Craftsman(field, 11, 17, TEAM::RED);
+	craftsmen_red << Craftsman(field, 22, 9, TEAM::RED);
 
 	// 職人を選択中かどうか
 	bool isTargeting = false;
 
 	const Font font{75, U"SourceHanSansJP-Medium.otf"};
 
-
+	Array<Craftsman > pre_craftsmen = craftsmen_blue;
+	Field pre_field = field;
 
 	while (System::Update()) {
 
@@ -92,28 +98,38 @@ void Main() {
 			font(U"赤チームの手番").draw(100, 600, Palette::Red);
 		}
 
+		font(U"ターン数:{}"_fmt(NumTurn)).draw(800, 50, Palette::Black);
+		font(U"青エリア:{}"_fmt(BlueArea)).draw(800, 150, Palette::Black);
+		font(U"赤エリア:{}"_fmt(RedArea)).draw(800, 250, Palette::Black);
+
+
 		// 上書きする場合もあるため始めに描画する
 		field.DisplayGrid();
 		field.DrawActors();
 
-		if (SimpleGUI::Button(U"移動", { 900, 100 })) {
+		if (SimpleGUI::Button(U"移動", { 700, 100 })) {
 			MODE = OPERATION_MODE::MOVE;
-		}else if (SimpleGUI::Button(U"建設", { 900, 200 })) {
+		}else if (SimpleGUI::Button(U"建設", { 700, 200 })) {
 			MODE = OPERATION_MODE::BUILD;
-		}else if (SimpleGUI::Button(U"破壊", { 900, 300 })) {
+		}else if (SimpleGUI::Button(U"破壊", { 700, 300 })) {
 			MODE = OPERATION_MODE::BREAK;
+		}else if (SimpleGUI::Button(U"手番開始時に戻す", { 700,400 })) {
+			(TURN == TEAM::BLUE ? craftsmen_blue : craftsmen_red) = pre_craftsmen;
+			field = pre_field;
 		}
-		if (SimpleGUI::Button(U"ターン終了", { 900, 500 })) {
-			for (Craftsman& craftsman : craftsmen) {
-				craftsman.isActed = false;
-				craftsman.isTarget = false;
+		if (SimpleGUI::Button(U"ターン終了", { 700, 500 })) {
+			for (Craftsman& craftsman : (TURN == TEAM::BLUE ? craftsmen_blue : craftsmen_red)) {
+				craftsman.Initialize();
 			}
-			field.SearchArea(TURN);
-			field.SearchArea(not TURN);
+			BlueArea = field.SearchArea(TEAM::BLUE);
+			RedArea = field.SearchArea(TEAM::RED);
 			TURN ^= true;
+			NumTurn++;
+			pre_craftsmen = (TURN == TEAM::BLUE ? craftsmen_blue : craftsmen_red);
+			pre_field = field;
 		}
 
-		if (SimpleGUI::Button(U"Debug", { 900, 600 })) {
+		if (SimpleGUI::Button(U"Debug", { 700, 600 })) {
 			for (auto& ary : field.grid) {
 				Console << ary;
 			}
@@ -121,7 +137,7 @@ void Main() {
 
 
 		// 職人の行動
-		for (Craftsman& craftsman : craftsmen) {
+		for (Craftsman& craftsman : (TURN == TEAM::BLUE ? craftsmen_blue : craftsmen_red)) {
 			// 敵の職人はスキップ
 			if (TURN != craftsman.team) {
 				continue;
@@ -152,8 +168,6 @@ void Main() {
 							continue;
 						}
 						if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Move(field, d.first, d.second)) {
-							craftsman.isActed = true;
-							craftsman.isTarget = false;
 							isTargeting = false;
 						}
 					}
@@ -167,8 +181,6 @@ void Main() {
 						continue;
 					}
 					if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Build(field, next.first, next.second)) {
-						craftsman.isActed = true;
-						craftsman.isTarget = false;
 						isTargeting = false;
 					}
 				}
@@ -183,8 +195,6 @@ void Main() {
 						continue;
 					}
 					if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Break(field, next.first, next.second)) {
-						craftsman.isActed = true;
-						craftsman.isTarget = false;
 						isTargeting = false;
 					}
 				}

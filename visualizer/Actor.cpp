@@ -19,12 +19,18 @@ extern size_t HEIGHT;
 extern size_t WIDTH;
 extern size_t CELL_SIZE;
 
-
+// コンストラクタで座標、チームを取得しフィールドを書き換える
 Craftsman::Craftsman(Field& field, size_t y, size_t x, bool team){
 	this->y_coordinate = y;
 	this->x_coordinate = x;
 	this ->team = team;
 	field.grid[y][x] |= SwitchCELL(U"CRAFTSMAN", team);
+}
+
+// 状態をリセット
+void Craftsman::Initialize(void) {
+	this->isActed = false;
+	this->isTarget = false;
 }
 
 // 城壁を建築
@@ -41,6 +47,8 @@ bool Craftsman::Build(Field& field, size_t y, size_t x) {
 	}
 	// bit変化
 	TargetCell |= SwitchCELL(U"WALL", team);
+	this->isActed = true;
+	this->isTarget = false;
 	return true;
 }
 
@@ -58,6 +66,8 @@ bool Craftsman::Break(Field& field, size_t y, size_t x) {
 	// bit変化
 	TargetCell &= ~CELL::WALL_ENEM;
 	TargetCell &= ~CELL::WALL_ALLY;
+	this->isActed = true;
+	this->isTarget = false;
 	return true;
 }
 
@@ -84,6 +94,8 @@ bool Craftsman::Move(Field& field, int dy, int dx) {
 	this->y_coordinate = next_y;
 	this->x_coordinate = next_x;
 	field.grid[next_y][next_x] |= SwitchCELL(U"CRAFTSMAN", team);
+	this->isActed = true;
+	this->isTarget = false;
 	return true;
 }
 
