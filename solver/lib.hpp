@@ -31,6 +31,7 @@ struct State {
   static const State Castle;
   static const State Human; // Ally | Enemey
   static const State Wall; // WallAlly | WallEnemy
+  static const State Area; // AreaAlly | AreaEnemy
 
   inline constexpr State(const uchar v=0) : val(v){}
   inline constexpr State &operator|=(const State s) noexcept{ val |= s.val; return *this; }
@@ -58,6 +59,7 @@ constexpr State State::Ally = 1 << 6;
 constexpr State State::Castle = 1 << 7;
 constexpr State State::Human = State::Ally | State::Enemy;
 constexpr State State::Wall = State::WallAlly | State::WallEnemy;
+constexpr State State::Area = State::AreaAlly | State::AreaEnemy;
 
 
 struct Point {
@@ -92,8 +94,12 @@ inline constexpr int manh_dist(const Point &p, const Point &q) noexcept{
   return abs(p.y - q.y) + abs(p.x - q.x);
 }
 
+inline constexpr int che_dist(const Point &p, const Point &q) noexcept{
+  return std::max(abs(p.y - q.y), abs(p.x - q.x));
+}
+
 inline constexpr int manche_dist(const Point &p, const Point &q) noexcept{
-  return manh_dist(p, q) + std::max(abs(p.y-q.y), abs(p.x-q.y));
+  return manh_dist(p, q) + che_dist(p, q);
 }
 
 inline constexpr bool is_neighbor(const Point &p, const Point &q) noexcept{
@@ -115,7 +121,6 @@ constexpr Point dmove[] = {
 inline uint randxor32() noexcept{
   //static uint y = (uint)rand() | (uint)rand() << 16;
   static uint y = 1210253353;
-  //std::cerr << y << " ";
   y = y ^ (y << 13); y = y ^ (y >> 17);
   return y = y ^ (y << 5);
 }

@@ -71,11 +71,12 @@ std::vector<std::vector<Action>> enumerate_next_all_agents_acts(const std::vecto
 
 namespace Evaluate {
 
-int calc_agent_min_dist(const Field &field, const std::vector<Point> &ally_agents){
+int calc_agent_min_dist(const Field &field, const std::vector<Point> &ally_agents, const State area){
   int dc = 0;
   for(const auto &agent : ally_agents){
     int min_dist = 1000;
     for(const auto &castle : field.castles){
+      if((field.get_state(castle) & State::Area) == area) continue;
       const int d = manche_dist(agent, castle);
       if(min_dist > d) min_dist = d;
     }
@@ -99,13 +100,14 @@ int calc_wall_min_dist(const Field &field, const State wall){
   return dw;
 }
 
-std::vector<std::vector<int>> calc_castle_min_dist(const Field &field){
+template <class F>
+std::vector<std::vector<int>> calc_castle_min_dist(const Field &field, const F &dist){
   std::vector<std::vector<int>> res(height, std::vector<int>(width));
   for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++){
       int min_dist = 1000;
       for(const auto &castle : field.castles){
-        const int d = manche_dist(Point(i, j), castle);
+        const int d = dist(Point(i, j), castle);
         if(min_dist > d) min_dist = d;
       }
       res[i][j] = min_dist;
@@ -115,7 +117,7 @@ std::vector<std::vector<int>> calc_castle_min_dist(const Field &field){
 }
 
 double calc_around_wall(const Field &field, const State wall, const int C){
-  static std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field);
+  static std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field, manche_dist);
   int wall_num = 0, mass = 0;
   for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++) if(dist_table[i][j] <= C){
@@ -127,13 +129,46 @@ double calc_around_wall(const Field &field, const State wall, const int C){
 }
 
 double calc_nearest_wall(const Field &field, const State wall){
-  static std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field);
+  static std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field, manche_dist);
   double res = 0;
   for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++) if(field.get_state(i, j) & wall){
-      res += 1.0 / dist_table[i][j];
+      res += 1.0 / (dist_table[i][j] * dist_table[i][j]);
     }
   }
+  return res;
+}
+
+int calc_connected_wall(const Field &field, const State wall){
+  static std::queue<Point> que;
+  static std::vector<std::vector<int>> used(height, std::vector<int>(width));
+  static int unused = 0;
+  int res = 0;
+  for(int i = 0; i < height; i++){
+    for(int j = 0; j < width; j++){
+      if((field.get_state(i, j) & wall) && used[i][j] <= unused){
+        int num = 0;
+        used[i][j] = unused + 1;
+        que.push(Point(i, j));
+        while(!que.empty()){
+          const auto pos = que.front();
+          que.pop();
+          num++;
+          for(int dir = 0; dir < 8; dir++){
+            const auto nxt = pos + dmove[dir];
+            if(!is_valid(nxt) || !(field.get_state(nxt) & wall)) continue;
+            if(used[nxt.y][nxt.x] <= unused){
+              used[nxt.y][nxt.x] = unused + 1;
+              que.push(nxt);
+            }
+          }
+        }
+        const int lim = std::min(num, 5);
+        res += lim*lim + num-lim;
+      }
+    }
+  }
+  unused++;
   return res;
 }
 
@@ -150,36 +185,37 @@ int calc_wall_by_enemy(const Field &field, const std::vector<Point> &enemy_agent
 }
 
 double evaluate_field(const Field &field){
-  static constexpr int C = 5;
-  // eval: 1
-  const int dc = calc_agent_min_dist(field, field.ally_agents) - calc_agent_min_dist(field, field.enemy_agents);
-  // eval: 2
+static constexpr int C = 3;
+  // eval #1: 各職人から一番近い城までの距離^2の総和
+  const int dc = calc_agent_min_dist(field, field.ally_agents, State::AreaAlly) - calc_agent_min_dist(field, field.enemy_agents, State::AreaEnemy);
+  // eval #2: 各城壁から一番近い城との距離の総和
   const int dw = calc_wall_min_dist(field, State::WallAlly) - calc_wall_min_dist(field, State::WallEnemy);
-  // eval: 3
+  // eval #3: 各城を中心として、((距離がC以内にある城壁の個数)/(対象のマスの数))
   const double pw = calc_around_wall(field, State::WallAlly, C) - calc_around_wall(field, State::WallEnemy, C);
-  // eval: 4
-  const int wd = calc_nearest_wall(field, State::WallAlly) - calc_nearest_wall(field, State::WallEnemy);
-  // eval: 5
-
-  // eval: 6
+  // eval #4: 1/(壁から一番近い城までの距離^2)の総和
+  const double wd = calc_nearest_wall(field, State::WallAlly) - calc_nearest_wall(field, State::WallEnemy);
+  // eval #5: 城壁の各連結成分の大きさ^2の総和
+  const int w = calc_connected_wall(field, State::WallAlly) - calc_connected_wall(field, State::WallEnemy);
+  // eval #6: 城、領域、壁の数
   const int n = field.calc_final_score();
-  // eval: 7
+  // eval #7: 敵の職人のマンハッタン距離1以内に置かれている壁の数
   const int wn = calc_wall_by_enemy(field, field.enemy_agents, State::WallAlly) - calc_wall_by_enemy(field, field.ally_agents, State::WallEnemy);
 
-  static constexpr double a = 0.006;
-  static constexpr double b = 0.003;
-  static constexpr double c = 0.9;
-  static constexpr double d = 1.0;
-  static constexpr double e = 0;
-  static constexpr double f = 0.1;
+  static constexpr double a = 0.0015;
+  static constexpr double b = 0.010;
+  static constexpr double c = 0.95;
+  static constexpr double d = 1.3;
+  static constexpr double e = 0.01;
+  static constexpr double f = 0.07;
   double res = 0;
   res -= dc * a;
   res -= dw * b;
   res += pw * c;
   res += wd * d;
-  res += n * 0.2;
+  res += w * e;
+  res += n * 0.1;
   res -= wn * f;
-  return res * 1;
+  return res * 0.5;
 }
 
 }
