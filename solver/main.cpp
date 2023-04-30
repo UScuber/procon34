@@ -1,19 +1,22 @@
+#include <time.h>
 #include "base.hpp"
 #include "mcts.hpp"
+#include "thunder.hpp"
 
 int main(){
-  castles_coef = 100;
-  area_coef = 10;
-  wall_coef = 1;
+  srand(time(NULL));
+  castles_coef = 80;
+  area_coef = 3;
+  wall_coef = 2;
   //std::cin >> height >> width;
-  height = width = 10;
+  height = width = 16;
   int side, vs_same;
   std::cout << "side(0/1): ";
   std::cin >> side;
   std::cout << "auto ? ";
   std::cin >> vs_same;
-  Field field = create_random_field(height, width, 2+2, 1, 20*2);
-  debug_field(field);
+  Field field = create_random_field(height, width, 2+1, 1+3, 30*2);
+  field.debug();
   while(!field.is_finished()){
     if((field.current_turn & 1) != side && !vs_same){
       std::cout << "agent move\n";
@@ -35,10 +38,12 @@ int main(){
         res.emplace_back(Action(field.get_now_turn_agents()[i] + dmove[dir], cmd, i));
       }
       field.update_turn(res);
-      debug_field(field);
+      field.debug();
     }else{
       Montecarlo::is_searching_ally = !(field.current_turn & 1);
-      const auto res = montecarlo_tree_search(field, 1 << 12);
+      Thunder::is_searching_ally = !(field.current_turn & 1);
+      //const auto res = montecarlo_tree_search(field, 1 << 12+1);
+      const auto res = (field.current_turn & 1) ? thunder_search(field, 1 << 9) : montecarlo_tree_search(field, 1 << 13);
       const int m = res.size();
       std::vector<int> dirs(m);
       std::vector<std::string> cmd(m, "none");
@@ -55,11 +60,12 @@ int main(){
         }
       }
       field.update_turn(res);
-      debug_field(field);
+      field.debug();
       for(int i = 0; i < m; i++){
         std::cout << "idx: " << i << ": " << dirs[i] << " " << cmd[i] << "\n";
       }
     }
   }
   std::cout << "Finished\n";
+  std::cout << "Ally's Score: " << field.calc_final_score() << "\n";
 }

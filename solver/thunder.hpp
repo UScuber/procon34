@@ -1,25 +1,8 @@
-#include <cmath>
 #include "base.hpp"
 
-namespace Montecarlo {
-
-constexpr double C = 1;
-constexpr int max_expand = 16;
-constexpr int max_playout_num = 6;
+namespace Thunder {
 
 bool is_searching_ally = false;
-
-double random_playout(Field field){
-  const bool side = field.current_turn & 1;
-  int cnt = 0;
-  while(!field.is_finished() && cnt++ < max_playout_num){
-    const auto acts = select_random_next_agents_acts(field.get_now_turn_agents(), field);
-    field.update_turn(acts);
-  }
-  //int final_score = field.calc_final_score();
-  const double final_score = Evaluate::evaluate_field(field);
-  return final_score;
-}
 
 struct Node {
   std::vector<Node> child_nodes;
@@ -28,17 +11,17 @@ struct Node {
 
   double evaluate(){
     if(field.is_finished()){
-      //const int score = field.calc_final_score();
-      const double score = Evaluate::evaluate_field(field);
+      const bool win = field.calc_final_score() > 0;
+      const double score = win ? 10 : -10;
       w += score;
       n++;
       return score;
     }
     if(child_nodes.empty()){
-      const double value = random_playout(field);
+      const double value = Evaluate::evaluate_field(field);
       w += value;
       n++;
-      if(n >= max_expand) expand();
+      expand();
       return value;
     }else{
       const double value = nextChildNode().evaluate();
@@ -67,7 +50,7 @@ struct Node {
     int best_action_idx = -1;
     for(int i = 0; i < (int)child_nodes.size(); i++){
       const auto &child_node = child_nodes[i];
-      const double ucb1_val = child_node.w / child_node.n + C * std::sqrt(2.0*std::log(t) / child_node.n);
+      const double ucb1_val = child_node.w / child_node.n;
       if((ucb1_val > best_value) ^ !is_searching_ally){
         best_value = ucb1_val;
         best_action_idx = i;
@@ -82,7 +65,7 @@ private:
 
 
 
-std::vector<Action> montecarlo_tree_search(const Field &field, const int search_num){
+std::vector<Action> thunder_search(const Field &field, const int search_num){
   Node root_node = Node(field);
   const auto legal_actions = root_node.expand();
   for(int i = 0; i < search_num; i++){
@@ -103,4 +86,4 @@ std::vector<Action> montecarlo_tree_search(const Field &field, const int search_
 
 }
 
-using Montecarlo::montecarlo_tree_search;
+using Thunder::thunder_search;
