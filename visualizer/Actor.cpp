@@ -20,10 +20,11 @@ extern size_t WIDTH;
 extern size_t CELL_SIZE;
 
 
-Craftsman::Craftsman(Field& field, size_t y, size_t x){
+Craftsman::Craftsman(Field& field, size_t y, size_t x, bool team){
 	this->y_coordinate = y;
 	this->x_coordinate = x;
-	field.grid[y][x] |= CELL::ALLY;
+	this ->team = team;
+	field.grid[y][x] |= SwitchCELL(U"CRAFTSMAN", team);
 }
 
 // 城壁を建築
@@ -35,11 +36,11 @@ bool Craftsman::Build(Field& field, size_t y, size_t x) {
 	// 建築可能な場所か
 	char& TargetCell = field.grid[y][x];
 	if (TargetCell & CELL::POND or TargetCell & CELL::WALL_ENEM or TargetCell & CELL::WALL_ALLY or
-		TargetCell & CELL::ENEM or TargetCell & CELL::CASTLE) {
+		TargetCell & SwitchCELL(U"CRAFTSMAN", not team) or TargetCell & CELL::CASTLE) {
 		return false;
 	}
 	// bit変化
-	TargetCell |= CELL::WALL_ALLY;
+	TargetCell |= SwitchCELL(U"WALL", team);
 	return true;
 }
 
@@ -74,15 +75,15 @@ bool Craftsman::Move(Field& field, int dy, int dx) {
 	}
 	// 移動可能な場所か
 	char& TargetCell = field.grid[next_y][next_x];
-	if (TargetCell & CELL::POND or TargetCell & CELL::WALL_ENEM or
+	if (TargetCell & CELL::POND or TargetCell & SwitchCELL(U"WALL", not team) or
 		TargetCell & CELL::ENEM or TargetCell & CELL::ALLY) {
 		return false;
 	}
 	// 座標変化とbit変化
-	field.grid[y_coordinate][x_coordinate] &= ~CELL::ALLY;
+	field.grid[y_coordinate][x_coordinate] &= ~SwitchCELL(U"CRAFTSMAN", team);
 	this->y_coordinate = next_y;
 	this->x_coordinate = next_x;
-	field.grid[next_y][next_x] |= CELL::ALLY;
+	field.grid[next_y][next_x] |= SwitchCELL(U"CRAFTSMAN", team);
 	return true;
 }
 

@@ -15,7 +15,7 @@ public:
 
 class Craftsman : public Actor {
 public:
-	Craftsman(Field& field, size_t y, size_t x);
+	Craftsman(Field& field, size_t y, size_t x, bool team);
 	bool isActed = false;
 	bool isTarget = false;
 	bool team = true;

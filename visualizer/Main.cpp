@@ -41,15 +41,15 @@ const Array<std::pair<int,int>> dydx_craftsman = { {0,1},{-1,1},{-1,0},{-1,-1},{
 // 城壁の建築範囲
 const Array<std::pair<int, int>> dydx_wall = { {0,1},{0,-1},{1,0},{-1,0} };
 
-void Main(){
+void Main() {
 	Scene::SetBackground(Palette::Lightsteelblue);
 	Window::Resize(1280, 720);
 
 	HEIGHT = 25;
 	WIDTH = 25;
 	CELL_SIZE = 20;
-	BLANK_LEFT = 50;
-	BLANK_TOP = 50;
+	BLANK_LEFT = 100;
+	BLANK_TOP = 100;
 
 	Field field;
 
@@ -61,19 +61,36 @@ void Main(){
 	bool TURN = TEAM::BLUE;
 
 	Array<Craftsman> craftsmen;
-	craftsmen << Craftsman(field, 0, 0);
-	craftsmen << Craftsman(field, 24, 24);
-	craftsmen << Craftsman(field, 6, 7);
-	craftsmen << Craftsman(field, 7, 6);
-	craftsmen << Craftsman(field, 10, 15);
-	craftsmen << Craftsman(field, 2, 20);
+	craftsmen << Craftsman(field, 0, 0, TEAM::BLUE);
+	craftsmen << Craftsman(field, 24, 24, TEAM::BLUE);
+	craftsmen << Craftsman(field, 6, 7, TEAM::BLUE);
+	craftsmen << Craftsman(field, 7, 6, TEAM::BLUE);
+	craftsmen << Craftsman(field, 10, 15, TEAM::BLUE);
+	craftsmen << Craftsman(field, 2, 20, TEAM::BLUE);
+
+	craftsmen << Craftsman(field, 3, 6, TEAM::RED);
+	craftsmen << Craftsman(field, 3, 12, TEAM::RED);
+	craftsmen << Craftsman(field, 20, 21, TEAM::RED);
+	craftsmen << Craftsman(field, 15, 6, TEAM::RED);
+	craftsmen << Craftsman(field, 11, 17, TEAM::RED);
+	craftsmen << Craftsman(field, 22, 9, TEAM::RED);
 
 	// 職人を選択中かどうか
 	bool isTargeting = false;
 
+	const Font font{75, U"SourceHanSansJP-Medium.otf"};
+
+
+
 	while (System::Update()) {
 
 		//Console << Scene::DeltaTime();
+
+		if (TURN == TEAM::BLUE) {
+			font(U"青チームの手番").draw(100, 600, Palette::Blue);
+		}else{ 
+			font(U"赤チームの手番").draw(100, 600, Palette::Red);
+		}
 
 		// 上書きする場合もあるため始めに描画する
 		field.DisplayGrid();
@@ -87,6 +104,12 @@ void Main(){
 			MODE = OPERATION_MODE::BREAK;
 		}
 		if (SimpleGUI::Button(U"ターン終了", { 900, 500 })) {
+			for (Craftsman& craftsman : craftsmen) {
+				craftsman.isActed = false;
+				craftsman.isTarget = false;
+			}
+			field.SearchArea(TURN);
+			field.SearchArea(not TURN);
 			TURN ^= true;
 		}
 
@@ -94,13 +117,15 @@ void Main(){
 			for (auto& ary : field.grid) {
 				Console << ary;
 			}
-			field.SearchArea(TURN);
-			field.SearchArea(not TURN);
 		}
 
 
 		// 職人の行動
-		for (Craftsman& craftsman : craftsmen) { 
+		for (Craftsman& craftsman : craftsmen) {
+			// 敵の職人はスキップ
+			if (TURN != craftsman.team) {
+				continue;
+			}
 			// 行動済みの職人は灰色で上塗り
 			if (craftsman.isActed) {
 				GetGridCircle(craftsman.y_coordinate, craftsman.x_coordinate).draw(Palette::Grey);
