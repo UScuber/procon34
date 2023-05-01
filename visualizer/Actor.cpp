@@ -33,6 +33,7 @@ Craftsman::Craftsman(Field& field, size_t y, size_t x, bool team){
 void Craftsman::Initialize(void) {
 	this->isActed = false;
 	this->isTarget = false;
+	this->Direction = 0;
 	this->Act = U"";
 }
 
@@ -55,11 +56,11 @@ bool Craftsman::Build(Field& field, int dy, int dx) {
 	this->isTarget = false;
 	for (size_t i = 0; i < dydx.size(); i++) {
 		if (dydx[i].first == dy and dydx[i].second == dx) {
-			this->Act += ToString(i);
+			this->Direction = i;
 			break;
 		}
 	}
-	this->Act += U" build";
+	this->Act = U" build";
 	return true;
 }
 
@@ -81,11 +82,11 @@ bool Craftsman::Break(Field& field, int dy, int dx) {
 	this->isTarget = false;
 	for (size_t i = 0; i < dydx.size(); i++) {
 		if (dydx[i].first == dy and dydx[i].second == dx) {
-			this->Act += ToString(i);
+			this->Direction = i;
 			break;
 		}
 	}
-	this->Act += U" break";
+	this->Act = U" break";
 	return true;
 }
 
@@ -116,11 +117,11 @@ bool Craftsman::Move(Field& field, int dy, int dx) {
 	this->isTarget = false;
 	for (size_t i = 0; i < dydx.size(); i++) {
 		if (dydx[i].first == dy and dydx[i].second == dx) {
-			this->Act += ToString(i);
+			this->Direction = i;
 			break;
 		}
 	}
-	this->Act += U" move";
+	this->Act = U" move";
 	return true;
 }
 

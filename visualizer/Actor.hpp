@@ -23,6 +23,7 @@ public:
 	bool Build(Field& field, int dy, int dx);
 	bool Break(Field& field, int dy, int dx);
 	bool Move(Field& field, int dy, int dx);
+	size_t Direction = 0;
 	String Act = U"";
 };
 

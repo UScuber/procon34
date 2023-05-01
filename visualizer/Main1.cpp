@@ -153,8 +153,7 @@ void Main() {
 			for (Craftsman& craftsman : craftsmen_blue) {
 				if (craftsman.Act == U"") {
 					child.ostream() << "0" << "none" << std::endl;
-				}
-				else {
+				}else{
 					child.ostream() << craftsman.Direction << craftsman.Act << std::endl;
 				}
 				craftsman.Initialize();
@@ -163,20 +162,18 @@ void Main() {
 			for (Craftsman& craftsman : craftsmen_red) {
 				child.istream() >> craftsman.Direction >> craftsman.Act;
 				std::pair<int, int> dydx = dydx_craftsman[craftsman.Direction];
-				if (craftsman.Act == U"move") {
+				if (craftsman.Act = U"move") {
 					craftsman.Move(field, dydx.first, dydx.second);
-				}
-				else if (craftsman.Act == U"build") {
+				}else if (craftsman.Act = U"build") {
 					craftsman.Build(field, dydx.first, dydx.second);
-				}
-				else if (craftsman.Act == U"break") {
+				}else if (craftsman.Act = U"break") {
 					craftsman.Break(field, dydx.first, dydx.second);
 				}
 				craftsman.Initialize();
 			}
 			field.SearchArea(TEAM::BLUE);
 			field.SearchArea(TEAM::RED);
-			TURN = TEAM::BLUE;
+			TURN ^= true;
 			CountTurn++;
 		}
 
@@ -196,19 +193,17 @@ void Main() {
 			MODE = OPERATION_MODE::BREAK;
 		}
 		else if (SimpleGUI::Button(U"手番開始時に戻す", { 700,400 })) {
-
+			
 		}
 		if (SimpleGUI::Button(U"ターン終了", { 700, 500 })) {
 			for (Craftsman& craftsman : craftsmen_blue) {
 				craftsman.Initialize();
 			}
-			TURN = TEAM::RED;
-			CountTurn++;
 		}
 
 
 		// 職人の行動
-		for (Craftsman& craftsman : craftsmen_blue) {
+		for (Craftsman& craftsman: craftsmen_blue) {
 			// 行動済みの職人だったら灰色で上塗りしてcontinue
 			if (craftsman.isActed) {
 				GetGridCircle(craftsman.y_coordinate, craftsman.x_coordinate).draw(Palette::Gray);
@@ -222,8 +217,7 @@ void Main() {
 			// 対象の職人は黄色の枠で囲う
 			if (craftsman.isTarget) {
 				GetGridRect(craftsman.y_coordinate, craftsman.x_coordinate).drawFrame(2, 2, Palette::Yellow);
-			}
-			else {
+			}else {
 				continue;
 			}
 			switch (MODE) {
