@@ -122,12 +122,16 @@ void Main() {
 	// 職人を選択中かどうか
 	bool isTargeting = false;
 
-	const Font font{75, U"SourceHanSansJP-Medium.otf"};
+	const Font font{50, U"SourceHanSansJP-Medium.otf"};
 
 	Array<Craftsman > pre_craftsmen = craftsmen_blue;
 	Field pre_field = field;
 
 	while (System::Update()) {
+
+		if (CountTurn >= NumTurn) {
+			break;
+		}
 
 		if (TURN == TEAM::BLUE) {
 			font(U"青チームの手番").draw(100, 600, Palette::Blue);
@@ -136,7 +140,7 @@ void Main() {
 			font(U"赤チームの手番").draw(100, 600, Palette::Red);
 		}
 
-		font(U"ターン数:{}"_fmt(CountTurn)).draw(800, 50, Palette::Black);
+		font(U"ターン数:{}/{}"_fmt(CountTurn, NumTurn)).draw(800, 50, Palette::Black);
 		font(U"青エリア:{}"_fmt(BlueArea)).draw(800, 150, Palette::Black);
 		font(U"赤エリア:{}"_fmt(RedArea)).draw(800, 250, Palette::Black);
 
@@ -167,6 +171,7 @@ void Main() {
 			field.SearchArea(TURN);
 			field.SearchArea(not TURN);
 			TURN ^= true;
+			CountTurn++;
 		}
 
 
@@ -272,6 +277,15 @@ void Main() {
 			}
 		}
 	}
+
+	while (System::Update()) {
+		field.DisplayGrid();
+		field.DrawActors();
+		font(U"ターン数:{}/{}"_fmt(CountTurn, NumTurn)).draw(800, 50, Palette::Black);
+		font(U"青エリア:{}"_fmt(BlueArea)).draw(800, 150, Palette::Black);
+		font(U"赤エリア:{}"_fmt(RedArea)).draw(800, 250, Palette::Black);
+	}
+
 }
 
 //
