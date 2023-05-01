@@ -142,7 +142,13 @@ void Main() {
 
 		if (TURN == TEAM::RED) {
 			for (Craftsman& craftsman : craftsmen_blue) {
+				if (craftsman.Act == U"") {
+					String dir = U"0";
+					String act = U"none";
+					child.ostream() << dir << act << std::endl;
+				}
 				child.ostream() << craftsman.Act << std::endl;
+				craftsman.Initialize();
 			}
 			for (Craftsman& craftsman : craftsmen_red) {
 				String direction = U"";
@@ -156,6 +162,7 @@ void Main() {
 				}else if (act == U"braek") {
 					craftsman.Break(field, dydx_craftsman[Parse<size_t>(direction)].first, dydx_craftsman[Parse<size_t>(direction)].second);
 				}
+				craftsman.Initialize();
 			}
 			field.SearchArea(TURN);
 			field.SearchArea(not TURN);

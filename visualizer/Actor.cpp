@@ -33,6 +33,7 @@ Craftsman::Craftsman(Field& field, size_t y, size_t x, bool team){
 void Craftsman::Initialize(void) {
 	this->isActed = false;
 	this->isTarget = false;
+	this->Act = U"";
 }
 
 
