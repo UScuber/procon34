@@ -1,0 +1,10 @@
+/.vs
+.editorconfig
+stdafx.cpp
+stdafx.h
+visualizer.*
+App/dll
+App/engine
+App/example
+App/icon.ico
+App/Resource.rc
