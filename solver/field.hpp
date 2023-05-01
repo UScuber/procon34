@@ -26,28 +26,27 @@ struct Action {
   }
 };
 
-struct Field;
-void debug_field(const Field &field);
 
 struct Field {
 
   std::vector<std::vector<State>> field;
   std::vector<Point> ally_agents, enemy_agents;
   std::vector<Point> castles;
-  int current_turn, final_turn;
+  int side, current_turn, final_turn;
 
   Field(const int h, const int w,
         const std::vector<Point> &ponds,
         const std::vector<Point> &_castles,
         const std::vector<Point> &_ally_agents,
         const std::vector<Point> &_enemy_agents,
-        const int _current_turn, // 0-indexed
+        const int _side, // 0 or 1
         const int _final_turn)
     : field(h, std::vector<State>(w, State::None)),
       ally_agents(_ally_agents),
       enemy_agents(_enemy_agents),
       castles(_castles),
-      current_turn(_current_turn),
+      side(_side),
+      current_turn(_side),
       final_turn(_final_turn){
     assert(ally_agents.size() == enemy_agents.size()); // check
 
@@ -178,14 +177,13 @@ struct Field {
 
   // bug: 移動に問題あり、職人がいた場所に職人が移動できてしまう
   // side: 味方:0, 敵:1
-  void update_field(const std::vector<Action> &acts, const bool side){
+  void update_field(const std::vector<Action> &acts){
     assert(acts.size() == ally_agents.size());
-    assert(side == (current_turn & 1));
     std::vector<Action> act_list[4];
     for(const auto &act : acts){
       act_list[act.command].emplace_back(act);
     }
-    if(!side){
+    if(!(current_turn & 1)){
       // break
       for(const auto &act : act_list[Action::Break]){
         const State st = get_state(act.pos);
@@ -240,8 +238,7 @@ struct Field {
   }
 
   void update_turn(const std::vector<Action> &acts){
-    const bool side = current_turn & 1;
-    update_field(acts, side);
+    update_field(acts);
     update_region();
     current_turn++;
   }
@@ -254,6 +251,7 @@ struct Field {
     return ally_agents;
   }
   bool is_finished() const{ return current_turn == final_turn; }
+  bool is_my_turn() const{ return (current_turn & 1) == side; }
   void debug() const{
     std::vector<std::string> board(height), wall(height), region(height);
     for(int i = 0; i < height; i++){
@@ -282,11 +280,11 @@ struct Field {
         region[i] += c;
       }
     }
-    std::cout << "board" << std::string(width-4, ' ') << ": walls" << std::string(width-4, ' ') << ": region\n";
+    std::cerr << "board" << std::string(width-4, ' ') << ": walls" << std::string(width-4, ' ') << ": region\n";
     for(int i = 0; i < height; i++){
-      std::cout << board[i] << " : " << wall[i] << " : " << region[i] << "\n";
+      std::cerr << board[i] << " : " << wall[i] << " : " << region[i] << "\n";
     }
-    std::cout << "\n";
+    std::cerr << "\n";
   }
 };
 
@@ -328,6 +326,35 @@ Field create_random_field(const int h, const int w, int agents_num=-1, int castl
     castles,
     gen_rnd_poses(agents_num),
     gen_rnd_poses(agents_num),
+    side,
+    final_turn
+  );
+}
+
+Field read_field(const int h, const int w){
+  auto get_points = []() -> std::vector<Point> {
+    int num;
+    std::cin >> num;
+    assert(0 <= num);
+    std::vector<Point> res(num);
+    for(int i = 0; i < num; i++) std::cin >> res[i];
+    return res;
+  };
+
+  int side; // 先行:0,後攻:1
+  int final_turn;
+  std::cin >> side >> final_turn;
+  assert(side == 0 || side == 1);
+  const auto ponds = get_points();
+  const auto castles = get_points();
+  const auto ally_agents = get_points();
+  const auto enemy_agents = get_points();
+  return Field(
+    h, w,
+    ponds,
+    castles,
+    ally_agents,
+    enemy_agents,
     side,
     final_turn
   );
