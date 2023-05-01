@@ -43,11 +43,35 @@ Circle GetGridCircle(size_t y, size_t x) {
 	return Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4);
 }
 
+bool isInField(size_t y, size_t x) {
+	return (0 <= y and y < HEIGHT and 0 <= x and x < WIDTH);
+}
+
 
 
 
 Field::Field(void) {
 	this->grid.resize(HEIGHT, Array<char>(WIDTH));
+}
+
+void Field::Initialize(size_t pond, size_t castle, size_t craftsman){
+	size_t y, x;
+	for (size_t i = 0; i < (pond + castle + craftsman * 2); i++) {
+		do {
+			y = Random(HEIGHT-1);
+			x = Random(WIDTH-1);
+		} while (this->grid[y][x] != 0);
+		if (i < pond) {
+			this->grid[y][x] |= CELL::POND;
+		}else if (i < pond + castle) {
+			this->grid[y][x] |= CELL::CASTLE;
+		}else if (i < pond + castle + craftsman) {
+			this->grid[y][x] |= CELL::ALLY;
+		}else {
+			this->grid[y][x] |= CELL::ENEM;
+		}
+	}
+	return;
 }
 
 void Field::DisplayGrid(void) {
@@ -116,7 +140,7 @@ void WallBFS(size_t y, size_t x, Array<Array<bool>>& visited, Array<Array<char>>
 		que.pop();
 		for (auto& d : d_ary) {
 			std::pair<int, int> next = { now.first + d.first , now.second + d.second };
-			if (next.first < 0 or HEIGHT <= next.first or next.second < 0 or WIDTH <= next.second) {
+			if (not isInField(next.first, next.second)) {
 				continue;
 			}
 			if (grid[next.first][next.second] & SwitchCELL(U"WALL", team) or visited[next.first][next.second]) {

@@ -37,48 +37,87 @@ size_t BLANK_LEFT;
 size_t BLANK_TOP;
 
 // 職人の移動範囲
-const Array<std::pair<int,int>> dydx_craftsman = { {0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1},{1,0},{1,1} };
+const Array<std::pair<int, int>> dydx_craftsman = { {-1,0},{0, -1},{1,0},{0,1},{-1,-1},{1,-1},{1,1},{-1,1} };
 // 城壁の建築範囲
 const Array<std::pair<int, int>> dydx_wall = { {0,1},{0,-1},{1,0},{-1,0} };
 
+
 void Main() {
+
+	ChildProcess child{ U"solver.exe", Pipe::StdInOut };
+
 	Scene::SetBackground(Palette::Lightsteelblue);
 	Window::Resize(1280, 720);
 
-	HEIGHT = 25;
-	WIDTH = 25;
+	HEIGHT = Random(11, 25);
+	WIDTH = Random(11, 25);
 	CELL_SIZE = 20;
 	BLANK_LEFT = 100;
 	BLANK_TOP = 100;
 
 	Field field;
 
-	size_t NumCraftsman = 6;
 	size_t MODE = 0;
 
 
-	size_t NumTurn = 0;
+	size_t CountTurn = 0;
 	size_t BlueArea = 0;
 	size_t RedArea = 0;
 
+	size_t NumTurn = Random(15, 100) * 2;
+	size_t NumPond = Random(0, 20);
+	size_t NumCastle = Random(1, 6);
+	size_t NumCraftsman = Random(2, 6);
+
 	// trueなら味方(青)チーム, falseなら敵(赤)チーム
-	bool TURN = TEAM::BLUE;
+	bool TURN = Random(0,1);
 
 	Array<Craftsman> craftsmen_blue;
 	Array<Craftsman> craftsmen_red;
-	craftsmen_blue << Craftsman(field, 0, 0, TEAM::BLUE);
-	craftsmen_blue << Craftsman(field, 24, 24, TEAM::BLUE);
-	craftsmen_blue << Craftsman(field, 6, 7, TEAM::BLUE);
-	craftsmen_blue << Craftsman(field, 7, 6, TEAM::BLUE);
-	craftsmen_blue << Craftsman(field, 10, 15, TEAM::BLUE);
-	craftsmen_blue << Craftsman(field, 2, 20, TEAM::BLUE);
 
-	craftsmen_red << Craftsman(field, 3, 6, TEAM::RED);
-	craftsmen_red << Craftsman(field, 3, 12, TEAM::RED);
-	craftsmen_red << Craftsman(field, 20, 21, TEAM::RED);
-	craftsmen_red << Craftsman(field, 15, 6, TEAM::RED);
-	craftsmen_red << Craftsman(field, 11, 17, TEAM::RED);
-	craftsmen_red << Craftsman(field, 22, 9, TEAM::RED);
+	Array<std::pair<size_t, size_t>> ponds;
+	Array<std::pair<size_t, size_t>> castles;
+	
+	field.Initialize(NumPond, NumCastle, NumCraftsman);
+
+	for (size_t i = 0; i < HEIGHT; i++) {
+		for (size_t j = 0; j < WIDTH; j++) {
+			if (field.grid[i][j] & CELL::ALLY) {
+				craftsmen_blue << Craftsman(field, i, j, TEAM::BLUE);
+			}else if (field.grid[i][j] & CELL::ENEM) {
+				craftsmen_red << Craftsman(field, i, j, TEAM::RED);
+			}else if (field.grid[i][j] & CELL::POND) {
+				ponds << std::make_pair(i, j);
+			}else if (field.grid[i][j] & CELL::CASTLE) {
+				castles << std::make_pair(i, j);
+			}
+		}
+	}
+
+
+	// solverに渡す
+	child.ostream() << HEIGHT << std::endl << WIDTH << std::endl;
+	child.ostream() << ((TURN == TEAM::RED) ? 0 : 1) << std::endl;
+	child.ostream() << NumTurn << std::endl;
+	child.ostream() << NumPond << std::endl;
+	for (auto &p : ponds) {
+		child.ostream() << p.first << std::endl << p.second << std::endl;
+	}
+	child.ostream() << NumCastle << std::endl;
+	for (auto& p : castles) {
+		child.ostream() << p.first << std::endl << p.second << std::endl;
+	}
+	child.ostream() << NumCraftsman << std::endl;
+	for (auto& p : craftsmen_blue) {
+		child.ostream() << p.y_coordinate << std::endl << p.x_coordinate<< std::endl;
+	}
+	child.ostream() << NumCraftsman << std::endl;
+	for (auto& p : craftsmen_red) {
+		child.ostream() << p.y_coordinate << std::endl << p.x_coordinate<< std::endl;
+	}
+
+
+
 
 	// 職人を選択中かどうか
 	bool isTargeting = false;
@@ -90,17 +129,39 @@ void Main() {
 
 	while (System::Update()) {
 
-		//Console << Scene::DeltaTime();
-
 		if (TURN == TEAM::BLUE) {
 			font(U"青チームの手番").draw(100, 600, Palette::Blue);
-		}else{ 
+		}
+		else {
 			font(U"赤チームの手番").draw(100, 600, Palette::Red);
 		}
 
-		font(U"ターン数:{}"_fmt(NumTurn)).draw(800, 50, Palette::Black);
+		font(U"ターン数:{}"_fmt(CountTurn)).draw(800, 50, Palette::Black);
 		font(U"青エリア:{}"_fmt(BlueArea)).draw(800, 150, Palette::Black);
 		font(U"赤エリア:{}"_fmt(RedArea)).draw(800, 250, Palette::Black);
+
+		if (TURN == TEAM::RED) {
+			for (Craftsman& craftsman : craftsmen_blue) {
+				child.ostream() << craftsman.Act << std::endl;
+			}
+			for (Craftsman& craftsman : craftsmen_red) {
+				String direction = U"";
+				String act = U"";
+				child.istream() >> direction >> act;
+				craftsman.Act = direction + U" " + act;
+				if (act == U"move") {
+					craftsman.Move(field, dydx_craftsman[Parse<size_t>(direction)].first, dydx_craftsman[Parse<size_t>(direction)].second);
+				}else if (act == U"build") {
+					craftsman.Build(field, dydx_craftsman[Parse<size_t>(direction)].first, dydx_craftsman[Parse<size_t>(direction)].second);
+				}else if (act == U"braek") {
+					craftsman.Break(field, dydx_craftsman[Parse<size_t>(direction)].first, dydx_craftsman[Parse<size_t>(direction)].second);
+				}
+			}
+			field.SearchArea(TURN);
+			field.SearchArea(not TURN);
+			TURN ^= true;
+		}
+
 
 
 		// 上書きする場合もあるため始めに描画する
@@ -124,7 +185,7 @@ void Main() {
 			BlueArea = field.SearchArea(TEAM::BLUE);
 			RedArea = field.SearchArea(TEAM::RED);
 			TURN ^= true;
-			NumTurn++;
+			CountTurn++;
 			pre_craftsmen = (TURN == TEAM::BLUE ? craftsmen_blue : craftsmen_red);
 			pre_field = field;
 		}
@@ -135,16 +196,18 @@ void Main() {
 			}
 		}
 
+		
+
 
 		// 職人の行動
 		for (Craftsman& craftsman : (TURN == TEAM::BLUE ? craftsmen_blue : craftsmen_red)) {
-			// 敵の職人はスキップ
+			// 敵の職人だったらcontinue
 			if (TURN != craftsman.team) {
 				continue;
 			}
-			// 行動済みの職人は灰色で上塗り
+			// 行動済みの職人だったら灰色で上塗りしてcontinue
 			if (craftsman.isActed) {
-				GetGridCircle(craftsman.y_coordinate, craftsman.x_coordinate).draw(Palette::Grey);
+				GetGridCircle(craftsman.y_coordinate, craftsman.x_coordinate).draw(Palette::Gray);
 				continue;
 			}
 			// 動かす対象の職人を決める
@@ -164,7 +227,7 @@ void Main() {
 					// 職人の周囲8マスがクリックされたらそこに移動
 					for (auto& d : dydx_craftsman) {
 						std::pair<int, int> next = { craftsman.y_coordinate + d.first, craftsman.x_coordinate + d.second };
-						if (next.first < 0 or HEIGHT <= next.first or next.second < 0 or WIDTH <= next.second) {
+						if (not isInField(next.first, next.second)) {
 							continue;
 						}
 						if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Move(field, d.first, d.second)) {
@@ -177,10 +240,10 @@ void Main() {
 			case OPERATION_MODE::BUILD:
 				for (auto& d : dydx_wall) {
 					std::pair<int, int> next = { craftsman.y_coordinate + d.first, craftsman.x_coordinate + d.second };
-					if (next.first < 0 or HEIGHT <= next.first or next.second < 0 or WIDTH <= next.second) {
+					if (not isInField(next.first, next.second)) {
 						continue;
 					}
-					if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Build(field, next.first, next.second)) {
+					if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Build(field, d.first, d.second)) {
 						isTargeting = false;
 					}
 				}
@@ -191,10 +254,10 @@ void Main() {
 			case OPERATION_MODE::BREAK:
 				for (auto& d : dydx_wall) {
 					std::pair<int, int> next = { craftsman.y_coordinate + d.first, craftsman.x_coordinate + d.second };
-					if (next.first < 0 or HEIGHT <= next.first or next.second < 0 or WIDTH <= next.second) {
+					if (not isInField(next.first, next.second)) {
 						continue;
 					}
-					if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Break(field, next.first, next.second)) {
+					if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Break(field, d.first, d.second)) {
 						isTargeting = false;
 					}
 				}

@@ -19,6 +19,8 @@ extern size_t HEIGHT;
 extern size_t WIDTH;
 extern size_t CELL_SIZE;
 
+const Array<std::pair<int, int>> dydx = { {-1,0},{0, -1},{1,0},{0,1},{-1,-1},{1,-1},{1,1},{-1,1} };
+
 // コンストラクタで座標、チームを取得しフィールドを書き換える
 Craftsman::Craftsman(Field& field, size_t y, size_t x, bool team){
 	this->y_coordinate = y;
@@ -33,14 +35,15 @@ void Craftsman::Initialize(void) {
 	this->isTarget = false;
 }
 
+
 // 城壁を建築
-bool Craftsman::Build(Field& field, size_t y, size_t x) {
+bool Craftsman::Build(Field& field, int dy, int dx) {
 	// 建築可能範囲
-	if (AbsDiff(y, this->y_coordinate) + AbsDiff(x, this->x_coordinate) > 1) {
+	if (not isInField(this->y_coordinate + dy, this->x_coordinate + dx) or not((Abs(dy) == 1) xor (Abs(dx) == 1))) {
 		return false;
 	}
 	// 建築可能な場所か
-	char& TargetCell = field.grid[y][x];
+	char& TargetCell = field.grid[this->y_coordinate + dy][this->x_coordinate + dx];
 	if (TargetCell & CELL::POND or TargetCell & CELL::WALL_ENEM or TargetCell & CELL::WALL_ALLY or
 		TargetCell & SwitchCELL(U"CRAFTSMAN", not team) or TargetCell & CELL::CASTLE) {
 		return false;
@@ -49,17 +52,24 @@ bool Craftsman::Build(Field& field, size_t y, size_t x) {
 	TargetCell |= SwitchCELL(U"WALL", team);
 	this->isActed = true;
 	this->isTarget = false;
+	for (size_t i = 0; i < dydx.size(); i++) {
+		if (dydx[i].first == dy and dydx[i].second == dx) {
+			this->Act += ToString(i);
+			break;
+		}
+	}
+	this->Act += U" build";
 	return true;
 }
 
 // 城壁を破壊
-bool Craftsman::Break(Field& field, size_t y, size_t x) {
-	// 破壊可能範囲
-	if (AbsDiff(y, this->y_coordinate) + AbsDiff(x, this->x_coordinate) > 1) {
+bool Craftsman::Break(Field& field, int dy, int dx) {
+	// 建築可能範囲
+	if (not isInField(this->y_coordinate + dy, this->x_coordinate + dx) or not((Abs(dy) == 1) xor (Abs(dx) == 1))) {
 		return false;
 	}
-	// 破壊する城壁があるか
-	char& TargetCell = field.grid[y][x];
+	// 建築可能な場所か
+	char& TargetCell = field.grid[this->y_coordinate + dy][this->x_coordinate + dx];
 	if (not (TargetCell & CELL::WALL_ENEM or TargetCell & CELL::WALL_ALLY)) {
 		return false;
 	}
@@ -68,6 +78,13 @@ bool Craftsman::Break(Field& field, size_t y, size_t x) {
 	TargetCell &= ~CELL::WALL_ALLY;
 	this->isActed = true;
 	this->isTarget = false;
+	for (size_t i = 0; i < dydx.size(); i++) {
+		if (dydx[i].first == dy and dydx[i].second == dx) {
+			this->Act += ToString(i);
+			break;
+		}
+	}
+	this->Act += U" break";
 	return true;
 }
 
@@ -80,7 +97,7 @@ bool Craftsman::Move(Field& field, int dy, int dx) {
 	// 移動先がフィールド内か
 	int next_y = this->y_coordinate + dy;
 	int next_x = this->x_coordinate + dx;
-	if (next_y < 0 or next_x < 0 or next_y >= HEIGHT or next_x >= WIDTH) {
+	if (not isInField(next_y, next_x)){
 		return false;
 	}
 	// 移動可能な場所か
@@ -96,6 +113,13 @@ bool Craftsman::Move(Field& field, int dy, int dx) {
 	field.grid[next_y][next_x] |= SwitchCELL(U"CRAFTSMAN", team);
 	this->isActed = true;
 	this->isTarget = false;
+	for (size_t i = 0; i < dydx.size(); i++) {
+		if (dydx[i].first == dy and dydx[i].second == dx) {
+			this->Act += ToString(i);
+			break;
+		}
+	}
+	this->Act += U" move";
 	return true;
 }
 

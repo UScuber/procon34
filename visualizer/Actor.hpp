@@ -20,9 +20,10 @@ public:
 	bool isActed = false;
 	bool isTarget = false;
 	bool team = true;
-	bool Build(Field& field, size_t y, size_t x);
-	bool Break(Field& field, size_t y, size_t x);
+	bool Build(Field& field, int dy, int dx);
+	bool Break(Field& field, int dy, int dx);
 	bool Move(Field& field, int dy, int dx);
+	String Act = U"";
 };
 
 class Wall : public Actor {

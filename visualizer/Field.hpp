@@ -8,9 +8,13 @@ char SwitchCELL(String s, bool team);
 Rect GetGridRect(size_t y, size_t x);
 Circle GetGridCircle(size_t y, size_t x);
 
+// (y,x)がフィールド内に収まっているか
+bool isInField(size_t y, size_t x);
+
 class Field{
 public:
 	Field(void);
+	void Initialize(size_t pond, size_t castle, size_t craftsman);
 	void DisplayGrid(void);
 	void DrawActors(void);
 	size_t SearchArea(bool team);
