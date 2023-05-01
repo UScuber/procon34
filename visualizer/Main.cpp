@@ -125,6 +125,7 @@ void Main() {
 	const Font font{50, U"SourceHanSansJP-Medium.otf"};
 
 	Array<Craftsman > pre_craftsmen = craftsmen_blue;
+
 	Field pre_field = field;
 
 	while (System::Update()) {
@@ -168,6 +169,8 @@ void Main() {
 				}
 				craftsman.Initialize();
 			}
+			pre_craftsmen = (TURN == TEAM::BLUE ? craftsmen_blue : craftsmen_red);
+			pre_field = field;
 			field.SearchArea(TURN);
 			field.SearchArea(not TURN);
 			TURN ^= true;
