@@ -3,7 +3,7 @@
 #include <set>
 #include "field.hpp"
 
-std::vector<Action> enumerate_next_agent_acts(const Point &agent, const Field &field){
+Actions enumerate_next_agent_acts(const Point &agent, const Field &field){
   const State ally = field.get_state(agent) & State::Human; // agentから見た味方
   assert((ally == State::Enemy) == (field.current_turn & 1));
   //const State enem = ally ^ State::Human; // agentから見た敵
@@ -12,9 +12,9 @@ std::vector<Action> enumerate_next_agent_acts(const Point &agent, const Field &f
   const State ally_wall = ally == State::Ally ? State::WallAlly : State::WallEnemy; // agentから見た味方のwall
   const State enemy_wall = ally_wall ^ State::Wall; // agentから見た敵のwall
 
-  std::vector<Action> actions;
+  Actions actions;
   for(int dir = 0; dir < 8; dir++){
-    const Point nxt = agent + dmove[dir];
+    const auto nxt = agent + dmove[dir];
     if(!is_valid(nxt)) continue;
     const State st = field.get_state(nxt);
     if(st & State::Pond) continue;
@@ -35,10 +35,10 @@ std::vector<Action> enumerate_next_agent_acts(const Point &agent, const Field &f
 
 
 // 適当に選ぶ
-std::vector<Action> select_random_next_agents_acts(const std::vector<Point> &agents, const Field &field){
-  std::vector<Action> result;
+Actions select_random_next_agents_acts(const std::vector<Point> &agents, const Field &field){
+  Actions result;
   std::set<Action> cnt;
-  for(const Point &agent : agents){
+  for(const auto &agent : agents){
     assert(((field.get_state(agent) & State::Human) == State::Enemy) == (field.current_turn & 1));
     auto acts = enumerate_next_agent_acts(agent, field);
     if(acts.empty()) acts.emplace_back(Action(agent, Action::None));
@@ -58,8 +58,8 @@ std::vector<Action> select_random_next_agents_acts(const std::vector<Point> &age
 
 #include <algorithm>
 // 後でちゃんと書きます...
-std::vector<std::vector<Action>> enumerate_next_all_agents_acts(const std::vector<Point> &agents, const Field &field){
-  std::vector<std::vector<Action>> acts;
+std::vector<Actions> enumerate_next_all_agents_acts(const Agents &agents, const Field &field){
+  std::vector<Actions> acts;
   for(int i = 0; i < 100; i++){
     acts.emplace_back(select_random_next_agents_acts(agents, field));
   }
@@ -71,7 +71,7 @@ std::vector<std::vector<Action>> enumerate_next_all_agents_acts(const std::vecto
 
 namespace Evaluate {
 
-int calc_agent_min_dist(const Field &field, const std::vector<Point> &ally_agents, const State area){
+int calc_agent_min_dist(const Field &field, const Agents &ally_agents, const State area){
   int dc = 0;
   for(const auto &agent : ally_agents){
     int min_dist = 1000;
@@ -116,7 +116,8 @@ std::vector<std::vector<int>> calc_castle_min_dist(const Field &field, const F &
   return res;
 }
 
-double calc_around_wall(const Field &field, const State wall, const int C){
+double calc_around_wall(const Field &field, const State wall){
+  static constexpr int C = 4;
   static std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field, manche_dist);
   int wall_num = 0, mass = 0;
   for(int i = 0; i < height; i++){
@@ -172,7 +173,7 @@ int calc_connected_wall(const Field &field, const State wall){
   return res;
 }
 
-int calc_wall_by_enemy(const Field &field, const std::vector<Point> &enemy_agents, const State wall){
+int calc_wall_by_enemy(const Field &field, const Agents &enemy_agents, const State wall){
   int res = 0;
   for(const auto &agent : enemy_agents){
     for(int dir = 0; dir < 4; dir++){
@@ -185,13 +186,12 @@ int calc_wall_by_enemy(const Field &field, const std::vector<Point> &enemy_agent
 }
 
 double evaluate_field(const Field &field){
-static constexpr int C = 3;
   // eval #1: 各職人から一番近い城までの距離^2の総和
   const int dc = calc_agent_min_dist(field, field.ally_agents, State::AreaAlly) - calc_agent_min_dist(field, field.enemy_agents, State::AreaEnemy);
   // eval #2: 各城壁から一番近い城との距離の総和
   const int dw = calc_wall_min_dist(field, State::WallAlly) - calc_wall_min_dist(field, State::WallEnemy);
   // eval #3: 各城を中心として、((距離がC以内にある城壁の個数)/(対象のマスの数))
-  const double pw = calc_around_wall(field, State::WallAlly, C) - calc_around_wall(field, State::WallEnemy, C);
+  const double pw = calc_around_wall(field, State::WallAlly) - calc_around_wall(field, State::WallEnemy);
   // eval #4: 1/(壁から一番近い城までの距離^2)の総和
   const double wd = calc_nearest_wall(field, State::WallAlly) - calc_nearest_wall(field, State::WallEnemy);
   // eval #5: 城壁の各連結成分の大きさ^2の総和

@@ -8,13 +8,14 @@ using uchar = unsigned char;
 using uint = unsigned int;
 using ull = unsigned long long;
 using ll = long long;
+using Pos = uint8_t; // y,x座標の型
 
 constexpr int max_height = 25;
 constexpr int max_width = 25;
 constexpr int max_agent_num = 6;
 
-constexpr int dy[] = { -1,0,1,0, -1,1,1,-1 };
-constexpr int dx[] = { 0,-1,0,1, -1,-1,1,1 };
+constexpr Pos dy[] = { (Pos)-1,0,1,0, (Pos)-1,1,1,(Pos)-1 };
+constexpr Pos dx[] = { 0,(Pos)-1,0,1, (Pos)-1,(Pos)-1,1,1 };
 
 int height = 0, width = 0; // fieldの大きさ
 int castles_coef = 0, area_coef = 0, wall_coef = 0; // 係数
@@ -37,9 +38,9 @@ struct State {
   inline constexpr State &operator|=(const State s) noexcept{ val |= s.val; return *this; }
   inline constexpr State &operator&=(const State s) noexcept{ val &= s.val; return *this; }
   inline constexpr State &operator^=(const State s) noexcept{ val ^= s.val; return *this; }
-  inline constexpr State operator|(const State s) const noexcept{ return State(*this) |= s; }
-  inline constexpr State operator&(const State s) const noexcept{ return State(*this) &= s; }
-  inline constexpr State operator^(const State s) const noexcept{ return State(*this) ^= s; }
+  inline constexpr State operator|(const State s) const noexcept{ return State(val | s.val); }
+  inline constexpr State operator&(const State s) const noexcept{ return State(val & s.val); }
+  inline constexpr State operator^(const State s) const noexcept{ return State(val ^ s.val); }
   inline constexpr State operator~() const noexcept{ return State(~val); }
   inline constexpr operator bool() const noexcept{ return val; }
   inline constexpr bool operator==(const State s) const noexcept{ return val == s.val; }
@@ -63,26 +64,29 @@ constexpr State State::Area = State::AreaAlly | State::AreaEnemy;
 
 
 struct Point {
-  int y,x;
-  constexpr Point(const int _y=-1, const int _x=-1) : y(_y), x(_x){}
-  inline constexpr Point &operator+=(const Point &p){
+  Pos y,x;
+  inline constexpr Point(const Pos _y=-1, const Pos _x=-1) : y(_y), x(_x){}
+  inline constexpr Point &operator+=(const Point &p) noexcept{
     y += p.y; x += p.x; return *this;
   }
-  inline constexpr Point operator+(const Point &p) const{ return Point(*this) += p; }
-  inline constexpr bool operator<(const Point &p) const{
+  inline constexpr Point operator+(const Point &p) const noexcept{ return Point(y + p.y, x + p.x); }
+  inline constexpr bool operator<(const Point &p) const noexcept{
     if(y != p.y) return y < p.y;
     return x < p.x;
   }
-  inline constexpr bool operator==(const Point &p) const{ return y == p.y && x == p.x; }
+  inline constexpr bool operator==(const Point &p) const noexcept{ return y == p.y && x == p.x; }
   friend std::istream &operator>>(std::istream &is, Point &p){
-    return is >> p.y >> p.x;
+    int y,x;
+    is >> y >> x;
+    p.y = y; p.x = x;
+    return is;
   }
   friend std::ostream &operator<<(std::ostream &os, const Point &p){
-    return os << p.y << " " << p.x;
+    return os << (int)p.y << " " << (int)p.x;
   }
 };
 
-inline constexpr bool is_valid(const int y, const int x) noexcept{
+inline constexpr bool is_valid(const Pos y, const Pos x) noexcept{
   return 0 <= y && y < height && 0 <= x && x < width;
 }
 
@@ -107,14 +111,14 @@ inline constexpr bool is_neighbor(const Point &p, const Point &q) noexcept{
 }
 
 constexpr Point dmove[] = {
-  { -1,0 },
-  { 0,-1 },
-  { 1,0 },
-  { 0,1 },
-  { -1,-1 },
-  { 1,-1 },
-  { 1,1 },
-  { -1,1 }
+  Point(-1, 0),
+  Point(0, -1),
+  Point(1, 0),
+  Point(0, 1),
+  Point(-1, -1),
+  Point(1, -1),
+  Point(1, 1),
+  Point(-1, 1),
 };
 
 

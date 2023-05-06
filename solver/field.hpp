@@ -26,19 +26,21 @@ struct Action {
   }
 };
 
+using Actions = std::vector<Action>;
+using Agents = std::vector<Point>;
 
 struct Field {
 
   std::vector<std::vector<State>> field;
-  std::vector<Point> ally_agents, enemy_agents;
+  Agents ally_agents, enemy_agents;
   std::vector<Point> castles;
   int side, current_turn, final_turn;
 
   Field(const int h, const int w,
         const std::vector<Point> &ponds,
         const std::vector<Point> &_castles,
-        const std::vector<Point> &_ally_agents,
-        const std::vector<Point> &_enemy_agents,
+        const Agents &_ally_agents,
+        const Agents &_enemy_agents,
         const int _side, // 0 or 1
         const int _final_turn)
     : field(h, std::vector<State>(w, State::None)),
@@ -50,10 +52,10 @@ struct Field {
       final_turn(_final_turn){
     assert(ally_agents.size() == enemy_agents.size()); // check
 
-    for(const Point &p : ponds) field[p.y][p.x] |= State::Pond;
-    for(const Point &p : castles) field[p.y][p.x] |= State::Castle;
-    for(const Point &p : ally_agents) field[p.y][p.x] |= State::Ally;
-    for(const Point &p : enemy_agents) field[p.y][p.x] |= State::Enemy;
+    for(const auto &p : ponds) field[p.y][p.x] |= State::Pond;
+    for(const auto &p : castles) field[p.y][p.x] |= State::Castle;
+    for(const auto &p : ally_agents) field[p.y][p.x] |= State::Ally;
+    for(const auto &p : enemy_agents) field[p.y][p.x] |= State::Enemy;
   }
   
   inline State get_state(const int y, const int x) const noexcept{
@@ -177,9 +179,9 @@ struct Field {
 
   // bug: 移動に問題あり、職人がいた場所に職人が移動できてしまう
   // side: 味方:0, 敵:1
-  void update_field(const std::vector<Action> &acts){
+  void update_field(const Actions &acts){
     assert(acts.size() == ally_agents.size());
-    std::vector<Action> act_list[4];
+    Actions act_list[4];
     for(const auto &act : acts){
       act_list[act.command].emplace_back(act);
     }
@@ -203,7 +205,7 @@ struct Field {
       for(const auto &act : act_list[Action::Move]){
         const State st = get_state(act.pos);
         assert(!(st & (State::Human | State::Pond | State::WallEnemy)));
-        const Point from = ally_agents[act.agent_idx];
+        const auto from = ally_agents[act.agent_idx];
         set_state(from, get_state(from) ^ State::Ally);
         set_state(act.pos, st | State::Ally);
         ally_agents[act.agent_idx] = act.pos;
@@ -228,7 +230,7 @@ struct Field {
       for(const auto &act : act_list[Action::Move]){
         const State st = get_state(act.pos);
         assert(!(st & (State::Human | State::Pond | State::WallAlly)));
-        const Point from = enemy_agents[act.agent_idx];
+        const auto from = enemy_agents[act.agent_idx];
         set_state(from, get_state(from) ^ State::Enemy);
         set_state(act.pos, st | State::Enemy);
         enemy_agents[act.agent_idx] = act.pos;
@@ -237,16 +239,16 @@ struct Field {
     update_region();
   }
 
-  void update_turn(const std::vector<Action> &acts){
+  void update_turn(const Actions &acts){
     update_field(acts);
     update_region();
     current_turn++;
   }
-  std::vector<Point> &get_now_turn_agents(){
+  Agents &get_now_turn_agents(){
     if(current_turn & 1) return enemy_agents;
     return ally_agents;
   }
-  const std::vector<Point> get_now_turn_agents() const{
+  const Agents get_now_turn_agents() const{
     if(current_turn & 1) return enemy_agents;
     return ally_agents;
   }

@@ -26,12 +26,12 @@ int main(){
         idx++;
       }
       std::cout << "listen... (dir, command)\n";
-      std::vector<Action> res;
+      Actions res;
       for(int i = 0; i < (int)field.enemy_agents.size(); i++){
         std::cout << "idx: " << i << ": ";
         int dir; std::string str;
         std::cin >> dir >> str;
-        uchar cmd = Action::None;
+        auto cmd = Action::None;
         if(str == "move") cmd = Action::Move;
         if(str == "build") cmd = Action::Build;
         if(str == "break") cmd = Action::Break;
