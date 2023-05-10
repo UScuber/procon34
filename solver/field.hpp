@@ -14,7 +14,7 @@ struct Action {
   Point pos;
 
   // posは移動先を表す、構築/破壊はその対象の場所がposになる
-  constexpr Action(const Point &_p, const uchar _cmd, const int _agent_idx=-1) : pos(_p), command(_cmd), agent_idx(_agent_idx){
+  inline constexpr Action(const Point &_p, const uchar _cmd, const int _agent_idx=-1) : pos(_p), command(_cmd), agent_idx(_agent_idx){
     assert(0 <= command && command < 4);
   }
   inline constexpr bool operator<(const Action &act) const{
@@ -184,6 +184,7 @@ struct Field {
     Actions act_list[4];
     for(const auto &act : acts){
       act_list[act.command].emplace_back(act);
+      assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
     }
     if(!(current_turn & 1)){
       // break
@@ -241,14 +242,13 @@ struct Field {
 
   void update_turn(const Actions &acts){
     update_field(acts);
-    update_region();
     current_turn++;
   }
   Agents &get_now_turn_agents(){
     if(current_turn & 1) return enemy_agents;
     return ally_agents;
   }
-  const Agents get_now_turn_agents() const{
+  const Agents &get_now_turn_agents() const{
     if(current_turn & 1) return enemy_agents;
     return ally_agents;
   }
