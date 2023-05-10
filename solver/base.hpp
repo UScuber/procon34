@@ -218,4 +218,37 @@ double evaluate_field(const Field &field){
   return res * 0.5;
 }
 
+double evaluate_field2(const Field &field){
+  // eval #1: 各職人から一番近い城までの距離^2の総和
+  const int dc = calc_agent_min_dist(field, field.ally_agents, State::AreaAlly) - calc_agent_min_dist(field, field.enemy_agents, State::AreaEnemy);
+  // eval #2: 各城壁から一番近い城との距離の総和
+  const int dw = calc_wall_min_dist(field, State::WallAlly) - calc_wall_min_dist(field, State::WallEnemy);
+  // eval #3: 各城を中心として、((距離がC以内にある城壁の個数)/(対象のマスの数))
+  const double pw = calc_around_wall(field, State::WallAlly) - calc_around_wall(field, State::WallEnemy);
+  // eval #4: 1/(壁から一番近い城までの距離^2)の総和
+  const double wd = calc_nearest_wall(field, State::WallAlly) - calc_nearest_wall(field, State::WallEnemy);
+  // eval #5: 城壁の各連結成分の大きさ^2の総和
+  const int w = calc_connected_wall(field, State::WallAlly) - calc_connected_wall(field, State::WallEnemy);
+  // eval #6: 城、領域、壁の数
+  const int n = field.calc_final_score();
+  // eval #7: 敵の職人のマンハッタン距離1以内に置かれている壁の数
+  const int wn = calc_wall_by_enemy(field, field.enemy_agents, State::WallAlly) - calc_wall_by_enemy(field, field.ally_agents, State::WallEnemy);
+
+  static constexpr double a = 0.002;
+  static constexpr double b = 0.007;
+  static constexpr double c = 0.65;
+  static constexpr double d = 1.2;
+  static constexpr double e = 0.001;
+  static constexpr double f = 0.07;
+  double res = 0;
+  res -= dc * a;
+  res -= dw * b;
+  res += pw * c;
+  res += wd * d;
+  res += w * e;
+  res += n * 0.1;
+  res -= wn * f;
+  return res * 0.5;
+}
+
 }
