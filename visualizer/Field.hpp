@@ -17,7 +17,8 @@ public:
 	void Initialize(size_t pond, size_t castle, size_t craftsman);
 	void DisplayGrid(void);
 	void DrawActors(void);
-	size_t SearchArea(bool team);
+	void SearchArea(void);
+	size_t CountArea(bool team);
 	void GetGrid(Array<Array<char>> grid);
 	Array<Array<char>> GiveGrid(void);
 //private:

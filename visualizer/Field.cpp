@@ -113,23 +113,6 @@ void Field::DrawActors(void) {
 
 
 
-/*
-void WallDFS(size_t y, size_t x, Array<Array<bool>> &flgs, Array<std::pair<size_t, size_t>> &ary, Array<Array<char>> &grid) {
-	ary.push_back({y, x});
-	flgs[y][x] = true;
-	for (auto &d: d_ary) {
-		int next_y = y + d.first;
-		int next_x = x + d.second;
-		if (next_y < 0 or HEIGHT <= next_y	or	next_x < 0 or HEIGHT <= next_x) {
-			continue;
-		}
-		if (not flgs[next_y][next_x] and grid[next_y][next_x] & WALL_ALLY) {
-			WallDFS(next_y, next_x, flgs, ary, grid);
-		}
-	}
-}
-*/
-
 const Array<std::pair<int, int>> d_ary = { {0,1},{-1,0},{0,-1},{1,0} };
 void WallBFS(size_t y, size_t x, Array<Array<bool>>& visited, Array<Array<char>>& grid, bool team) {
 	std::queue<std::pair<size_t, size_t>> que;
@@ -152,36 +135,60 @@ void WallBFS(size_t y, size_t x, Array<Array<bool>>& visited, Array<Array<char>>
 	}
 }
 
-size_t Field::SearchArea(bool team) {
-	Array<Array<bool>> visited(HEIGHT, Array<bool>(WIDTH, false));
+void Field::SearchArea(void) {
+	Array<Array<bool>> blue_visited(HEIGHT, Array<bool>(WIDTH, false));
+	Array<Array<bool>> red_visited(HEIGHT, Array<bool>(WIDTH, false));
 	for (size_t h = 0; h < HEIGHT; h++) {
 		for (size_t w = 0; w < WIDTH; w++) {
-			if ((h == 0 or h == HEIGHT - 1 or w == 0 or w == WIDTH - 1) and not(this->grid[h][w] & SwitchCELL(U"WALL", team))) {
-				WallBFS(h, w, visited, this->grid, team);
+			if ((h == 0 or h == HEIGHT - 1 or w == 0 or w == WIDTH - 1) and not(this->grid[h][w] & SwitchCELL(U"WALL", TEAM::BLUE))) {
+				WallBFS(h, w, blue_visited, this->grid, TEAM::BLUE);
+			}
+			if ((h == 0 or h == HEIGHT - 1 or w == 0 or w == WIDTH - 1) and not(this->grid[h][w] & SwitchCELL(U"WALL", TEAM::RED))) {
+				WallBFS(h, w, red_visited, this->grid, TEAM::RED);
+			}
+		}
+	}
+
+	for (size_t h = 0; h < HEIGHT; h++) {
+		for (size_t w = 0; w < WIDTH; w++) {
+			if (grid[h][w] & SwitchCELL(U"WALL", TEAM::BLUE)) {
+				blue_visited[h][w] = true;
+			}
+			if (grid[h][w] & SwitchCELL(U"WALL", TEAM::RED)) {
+				red_visited[h][w] = true;
 			}
 		}
 	}
 
 	for (size_t h = 0; h < HEIGHT ; h++) {
 		for (size_t w = 0; w < WIDTH; w++) {
-			if (not(visited[h][w]) and not(this->grid[h][w] & SwitchCELL(U"WALL", team))) {
-				this->grid[h][w] |= SwitchCELL(U"AREA", team);
+			if ((not blue_visited[h][w]) and (not red_visited[h][w])) {
+				grid[h][w] |= (CELL::AREA_ALLY | CELL::AREA_ENEM);
 			}
-			else if (this->grid[h][w] & SwitchCELL(U"WALL", team)) {
-				this->grid[h][w] &= ~SwitchCELL(U"AREA", team);
+			else if (blue_visited[h][w] xor red_visited[h][w]) {
+				if (not blue_visited[h][w]) {
+					grid[h][w] |= SwitchCELL(U"AREA", TEAM::BLUE);
+					grid[h][w] &= ~SwitchCELL(U"AREA", TEAM::RED);
+				}
+				else if (not red_visited[h][w]) {
+					grid[h][w] |= SwitchCELL(U"AREA", TEAM::RED);
+					grid[h][w] &= ~SwitchCELL(U"AREA", TEAM::BLUE);
+				}
 			}
 		}
 	}
+}
 
-	size_t cnt = 0;
+size_t Field::CountArea(bool team) {
+	size_t count = 0;
 	for (size_t h = 0; h < HEIGHT; h++) {
 		for (size_t w = 0; w < WIDTH; w++) {
-			if (this->grid[h][w] & SwitchCELL(U"AREA", team)) {
-				cnt++;
+			if (grid[h][w] & SwitchCELL(U"AREA", team)) {
+				count++;
 			}
 		}
 	}
-	return cnt;
+	return count;
 }
 
 void Field::GetGrid(Array<Array<char>> grid) {
