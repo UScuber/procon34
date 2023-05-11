@@ -52,6 +52,22 @@ void Main() {
 	Scene::SetBackground(Palette::Lightsteelblue);
 	Window::Resize(1280, 720);
 
+	int GAME_MODE = 0;
+	while (System::Update()) {
+		if (SimpleGUI::Button(U"PlayerVSPlayer", {100, 100})) {
+			GAME_MODE = GAME_MODE::PlayerVSPlayer;
+			break;
+		}
+		if (SimpleGUI::Button(U"PlayerVSComputer", { 100, 200 })) {
+			GAME_MODE = GAME_MODE::PlayerVSComputer;
+			break;
+		}
+		if (SimpleGUI::Button(U"ComputerVSComputer", { 100, 300 })) {
+			GAME_MODE = GAME_MODE::ComputerVSComputer;
+			break;
+		}
+	}
+
 	HEIGHT = Random(11, 25);
 	WIDTH = Random(11, 25);
 	CELL_SIZE = 20;
