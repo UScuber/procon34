@@ -7,7 +7,7 @@ Actions enumerate_next_agent_acts(const Point &agent, const Field &field){
   const State ally = field.get_state(agent) & State::Human; // agentから見た味方
   assert((ally == State::Enemy) == (field.current_turn & 1));
   //const State enem = ally ^ State::Human; // agentから見た敵
-  assert(ally == State::Ally || ally == State::Enemy);
+  //assert(ally == State::Ally || ally == State::Enemy);
 
   const State ally_wall = ally == State::Ally ? State::WallAlly : State::WallEnemy; // agentから見た味方のwall
   const State enemy_wall = ally_wall ^ State::Wall; // agentから見た敵のwall
@@ -234,7 +234,7 @@ double evaluate_field2(const Field &field){
   // eval #7: 敵の職人のマンハッタン距離1以内に置かれている壁の数
   const int wn = calc_wall_by_enemy(field, field.enemy_agents, State::WallAlly) - calc_wall_by_enemy(field, field.ally_agents, State::WallEnemy);
 
-  static constexpr double a = 0.002;
+  static constexpr double a = 0.004;
   static constexpr double b = 0.007;
   static constexpr double c = 0.65;
   static constexpr double d = 1.2;

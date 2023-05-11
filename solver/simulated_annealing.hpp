@@ -21,7 +21,11 @@ std::vector<Actions> enumerate_agent_moves(const Point &agent, const int agent_i
     for(const auto &act : enumerate_next_agent_acts(agent, field)){
       current_acts.emplace_back(act);
       current_acts.back().agent_idx = agent_idx;
-      self(self, agent, dep - 1);
+      if(act.command == Action::Build || act.command == Action::Break){
+        self(self, agent, dep - 1);
+      }else{
+        self(self, act.pos, dep - 1);
+      }
       current_acts.pop_back();
     }
   };
@@ -31,6 +35,7 @@ std::vector<Actions> enumerate_agent_moves(const Point &agent, const int agent_i
 
 // side: 味方:0, 敵:1
 // 動けないような移動が与えられた場合はNoneの行動になり、1が返る(建設や破壊は一応問題ない)
+// 次に動かす敵の行動はすべてNone
 std::vector<int> advance_field(const Actions &acts, Field &field){
   assert(acts.size() == field.ally_agents.size());
   std::vector<int> cannot_move(acts.size());
@@ -115,6 +120,13 @@ std::vector<int> advance_field(const Actions &acts, Field &field){
   }
   field.update_region();
   field.current_turn++;
+  // enemy's act
+  Actions enem_acts;
+  for(int i = 0; i < (int)field.enemy_agents.size(); i++){
+    enem_acts.emplace_back(Action(Point(), Action::None, i));
+  }
+  field.update_turn(enem_acts);
+
   return cannot_move;
 }
 
@@ -139,7 +151,7 @@ Score calc_score(const std::vector<Actions> &agents_acts, Field field){
       cannot_move[i] |= cannot_state[i];
     }
   }
-  return Evaluate::evaluate_field2(field);
+  return Evaluate::evaluate_field(field);
 }
 
 
@@ -173,10 +185,11 @@ Actions SA(const Field &field){
   Timer timer;
   int trials = 0, updated_num = 0;
   static constexpr double t0 = 5;
-  static constexpr double t1 = 0.0001;
+  static constexpr double t1 = 0.0005;
   double temp = t0;
 
   std::cerr << "Start SA\n";
+  std::cerr << "first score: " << current_score << "\n";
   for(; ; trials++){
     static constexpr int mask = (1 << 4) - 1;
     if(!(trials & mask)){
@@ -207,6 +220,7 @@ Actions SA(const Field &field){
   }
   std::cerr << "trials : " << trials << "\n";
   std::cerr << "updated: " << updated_num << "\n";
+  std::cerr << "score  : " << best_score << "\n";
 
   Actions result;
   int idx = 0;
