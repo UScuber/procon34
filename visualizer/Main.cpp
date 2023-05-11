@@ -140,6 +140,7 @@ void Main() {
 		else if (SimpleGUI::Button(U"破壊", { 700, 300 })) {
 			MODE = OPERATION_MODE::BREAK;
 		}
+
 		if (SimpleGUI::Button(U"ターン終了", { 700, 500 })) {
 			field.SearchArea();
 			RedArea = field.CountArea(TEAM::RED);
@@ -342,10 +343,10 @@ void Main() {
 			// 手動の操作をプログラムに入力
 			for (Craftsman& craftsman : craftsmen_blue) {
 				if (craftsman.Act == U"") {
-					child.ostream() << "0" << "none" << std::endl;
+					child.ostream() << "0" << std::endl << "none" << std::endl;
 				}
 				else {
-					child.ostream() << craftsman.Direction << craftsman.Act << std::endl;
+					child.ostream() << craftsman.Direction << std::endl << craftsman.Act << std::endl;
 				}
 				craftsman.Initialize();
 			}
