@@ -113,6 +113,7 @@ void Field::DrawActors(void) {
 
 
 
+// {y,x}からBFSを始める
 const Array<std::pair<int, int>> d_ary = { {0,1},{-1,0},{0,-1},{1,0} };
 void WallBFS(size_t y, size_t x, Array<Array<bool>>& visited, Array<Array<char>>& grid, bool team) {
 	std::queue<std::pair<size_t, size_t>> que;
@@ -135,9 +136,11 @@ void WallBFS(size_t y, size_t x, Array<Array<bool>>& visited, Array<Array<char>>
 	}
 }
 
+// 陣地計算
 void Field::SearchArea(void) {
 	Array<Array<bool>> blue_visited(HEIGHT, Array<bool>(WIDTH, false));
 	Array<Array<bool>> red_visited(HEIGHT, Array<bool>(WIDTH, false));
+	// フィールドの辺からBFSを開始
 	for (size_t h = 0; h < HEIGHT; h++) {
 		for (size_t w = 0; w < WIDTH; w++) {
 			if ((h == 0 or h == HEIGHT - 1 or w == 0 or w == WIDTH - 1) and not(this->grid[h][w] & SwitchCELL(U"WALL", TEAM::BLUE))) {
@@ -148,23 +151,14 @@ void Field::SearchArea(void) {
 			}
 		}
 	}
-
-	for (size_t h = 0; h < HEIGHT; h++) {
-		for (size_t w = 0; w < WIDTH; w++) {
-			if (grid[h][w] & SwitchCELL(U"WALL", TEAM::BLUE)) {
-				blue_visited[h][w] = true;
-			}
-			if (grid[h][w] & SwitchCELL(U"WALL", TEAM::RED)) {
-				red_visited[h][w] = true;
-			}
-		}
-	}
-
+	// BFSで到達できたかで陣地塗り
 	for (size_t h = 0; h < HEIGHT ; h++) {
 		for (size_t w = 0; w < WIDTH; w++) {
+			// 両方の陣地となる場合
 			if ((not blue_visited[h][w]) and (not red_visited[h][w])) {
 				grid[h][w] |= (CELL::AREA_ALLY | CELL::AREA_ENEM);
 			}
+			// 片方の陣地となる場合
 			else if (blue_visited[h][w] xor red_visited[h][w]) {
 				if (not blue_visited[h][w]) {
 					grid[h][w] |= SwitchCELL(U"AREA", TEAM::BLUE);
@@ -174,6 +168,18 @@ void Field::SearchArea(void) {
 					grid[h][w] |= SwitchCELL(U"AREA", TEAM::RED);
 					grid[h][w] &= ~SwitchCELL(U"AREA", TEAM::BLUE);
 				}
+			}
+		}
+	}
+
+	// 壁は陣地外
+	for (size_t h = 0; h < HEIGHT; h++) {
+		for (size_t w = 0; w < WIDTH; w++) {
+			if (grid[h][w] & SwitchCELL(U"WALL", TEAM::BLUE)) {
+				blue_visited[h][w] = true;
+			}
+			if (grid[h][w] & SwitchCELL(U"WALL", TEAM::RED)) {
+				red_visited[h][w] = true;
 			}
 		}
 	}
