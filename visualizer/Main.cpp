@@ -47,7 +47,7 @@ const Array<std::pair<int, int>> dydx_craftsman = { {-1,0},{0, -1},{1,0},{0,1},{
 // 城壁の建築範囲
 const Array<std::pair<int, int>> dydx_wall = { {0,1},{0,-1},{1,0},{-1,0} };
 
-
+/*
 void Main() {
 	Scene::SetBackground(Palette::Lightsteelblue);
 	Window::Resize(1280, 720);
@@ -246,9 +246,9 @@ void Main() {
 	}
 
 }
+*/
 
 
-/*
 void Main() {
 
 	ChildProcess child{ U"solver.exe", Pipe::StdInOut };
@@ -318,11 +318,11 @@ void Main() {
 		child.ostream() << p.first << std::endl << p.second << std::endl;
 	}
 	child.ostream() << NumCraftsman << std::endl;
-	for (auto& p : craftsmen_blue) {
+	for (auto& p : craftsmen_red) {
 		child.ostream() << p.y_coordinate << std::endl << p.x_coordinate << std::endl;
 	}
 	child.ostream() << NumCraftsman << std::endl;
-	for (auto& p : craftsmen_red) {
+	for (auto& p : craftsmen_blue) {
 		child.ostream() << p.y_coordinate << std::endl << p.x_coordinate << std::endl;
 	}
 
@@ -381,8 +381,9 @@ void Main() {
 				}
 				craftsman.Initialize();
 			}
-			field.SearchArea(TEAM::BLUE);
-			field.SearchArea(TEAM::RED);
+			field.SearchArea();
+			BlueArea = field.CountArea(TEAM::BLUE);
+			RedArea = field.CountArea(TEAM::RED);
 			turn = TEAM::BLUE;
 			CountTurn++;
 		}
@@ -487,4 +488,4 @@ void Main() {
 	}
 
 }
-*/
+
