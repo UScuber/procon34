@@ -176,10 +176,10 @@ void Field::SearchArea(void) {
 	for (size_t h = 0; h < HEIGHT; h++) {
 		for (size_t w = 0; w < WIDTH; w++) {
 			if (grid[h][w] & SwitchCELL(U"WALL", TEAM::BLUE)) {
-				blue_visited[h][w] = true;
+				grid[h][w] &= ~SwitchCELL(U"AREA", TEAM::BLUE);
 			}
 			if (grid[h][w] & SwitchCELL(U"WALL", TEAM::RED)) {
-				red_visited[h][w] = true;
+				grid[h][w] &= ~SwitchCELL(U"AREA", TEAM::RED);
 			}
 		}
 	}
