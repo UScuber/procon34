@@ -89,7 +89,7 @@ void Main() {
 	size_t NumCraftsman = Random(2, 6);
 
 	// trueなら味方(青)チーム, falseなら敵(赤)チーム
-	bool TURN = Random(0, 1);
+	bool turn = Random(0, 1);
 
 	Array<Craftsman> craftsmen;
 	Array<Craftsman> craftsmen_blue;
@@ -131,7 +131,7 @@ void Main() {
 			break;
 		}
 
-		if (TURN == TEAM::BLUE) {
+		if (turn == TEAM::BLUE) {
 			font(U"青チームの手番").draw(100, 600, Palette::Blue);
 		}
 		else {
@@ -164,7 +164,7 @@ void Main() {
 			for (Craftsman& craftsman : craftsmen) {
 				craftsman.Initialize();
 			}
-			TURN ^= true;
+			turn ^= true;
 			CountTurn++;
 		}
 
@@ -172,7 +172,7 @@ void Main() {
 		// 職人の行動
 		for (Craftsman& craftsman : craftsmen) {
 			// そのターンの職人でなければスルー
-			if (craftsman.team != TURN) {
+			if (craftsman.team != turn) {
 				continue;
 			}
 			// 行動済みの職人だったら灰色で上塗りしてcontinue
@@ -277,7 +277,7 @@ void Main() {
 	size_t NumCraftsman = Random(2, 6);
 
 	// trueなら味方(青)チーム, falseなら敵(赤)チーム
-	bool TURN = Random(0, 1);
+	bool turn = Random(0, 1);
 
 	Array<Craftsman> craftsmen_blue;
 	Array<Craftsman> craftsmen_red;
@@ -307,7 +307,7 @@ void Main() {
 
 	// solverに渡す
 	child.ostream() << HEIGHT << std::endl << WIDTH << std::endl;
-	child.ostream() << ((TURN == TEAM::RED) ? 0 : 1) << std::endl;
+	child.ostream() << ((turn == TEAM::RED) ? 0 : 1) << std::endl;
 	child.ostream() << NumTurn << std::endl;
 	child.ostream() << NumPond << std::endl;
 	for (auto& p : ponds) {
@@ -344,7 +344,7 @@ void Main() {
 			break;
 		}
 
-		if (TURN == TEAM::BLUE) {
+		if (turn == TEAM::BLUE) {
 			font(U"青チームの手番").draw(100, 600, Palette::Blue);
 		}
 		else {
@@ -355,7 +355,7 @@ void Main() {
 		font(U"青エリア:{}"_fmt(BlueArea)).draw(800, 150, Palette::Black);
 		font(U"赤エリア:{}"_fmt(RedArea)).draw(800, 250, Palette::Black);
 
-		if (TURN == TEAM::RED) {
+		if (turn == TEAM::RED) {
 			// 手動の操作をプログラムに入力
 			for (Craftsman& craftsman : craftsmen_blue) {
 				if (craftsman.Act == U"") {
@@ -383,7 +383,7 @@ void Main() {
 			}
 			field.SearchArea(TEAM::BLUE);
 			field.SearchArea(TEAM::RED);
-			TURN = TEAM::BLUE;
+			turn = TEAM::BLUE;
 			CountTurn++;
 		}
 
@@ -409,7 +409,7 @@ void Main() {
 			for (Craftsman& craftsman : craftsmen_blue) {
 				craftsman.Initialize();
 			}
-			TURN = TEAM::RED;
+			turn = TEAM::RED;
 			CountTurn++;
 		}
 
