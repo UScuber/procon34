@@ -46,7 +46,7 @@ bool Craftsman::Build(Field& field, int dy, int dx) {
 	}
 	// 建築可能な場所か
 	char& TargetCell = field.grid[this->y_coordinate + dy][this->x_coordinate + dx];
-	if (TargetCell & CELL::POND or TargetCell & CELL::WALL_ENEM or TargetCell & CELL::WALL_ALLY or
+	if (TargetCell & CELL::WALL_ENEM or TargetCell & CELL::WALL_ALLY or
 		TargetCell & SwitchCELL(U"CRAFTSMAN", not team) or TargetCell & CELL::CASTLE) {
 		return false;
 	}
