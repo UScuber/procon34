@@ -56,23 +56,54 @@ Field::Field(void) {
 
 void Field::Initialize(size_t pond, size_t castle, size_t craftsman){
 	size_t y, x;
-	for (size_t i = 0; i < (pond + castle + craftsman * 2); i++) {
+	for (size_t i = 0; i < (pond  + craftsman * 2); i++) {
 		do {
 			y = Random(HEIGHT-1);
 			x = Random(WIDTH-1);
 		} while (this->grid[y][x] != 0);
 		if (i < pond) {
 			this->grid[y][x] |= CELL::POND;
-		}else if (i < pond + castle) {
-			this->grid[y][x] |= CELL::CASTLE;
-		}else if (i < pond + castle + craftsman) {
+		}else if (i < pond + craftsman) {
 			this->grid[y][x] |= CELL::ALLY;
 		}else {
 			this->grid[y][x] |= CELL::ENEM;
 		}
 	}
+	for (size_t i = 0; i < castle; i++) {
+		do {
+			y = Random(1, (int)HEIGHT - 2);
+			x = Random(1, (int)WIDTH - 2);
+		} while (this->grid[y][x] != 0);
+		this->grid[y][x] |= CELL::CASTLE;
+	}
 	return;
 }
+
+/*
+void Field::Initialize(size_t pond, size_t castle, size_t craftsman) {
+	size_t y, x;
+	for (size_t i = 0; i < (pond + castle + craftsman * 2); i++) {
+		do {
+			y = Random(HEIGHT - 1);
+			x = Random(WIDTH - 1);
+		} while (this->grid[y][x] != 0);
+		if (i < pond) {
+			this->grid[y][x] |= CELL::POND;
+		}
+		else if (i < pond + castle) {
+			this->grid[y][x] |= CELL::CASTLE;
+		}
+		else if (i < pond + castle + craftsman) {
+			this->grid[y][x] |= CELL::ALLY;
+		}
+		else {
+			this->grid[y][x] |= CELL::ENEM;
+		}
+	}
+	return;
+}
+*/
+
 
 void Field::DisplayGrid(void) {
 	for (size_t i = 0; i < (HEIGHT * WIDTH); i++) {
