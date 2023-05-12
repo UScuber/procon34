@@ -2,6 +2,7 @@
 # include <Siv3D.hpp> // OpenSiv3D v0.6.9
 # include "Field.hpp"
 # include "Actor.hpp"
+# include "Menu.hpp"
 
 enum CELL {
 	POND = 1 << 0,
@@ -332,13 +333,17 @@ void Main() {
 	// 職人を選択中かどうか
 	bool isTargeting = false;
 
-	const Font font{ 50, U"SourceHanSansJP-Medium.otf" };
+	Font font{ 50, U"SourceHanSansJP-Medium.otf" };
 
 	Array<Craftsman > pre_craftsmen = craftsmen_blue;
 
 	Field pre_field = field;
 
+	MenuTab menutab(4, 50, font);
+
 	while (System::Update()) {
+
+		menutab.DrawMenuTab();
 
 		if (CountTurn >= NumTurn) {
 			break;
