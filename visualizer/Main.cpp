@@ -339,7 +339,8 @@ void Main() {
 
 	Field pre_field = field;
 
-	MenuTab menutab(4, 50, font);
+	Font font_menu{ 40, U"SourceHanSansJP-Medium.otf" };
+	MenuTab menutab(4, 50, font_menu);
 
 	while (System::Update()) {
 
