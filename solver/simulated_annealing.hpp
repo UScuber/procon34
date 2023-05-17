@@ -16,9 +16,9 @@ std::vector<Actions> enumerate_agent_moves(const Point &agent, const int agent_i
   std::vector<Actions> result;
   Actions current_acts;
   auto dfs = [&](auto &&self, const Point &agent, int dep){
-    if(!current_acts.empty()) result.emplace_back(current_acts);
+    if(!current_acts.empty() && !dep) result.emplace_back(current_acts);
     if(!dep) return;
-    for(const auto &act : enumerate_next_agent_acts(agent, field)){
+    for(const auto &act : enumerate_next_agent_acts(agent, field, false)){
       current_acts.emplace_back(act);
       current_acts.back().agent_idx = agent_idx;
       if(act.command == Action::Build || act.command == Action::Break){
