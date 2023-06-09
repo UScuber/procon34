@@ -12,3 +12,4 @@ App/Resource.rc
 App/visualizer(debug).exe
 App/visualizer.exe
 App/AS_DEBUG
+App/solver.exe
