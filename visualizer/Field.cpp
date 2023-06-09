@@ -26,7 +26,7 @@ extern size_t BLANK_LEFT;
 extern size_t BLANK_TOP;
 
 
-char SwitchCELL(String s, bool team) {
+char SwitchCELL(const String& s, const bool team) {
 	if (s == U"WALL") {
 		return (team == TEAM::BLUE) ? CELL::WALL_ALLY : CELL::WALL_ENEM;
 	}else if (s == U"AREA") {
@@ -36,18 +36,28 @@ char SwitchCELL(String s, bool team) {
 	}
 }
 
-Rect GetGridRect(size_t y, size_t x) {
-	return Rect{ x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE };
+Rect GetGridRect(const Point p) {
+	return Rect{ p.x * CELL_SIZE + BLANK_LEFT, p.y * CELL_SIZE + BLANK_TOP, CELL_SIZE };
 }
-Circle GetGridCircle(size_t y, size_t x) {
-	return Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4);
+Circle GetGridCircle(const Point p) {
+	return Circle(Arg::center(p.x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, p.y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4);
 }
 
-bool isInField(size_t y, size_t x) {
+bool isInField(int y, int x) {
 	return (0 <= y and y < HEIGHT and 0 <= x and x < WIDTH);
 }
+bool isInField(const Point& p) {
+	return (0 <= p.y and p.y < HEIGHT and 0 <= p.x and p.x < WIDTH);
+}
 
-
+Optional<Point> get_clicked_pos(const Point p, const Array<Point>& dydx) {
+	for (const Point q : dydx) {
+		if (isInField(p + q) and GetGridRect(p + q).leftClicked()) {
+			return q;
+		}
+	}
+	return none;
+}
 
 
 Field::Field(void) {
@@ -105,9 +115,25 @@ void Field::Initialize(size_t pond, size_t castle, size_t craftsman) {
 */
 
 
-void Field::DisplayGrid(void) {
+char Field::getGrid(const int y, const int x) const {
+	return grid[y][x];
+}
+
+char Field::getGrid(const Point p) const {
+	return grid[p.y][p.x];
+}
+
+void Field::setGrid(const int y, const int x, const char v) {
+	grid[y][x] = v;
+}
+
+void Field::setGrid(const Point p, const char v) {
+	grid[p.y][p.x] = v;
+}
+
+void Field::DisplayGrid(void) const {
 	for (size_t i = 0; i < (HEIGHT * WIDTH); i++) {
-		GetGridRect(i / WIDTH, i % WIDTH).drawFrame(1, 1, Palette::Black);
+		GetGridRect(Point(i % WIDTH, i / WIDTH)).drawFrame(1, 1, Palette::Black);
 	}
 }
 
@@ -226,11 +252,4 @@ size_t Field::CountArea(bool team) {
 		}
 	}
 	return count;
-}
-
-void Field::GetGrid(Array<Array<char>> grid) {
-	this->grid = grid;	
-}
-Array<Array<char>> Field::GiveGrid(void) {
-	return this->grid;
 }

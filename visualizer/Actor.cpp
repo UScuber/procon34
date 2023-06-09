@@ -19,14 +19,13 @@ extern size_t HEIGHT;
 extern size_t WIDTH;
 extern size_t CELL_SIZE;
 
-const Array<std::pair<int, int>> dydx = { {-1,0},{0, -1},{1,0},{0,1},{-1,-1},{1,-1},{1,1},{-1,1} };
+const Array<Point> dydx = { {0,-1},{-1,0},{0,1},{1,0},{-1,-1},{-1,1},{1,1},{1,-1} };
 
 // コンストラクタで座標、チームを取得しフィールドを書き換える
-Craftsman::Craftsman(Field& field, size_t y, size_t x, bool team){
-	this->y_coordinate = y;
-	this->x_coordinate = x;
-	this ->team = team;
-	field.grid[y][x] |= SwitchCELL(U"CRAFTSMAN", team);
+Craftsman::Craftsman(Field& field, int y, int x, bool team){
+	this->pos = { x, y };
+	this->team = team;
+	field.setGrid(y, x, field.getGrid(y, x) | SwitchCELL(U"CRAFTSMAN", team));
 }
 
 // 状態をリセット
@@ -39,89 +38,90 @@ void Craftsman::Initialize(void) {
 
 
 // 城壁を建築
-bool Craftsman::Build(Field& field, int dy, int dx) {
+bool Craftsman::Build(Field& field, const Point d) {
+	const Point to_pos = this->pos + d;
 	// 建築可能範囲
-	if (not isInField(this->y_coordinate + dy, this->x_coordinate + dx) or not((Abs(dy) == 1) xor (Abs(dx) == 1))) {
+	if (not isInField(to_pos) or (Abs(d.y) + Abs(d.x) != 1)) {
 		return false;
 	}
 	// 建築可能な場所か
-	char& TargetCell = field.grid[this->y_coordinate + dy][this->x_coordinate + dx];
+	const char TargetCell = field.getGrid(to_pos);
 	if (TargetCell & CELL::WALL_ENEM or TargetCell & CELL::WALL_ALLY or
 		TargetCell & SwitchCELL(U"CRAFTSMAN", not team) or TargetCell & CELL::CASTLE) {
 		return false;
 	}
 	// bit変化
-	TargetCell |= SwitchCELL(U"WALL", team);
+	field.setGrid(to_pos, TargetCell | SwitchCELL(U"WALL", team));
+
 	this->isActed = true;
 	this->isTarget = false;
 	for (size_t i = 0; i < dydx.size(); i++) {
-		if (dydx[i].first == dy and dydx[i].second == dx) {
+		if (dydx[i] == d) {
 			this->Direction = i;
 			break;
 		}
 	}
-	this->Act = U" build";
+	this->Act = U"build";
 	return true;
 }
 
 // 城壁を破壊
-bool Craftsman::Break(Field& field, int dy, int dx) {
+bool Craftsman::Break(Field& field, const Point d) {
+	const Point to_pos = this->pos + d;
 	// 建築可能範囲
-	if (not isInField(this->y_coordinate + dy, this->x_coordinate + dx) or not((Abs(dy) == 1) xor (Abs(dx) == 1))) {
+	if (not isInField(to_pos) or (Abs(d.y) + Abs(d.x) != 1)) {
 		return false;
 	}
 	// 建築可能な場所か
-	char& TargetCell = field.grid[this->y_coordinate + dy][this->x_coordinate + dx];
+	const char TargetCell = field.getGrid(to_pos);
 	if (not (TargetCell & CELL::WALL_ENEM or TargetCell & CELL::WALL_ALLY)) {
 		return false;
 	}
 	// bit変化
-	TargetCell &= ~CELL::WALL_ENEM;
-	TargetCell &= ~CELL::WALL_ALLY;
+	field.setGrid(to_pos, TargetCell & ~(CELL::WALL_ENEM | CELL::WALL_ALLY));
+
 	this->isActed = true;
 	this->isTarget = false;
 	for (size_t i = 0; i < dydx.size(); i++) {
-		if (dydx[i].first == dy and dydx[i].second == dx) {
+		if (dydx[i] == d) {
 			this->Direction = i;
 			break;
 		}
 	}
-	this->Act = U" break";
+	this->Act = U"break";
 	return true;
 }
 
 // 移動
-bool Craftsman::Move(Field& field, int dy, int dx) {
+bool Craftsman::Move(Field& field, const Point d) {
 	// 移動可能範囲
-	if (Abs(dy) > 1 or Abs(dx) > 1) {
+	if (Abs(d.y) > 1 or Abs(d.x) > 1) {
 		return false;
 	}
 	// 移動先がフィールド内か
-	int next_y = this->y_coordinate + dy;
-	int next_x = this->x_coordinate + dx;
-	if (not isInField(next_y, next_x)){
+	const Point next = this->pos + d;
+	if (not isInField(next)){
 		return false;
 	}
 	// 移動可能な場所か
-	char& TargetCell = field.grid[next_y][next_x];
+	const char TargetCell = field.getGrid(next);
 	if (TargetCell & CELL::POND or TargetCell & SwitchCELL(U"WALL", not team) or
 		TargetCell & CELL::ENEM or TargetCell & CELL::ALLY) {
 		return false;
 	}
 	// 座標変化とbit変化
-	field.grid[y_coordinate][x_coordinate] &= ~SwitchCELL(U"CRAFTSMAN", team);
-	this->y_coordinate = next_y;
-	this->x_coordinate = next_x;
-	field.grid[next_y][next_x] |= SwitchCELL(U"CRAFTSMAN", team);
+	field.setGrid(this->pos, field.getGrid(this->pos) & ~SwitchCELL(U"CRAFTSMAN", team));
+	this->pos = next;
+	field.setGrid(next, field.getGrid(next) | SwitchCELL(U"CRAFTSMAN", team));
 	this->isActed = true;
 	this->isTarget = false;
 	for (size_t i = 0; i < dydx.size(); i++) {
-		if (dydx[i].first == dy and dydx[i].second == dx) {
+		if (dydx[i] == d) {
 			this->Direction = i;
 			break;
 		}
 	}
-	this->Act = U" move";
+	this->Act = U"move";
 	return true;
 }
 
