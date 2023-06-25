@@ -14,6 +14,8 @@ class State:
         self.enemy_craftsmen = np.zeros((WIDTH, HEIGHT))
         self.wall = np.zeros((WIDTH, HEIGHT))
         self.enemy_wall = np.zeros((WIDTH, HEIGHT))
+        self.area = np.zeros((WIDTH, HEIGHT))
+        self.enemy_area = np.zeros((WIDTH, HEIGHT))
         
         # 各職人をランダムにフィールドに配置
         while True:
@@ -27,6 +29,14 @@ class State:
     # デュアルネットワークの入力の二次元配列
     def pieces_array(self):
 
+    # 領域の計算
+    def colcu_areas(self):
+        # 領域の計算
+    
+    # 領域の大きさを計算
+    def get_areas(self):
+        # 領域の大きさを計算
+        return areas, enemy_areas # 関数名変えても構わない
     # 負けかどうか
     def is_lose(self):
     
@@ -43,4 +53,3 @@ class State:
     def is_leagal_action(self):
     
     # 文字列表示
-
