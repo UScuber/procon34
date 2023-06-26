@@ -64,13 +64,42 @@ class State:
     def next(self, action):
     
     # 合法手かどうか
-    def is_leagal_action(self):
+    def is_legal_action(self):
     
     # 文字列表示
+    def __str__(self):
 
     # 建築
     def build_wall(self, action):
         craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
 
 
+# ランダムに行動させる関数
+# あとで、前職人がいた場所に行動できないのを実装する
+def random_action(self):
+    while True:
+        action = np.random.choice(3) # ランダムに、移動、建築、解体、滞在を選択
+        if action == 0: # 移動だったら
+            direction = np.random.choice(7)
+        if is_legal_action():
+            break
+    
+    return action, direction
 
+
+if __name__ == '__main__':
+    # 状態の生成
+    state = State()
+
+    # ゲーム終了までのループ
+    while True:
+        # ゲーム終了時
+        if state.is_done():
+            break
+
+        # 次の状態の取得
+        state = state.next(random_action(state))
+
+        # 文字列表示
+        print(state)
+        print()
