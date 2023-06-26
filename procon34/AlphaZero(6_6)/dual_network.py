@@ -9,7 +9,7 @@ import gc
 DN_FILTERS = 128 # 畳み込み層のカーネル数
 DN_RESIDUAL_NUM = 16 # 残差ブロックの数
 DN_INPUT_SHAPE = (6,6,4) # 入力シェイプ
-DN_OUTPUT_SIZE = 89  # 行動数
+DN_OUTPUT_SIZE = 34  # 行動数
 
 # 畳み込み層の作成
 def conv(filters):

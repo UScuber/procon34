@@ -24,6 +24,8 @@ class State:
         self.game_count = game_count if game_count != None else 0
         # 方向
         self.directions = np.array([[0,1],[-1,0],[0,-1],[1,0],[-1,1],[-1,-1],[1,-1],[1,1]]) # 上、左、下、右、左上、左下、右下、右上
+        # 行動
+        self.action = np.zeros(17, dtype=np.int8) # 0~7: 移動、8~11: 建築、12~15: 解体、16: 滞在
         
         # 各職人をランダムにフィールドに配置
         if craftsmen == None and enemy_craftsmen == None:
