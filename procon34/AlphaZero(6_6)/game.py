@@ -5,26 +5,35 @@ import numpy as np
 # フィールド
 WIDTH = 6
 HEIGHT = 6
+GAME_COUNT = 30 # ターン数
 
 class State:
     # 局面の初期化
-    def __init__(self, craftsmen=None, enemy_craftsmen=None, wall=None, enemy_wall=None):
+    def __init__(self, craftsmen=None, enemy_craftsmen=None, wall=None, enemy_wall=None, area=None, enemy_area=None, game_count=None):
         # フィールドの初期化
-        self.craftsmen = np.zeros((WIDTH, HEIGHT))
-        self.enemy_craftsmen = np.zeros((WIDTH, HEIGHT))
-        self.wall = np.zeros((WIDTH, HEIGHT))
-        self.enemy_wall = np.zeros((WIDTH, HEIGHT))
-        self.area = np.zeros((WIDTH, HEIGHT))
-        self.enemy_area = np.zeros((WIDTH, HEIGHT))
+        # 職人の位置
+        self.craftsmen = craftsmen if craftsmen != None else np.zeros((WIDTH, HEIGHT))
+        self.enemy_craftsmen = enemy_craftsmen if enemy_craftsmen != None else np.zeros((WIDTH, HEIGHT))
+        # 壁の位置
+        self.wall = wall if wall != None else np.zeros((WIDTH, HEIGHT))
+        self.enemy_wall = enemy_wall if enemy_wall != None else np.zeros((WIDTH, HEIGHT))
+        # 領域の位置
+        self.area = area if area != None else np.zeros((WIDTH, HEIGHT))
+        self.enemy_area = enemy_area if enemy_area != None else np.zeros((WIDTH, HEIGHT))
+        # 現在のターン数
+        self.game_count = game_count if game_count != None else 0
+        # 方向
+        self.directions = np.array([[0,1],[-1,0],[0,-1],[1,0],[-1,1],[-1,-1],[1,-1],[1,1]]) # 上、左、下、右、左上、左下、右下、右上
         
         # 各職人をランダムにフィールドに配置
-        while True:
-            x = np.random.choice(WIDTH, 2)
-            y = np.random.choice(HEIGHT, 2)
-            if x[0] != x[1] or y[0] != y[1]:
-                break
-        self.craftsmen[x[0], y[0]] = 1
-        self.enemy_craftsmen[x[1], y[1]] = 1
+        if craftsmen == None and enemy_craftsmen == None:
+            while True:
+                x = np.random.choice(WIDTH, 2)
+                y = np.random.choice(HEIGHT, 2)
+                if x[0] != x[1] or y[0] != y[1]:
+                    break
+            self.craftsmen[x[0], y[0]] = 1
+            self.enemy_craftsmen[x[1], y[1]] = 1
     
     # デュアルネットワークの入力の二次元配列
     def pieces_array(self):
@@ -45,7 +54,10 @@ class State:
     
     # ゲーム終了かどうか
     def is_done(self):
-    
+        if self.game_count >= GAME_COUNT:
+            return True
+        return False
+
     # 次の状態の取得
     def next(self, action):
     
@@ -53,3 +65,12 @@ class State:
     def is_leagal_action(self):
     
     # 文字列表示
+
+    # 建築
+    def build_wall(self, action, direction):
+        craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
+        direct = self.directions[direction] # 二要素一次元配列
+        self.wall[craftsmen[0][0],craftsmen[1][0]]
+
+
+
