@@ -61,7 +61,7 @@ class State:
         return False
 
     # 次の状態の取得
-    def next(self, action):
+    def next(self, action, direction):
     
     # 合法手かどうか
     def is_legal_action(self):
