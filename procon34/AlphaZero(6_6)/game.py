@@ -9,23 +9,23 @@ GAME_COUNT = 30 # ターン数
 
 class State:
     # 局面の初期化
-    def __init__(self, craftsmen=None, enemy_craftsmen=None, wall=None, enemy_wall=None, area=None, enemy_area=None, game_count=None):
+    def __init__(self, craftsmen=None, enemy_craftsmen=None, walls=None, enemy_walls=None, areas=None, enemy_areas=None, game_count=None):
         # フィールドの初期化
         # 職人の位置
         self.craftsmen = craftsmen if craftsmen != None else np.zeros((WIDTH, HEIGHT))
         self.enemy_craftsmen = enemy_craftsmen if enemy_craftsmen != None else np.zeros((WIDTH, HEIGHT))
         # 壁の位置
-        self.wall = wall if wall != None else np.zeros((WIDTH, HEIGHT))
-        self.enemy_wall = enemy_wall if enemy_wall != None else np.zeros((WIDTH, HEIGHT))
+        self.walls = walls if walls != None else np.zeros((WIDTH, HEIGHT))
+        self.enemy_walls = enemy_walls if enemy_walls != None else np.zeros((WIDTH, HEIGHT))
         # 領域の位置
-        self.area = area if area != None else np.zeros((WIDTH, HEIGHT))
-        self.enemy_area = enemy_area if enemy_area != None else np.zeros((WIDTH, HEIGHT))
+        self.areas = areas if areas != None else np.zeros((WIDTH, HEIGHT))
+        self.enemy_areas = enemy_areas if enemy_areas != None else np.zeros((WIDTH, HEIGHT))
         # 現在のターン数
         self.game_count = game_count if game_count != None else 0
         # 方向
         self.directions = np.array([[0,1],[-1,0],[0,-1],[1,0],[-1,1],[-1,-1],[1,-1],[1,1]]) # 上、左、下、右、左上、左下、右下、右上
         # 行動
-        self.action = np.zeros(17, dtype=np.int8) # 0~7: 移動、8~11: 建築、12~15: 解体、16: 滞在
+        self.actions = np.zeros(17, dtype=np.int8) # 0~7: 移動、8~11: 建築、12~15: 解体、16: 滞在
         
         # 各職人をランダムにフィールドに配置
         if craftsmen == None and enemy_craftsmen == None:
@@ -69,10 +69,8 @@ class State:
     # 文字列表示
 
     # 建築
-    def build_wall(self, action, direction):
+    def build_wall(self, action):
         craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
-        direct = self.directions[direction] # 二要素一次元配列
-        self.wall[craftsmen[0][0],craftsmen[1][0]]
 
 
 
