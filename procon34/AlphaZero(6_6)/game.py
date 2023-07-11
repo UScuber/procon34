@@ -31,7 +31,7 @@ class State:
         # 方向
         self.directions = np.array([[0,1],[-1,0],[0,-1],[1,0],[-1,1],[-1,-1],[1,-1],[1,1]]) # 上、左、下、右、左上、左下、右下、右上
         # 行動
-        self.actions = np.zeros(NUM_CRAFTSMEN*17, dtype=np.bool8) # 0~7: 移動、8~11: 建築、12~15: 解体、16: 滞在
+        # self.actions = np.zeros(NUM_CRAFTSMEN*17, dtype=np.bool8) # 0~7: 移動、8~11: 建築、12~15: 解体、16: 滞在
 
         self.num_area, self.num_enemy_area = 0, 0
         self.num_walls, self.num_enemy_walls = 0, 0
@@ -90,20 +90,119 @@ class State:
     
     def is_done(self) -> bool:
         return self.game_count >= GAME_COUNT
+    
+    # 敵の壁か味方の壁か判定する
+    def is_ally_wall(self, x, y):
+        if self.walls[x][y]:
+            return 1
+        elif self.enemy_walls[x][y]:
+            return 0
+        else:
+            return -1
 
     # actionsから次の状態へ遷移
-    def next(self):
-        assert self.is_legal_action()
-        state = State(craftsmen=self.craftsmen, enemy_craftsmen=self.enemy_craftsmen, walls=self.walls, enemy_walls=self.enemy_walls, areas=self.areas, enemy_areas=self.enemy_areas, game_count=self.game_count)
-    
-    def is_legal_action(self) -> bool:
-        pass
+    def next(self, actions):
+        # 破壊建築移動の順番で作る(後で)
+        assert self.is_legal_action(actions)
+        craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
+        # 修正する
+
+        for i in range(NUM_CRAFTSMEN):
+            for j in range(17):
+                # 移動だったら
+                if 0<=j and j<=7 and actions[j*(i+1)]:
+                    direction = self.directions[j]
+                    x = craftsmen[0][i]
+                    y = craftsmen[1][i]
+                    next_place_x = x + direction[0]
+                    next_place_y = y + direction[1]
+                    # 職人を移動させる
+                    self.craftsmen[x][y] = 0
+                    self.craftsmen[next_place_x][next_place_y] = 1
+                # 建築だったら
+                elif 8<=j and j<=11 and actions[j*(i+1)]:
+                    direction = self.directions[j]
+                    x = craftsmen[0][i]
+                    y = craftsmen[1][i]
+                    build_place_x = x + direction[0]
+                    build_place_y = y + direction[1]
+                    # 壁を建築する
+                    self.walls[build_place_x][build_place_y] = 1
+                # 解体だったら
+                elif 12<=j and j<=15 and actions[j*(i+1)]:
+                    direction = self.directions[j]
+                    x = craftsmen[0][i]
+                    y = craftsmen[1][i]
+                    dismantle_place_x = x + direction[0]
+                    dismantle_place_y = y + direction[1]
+                    # 壁を解体する
+                    if self.is_ally_wall(dismantle_place_x, dismantle_place_y) == 1: # 味方なら
+                        self.walls[dismantle_place_x][dismantle_place_y] = 0
+                    elif self.is_ally_wall(dismantle_place_x, dismantle_place_y) == 0: # 敵なら
+                        self.enemy_walls[dismantle_place_x][dismantle_place_y] = 0
+                    else:
+                        pass
+                #滞在なら
+                elif j == 16 and actions[j*(i+1)]:
+                    pass
+        
+        return State(craftsmen=self.enemy_craftsmen, enemy_craftsmen=self.craftsmen, walls=self.enemy_walls, enemy_walls=self.walls, areas=self.enemy_areas, enemy_areas=self.areas, game_count=(self.game_count+1))
+    # 合法手かどうか確認する
+    def is_legal_action(self, actions) -> bool:
+        craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
+        enemy_craftsmen = np.where(self.enemy_craftsmen == 1)
+
+        for i in range(NUM_CRAFTSMEN):
+            for j in range(17):
+                if actions[j*(i+1)]:
+                    direction = self.directions[j]
+                    x = craftsmen[0][i]
+                    y = craftsmen[1][i]
+                    next_place_x = x + direction[0]
+                    next_place_y = y + direction[1]
+                    # 移動
+                    if 0 <= j and j <= 7:
+                        # フィールド外なら
+                        if next_place_x < 0 or WIDTH <= next_place_x:
+                            return False
+                        if next_place_y < 0 or HEIGHT <= next_place_y:
+                            return False
+                        # 相手の職人がいたら（あとで自分の職人とも重なっていないかの判定を加える）
+                        if next_place_x == enemy_craftsmen[0][i] and next_place_y == enemy_craftsmen[1][i]:
+                            return False
+                        # 相手の壁があったら
+                        if self.enemy_walls[next_place_x] == 1:
+                            return False
+                    # 建築
+                    if 8 <= j and j <= 11:
+                        # フィールド外なら
+                        if next_place_x < 0 or WIDTH <= next_place_x:
+                            return False
+                        if next_place_y < 0 or HEIGHT <= next_place_y:
+                            return False
+                        # 相手の職人がいたら
+                        if next_place_x == enemy_craftsmen[0][i] and next_place_y == enemy_craftsmen[1][i]:
+                            return False
+                        # 壁があったら
+                        if self.enemy_walls[next_place_x][next_place_y] == 1 and self.walls[next_place_x][next_place_y]:
+                            return False
+                    # 解体
+                    if 12 <= j and j <= 15:
+                        # フィールド外なら
+                        if next_place_x < 0 or WIDTH <= next_place_x:
+                            return False
+                        if next_place_y < 0 or HEIGHT <= next_place_y:
+                            return False
+                        # 指定先に壁がなかったら
+                        if self.walls[next_place_x][next_place_y] or self.enemy_walls[next_place_x][next_place_y]:
+                            return False
+                    
+                    if j == 16:
+                        return True        
+        return True
     
     def __str__(self) -> str:
         pass
-
-    def build_wall(self, action):
-        craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
 
 
 # ランダムに行動させる関数
