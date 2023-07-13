@@ -1,6 +1,7 @@
 import random
 import math
 import numpy as np
+from collections import deque
 
 # フィールド
 WIDTH = 6
@@ -9,7 +10,6 @@ GAME_COUNT = 30 # ターン数
 
 WALL_POINT = 2
 AREA_POINT = 10
-CASTLE_POINT = 20
 
 NUM_CRAFTSMEN = 1
 
@@ -35,7 +35,6 @@ class State:
 
         self.num_area, self.num_enemy_area = 0, 0
         self.num_walls, self.num_enemy_walls = 0, 0
-        self.num_castles, self.num_enemy_castles = 0, 0
         
         # 各職人をランダムにフィールドに配置
         if craftsmen == None and enemy_craftsmen == None:
@@ -67,20 +66,70 @@ class State:
 
     # 領域の計算
     def calc_areas(self) -> None:
-        next_area = np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
-        next_enemy_area = np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
+        AREA = 1
+        NEUTRAL = 2
 
-        self.areas = next_area
-        self.enemy_areas = next_enemy_area
-        self.num_area, self.num_enemy_area = next_area.sum(), next_enemy_area.sum()
-        self.num_castles, self.num_enemy_castles = 0, 0
+        def calc_region(wall_func) -> np.ndarray:
+            used = np.zeros((WIDTH, HEIGHT), dtype=np.uint8)
+            que = deque()
+            for i in range(HEIGHT):
+                if not wall_func(0, i):
+                    que.append((0, i))
+                    used[0, i] = NEUTRAL
+                if not wall_func(WIDTH-1, i):
+                    que.append((WIDTH-1, i))
+                    used[WIDTH-1, i] = NEUTRAL
+                
+            for j in range(WIDTH):
+                if not wall_func(j, 0):
+                    que.append((j, 0))
+                    used[j, 0] = NEUTRAL
+                if not wall_func(j, HEIGHT-1):
+                    que.append((j, HEIGHT-1))
+                    used[j, HEIGHT-1] = NEUTRAL
+            while que:
+                posx,posy = que.popleft()
+                for i in range(4):
+                    x = posx + self.directions[i][0]
+                    y = posy + self.directions[i][1]
+                    if x < 0 or y < 0 or x >= WIDTH or y >= HEIGHT: continue
+                    if used[x, y] == 0 and not wall_func(x,y):
+                        used[x, y] = NEUTRAL
+                        que.append((x, y))
+            
+            for i in range(1, HEIGHT-1):
+                for j in range(1, WIDTH-1):
+                    if used[i,j] == 0 and not wall_func(j,i):
+                        used[i,j] = AREA
+            return used
+        
+        ally_region = calc_region(self.is_ally_wall)
+        enemy_region = calc_region(self.is_enemy_wall)
+        
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                if ally_region[j,i] == AREA and enemy_region[j,i] == AREA:
+                    self.areas[j,i] = 1
+                    self.enemy_areas[j,i] = 1
+                elif ally_region[j,i] == AREA:
+                    self.areas[j,i] = 1
+                    self.enemy_areas[j,i] = 0
+                elif enemy_region[j,i] == AREA:
+                    self.areas[j,i] = 0
+                    self.enemy_areas[j,i] = 1
+                if self.is_ally_wall(j,i):
+                    self.areas[j,i] = 0
+                if self.is_enemy_wall(j,i):
+                    self.enemy_areas[j,i] = 0
+
+        self.num_area, self.num_enemy_area = self.areas.sum(), self.enemy_areas.sum()
 
     
     def get_areas(self):
         return self.areas, self.enemy_areas
     
     def _calc_score_diff(self) -> int:
-        return (self.num_area - self.num_enemy_area) * AREA_POINT + (self.num_walls - self.num_enemy_walls) * WALL_POINT + (self.num_castles - self.num_enemy_castles) * CASTLE_POINT
+        return (self.num_area - self.num_enemy_area) * AREA_POINT + (self.num_walls - self.num_enemy_walls) * WALL_POINT
     
     def is_lose(self) -> bool:
         return self._calc_score_diff() < 0
@@ -92,13 +141,10 @@ class State:
         return self.game_count >= GAME_COUNT
     
     # 敵の壁か味方の壁か判定する
-    def is_ally_wall(self, x, y):
-        if self.walls[x][y]:
-            return 1
-        elif self.enemy_walls[x][y]:
-            return 0
-        else:
-            return -1
+    def is_ally_wall(self, x, y) -> bool:
+        return self.walls[x][y]
+    def is_enemy_wall(self, x, y) -> bool:
+        return self.enemy_walls[x][y]
 
     # actionsから次の状態へ遷移
     def next(self, actions):
@@ -136,9 +182,9 @@ class State:
                     dismantle_place_x = x + direction[0]
                     dismantle_place_y = y + direction[1]
                     # 壁を解体する
-                    if self.is_ally_wall(dismantle_place_x, dismantle_place_y) == 1: # 味方なら
+                    if self.is_ally_wall(dismantle_place_x, dismantle_place_y): # 味方なら
                         self.walls[dismantle_place_x][dismantle_place_y] = 0
-                    elif self.is_ally_wall(dismantle_place_x, dismantle_place_y) == 0: # 敵なら
+                    elif self.is_enemy_wall(dismantle_place_x, dismantle_place_y): # 敵なら
                         self.enemy_walls[dismantle_place_x][dismantle_place_y] = 0
                     else:
                         pass
