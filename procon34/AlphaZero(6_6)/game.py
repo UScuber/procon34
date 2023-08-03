@@ -61,7 +61,7 @@ class State:
             self.enemy_craftsmen[board == 2] = 1
     
     # デュアルネットワークの入力用の二次元配列
-    def state_array(self):
+    def state_array(self) -> np.ndarray:
         return np.stack([self.craftsmen, self.enemy_craftsmen, self.walls, self.enemy_walls, self.areas, self.enemy_areas],2)
 
     # 領域の計算
@@ -264,18 +264,32 @@ class State:
         string_walls = [["" for i in range(WIDTH)]for j in range(HEIGHT)]
         for i in range(HEIGHT):
             for j in range(WIDTH):
-                if self.craftsmen[i][j]:
-                    string_board[i][j] = "AC" #ally craftsmen
-                if self.enemy_craftsmen[i][j]:
-                    string_board[i][j] = "EC" #enemy craftsmen
-                if self.areas[i][j]:
-                    string_area[i][j] = "#"
-                if self.enemy_areas[i][j]:
-                    string_enemy_area[i][j] = "@"
-                if self.walls[i][j]:
-                    string_walls[i][j] = "="
-                if self.enemy_walls[i][j]:
-                    string_walls[i][j] = "*"
+                if self.game_count%2 == 0: # 先手だったら
+                    if self.craftsmen[i][j]:
+                        string_board[i][j] = "AC" #ally craftsmen
+                    if self.enemy_craftsmen[i][j]:
+                        string_board[i][j] = "EC" #enemy craftsmen
+                    if self.areas[i][j]:
+                        string_area[i][j] = "#"
+                    if self.enemy_areas[i][j]:
+                        string_enemy_area[i][j] = "@"
+                    if self.walls[i][j]:
+                        string_walls[i][j] = "="
+                    if self.enemy_walls[i][j]:
+                        string_walls[i][j] = "*"
+                elif self.game_count%2 == 1: # 後手だったら
+                    if self.enemy_craftsmen[i][j]:
+                        string_board[i][j] = "AC" #ally craftsmen
+                    if self.craftsmen[i][j]:
+                        string_board[i][j] = "EC" #enemy craftsmen
+                    if self.enemy_areas[i][j]:
+                        string_area[i][j] = "#"
+                    if self.areas[i][j]:
+                        string_enemy_area[i][j] = "@"
+                    if self.enemy_walls[i][j]:
+                        string_walls[i][j] = "="
+                    if self.walls[i][j]:
+                        string_walls[i][j] = "*"
         
         return string_board, string_area, string_enemy_area, string_walls
 
