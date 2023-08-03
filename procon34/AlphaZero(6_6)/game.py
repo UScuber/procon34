@@ -1,7 +1,6 @@
-import random
-import math
 import numpy as np
 from collections import deque
+import random
 
 # フィールド
 WIDTH = 6
@@ -19,10 +18,10 @@ class State:
         # フィールドの初期化
         # 職人の位置
         self.craftsmen = craftsmen if craftsmen != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
-        self.enemy_craftsmen = enemy_craftsmen if enemy_craftsmen != None else np.zeros((WIDTH, HEIGHT))
+        self.enemy_craftsmen = enemy_craftsmen if enemy_craftsmen != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
         # 壁の位置
         self.walls = walls if walls != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
-        self.enemy_walls = enemy_walls if enemy_walls != None else np.zeros((WIDTH, HEIGHT))
+        self.enemy_walls = enemy_walls if enemy_walls != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
         # 領域の位置
         self.areas = areas if areas != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
         self.enemy_areas = enemy_areas if enemy_areas != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
@@ -60,9 +59,9 @@ class State:
             self.craftsmen[board == 1] = 1
             self.enemy_craftsmen[board == 2] = 1
     
-    # デュアルネットワークの入力の二次元配列
+    # デュアルネットワークの入力用の二次元配列
     def pieces_array(self):
-        pass
+        return np.stack([self.craftsmen, self.enemy_craftsmen, self.walls, self.enemy_walls, self.areas, self.enemy_areas],2)
 
     # 領域の計算
     def calc_areas(self) -> None:
@@ -247,8 +246,28 @@ class State:
                         return True        
         return True
     
+    # 文字列表示
     def __str__(self) -> str:
-        pass
+        string_board = [["" for i in range(WIDTH)]for j in range(HEIGHT)]
+        string_area = [["" for i in range(WIDTH)]for j in range(HEIGHT)]
+        string_enemy_area = [["" for i in range(WIDTH)]for j in range(HEIGHT)]
+        string_walls = [["" for i in range(WIDTH)]for j in range(HEIGHT)]
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                if self.craftsmen[i][j]:
+                    string_board[i][j] = "AC" #ally craftsmen
+                if self.enemy_craftsmen[i][j]:
+                    string_board[i][j] = "EC" #enemy craftsmen
+                if self.areas[i][j]:
+                    string_area[i][j] = "#"
+                if self.enemy_areas[i][j]:
+                    string_enemy_area[i][j] = "@"
+                if self.walls[i][j]:
+                    string_walls[i][j] = "="
+                if self.enemy_walls[i][j]:
+                    string_walls[i][j] = "*"
+        
+        return string_board, string_area, string_enemy_area, string_walls
 
 
 # ランダムに行動させる関数
@@ -258,7 +277,17 @@ def random_action(state: State):
         action = np.random.choice(3) # ランダムに、移動、建築、解体、滞在を選択
         if action == 0: # 移動だったら
             direction = np.random.choice(7)
-        if state.is_legal_action():
+            action = direction
+        elif action == 1: # 建築だったら
+            direction = np.random.choice(3)
+            action = 8 + direction
+        elif action == 2: # 解体だったら
+            direction = np.random.choice(3)
+            action = 12 + direction
+        else: # 滞在だったら
+            action = 16
+        
+        if state.is_legal_action(action):
             break
     
     return action, direction
@@ -278,5 +307,23 @@ if __name__ == '__main__':
         state = state.next(random_action(state))
 
         # 文字列表示
-        print(state)
-        print()
+        board, area, enemy_area, walls = state.__str__
+        print("各職人の位置(AC:味方の職人, EC:敵の職人)")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                print(board[i][j])
+
+        print("味方の領域を表示")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                print(area)
+        
+        print("敵の領域を表示")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                print(enemy_area)
+        
+        print("建てられた壁を表示(=:味方の壁, *:敵の壁)")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                print(walls)
