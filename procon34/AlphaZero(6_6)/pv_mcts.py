@@ -9,19 +9,18 @@ import numpy as np
 PV_EVALUATE_COUNT = 50 # 1推論当たりのシミュレーション回数(本家は1600)
 
 # 推論
-def predict(model, state):
+def predict(model, state:State):
     # 推論のための入力データのシェイプの変換
     a, b, c = DN_INPUT_SHAPE
-    x = state.pieces_array()
+    x = state.state_array()
     x = x.reshape(c, a, b).transpose(1, 2, 0).reshape(1, a, b, c)
 
     # 推論
     y = model.predict_on_batch(x)
 
     # 方策の取得
-    policies = y[0][0][list(state.legal_actions())] # 合法手のみ
+    policies = y[0][0][state.get_list_of_legal_actions()] # 合法手のみ
     policies /= sum(policies) if sum(policies) else 1 # 合計1の確率分布に変換
-
     # 価値の取得
     value = y[1][0][0]
     return policies, value
@@ -34,7 +33,7 @@ def nodes_to_scores(nodes):
     return scores
 
 # モンテカルロ木探索のスコアの取得
-def pv_mcts_scores(model, state, temperature):
+def pv_mcts_scores(model, state:State, temperature):
     # モンテカルロ木探索のノードの定義
     class node:
         def __init__(self, state, p):
@@ -66,7 +65,7 @@ def pv_mcts_scores(model, state, temperature):
 
                 # 子ノードの展開
                 self.child_nodes = []
-                for action, policy in zip(self.state.legal_actions(), policies):
+                for action, policy in zip(self.state.get_list_of_legal_actions(), policies):
                     self.child_nodes.append(node(self.state.next(action), policy))
                 return value
             # 子ノードが存在するとき
@@ -111,7 +110,7 @@ def pv_mcts_scores(model, state, temperature):
 def pv_mcts_action(model, temperature=0):
     def pv_mcts_action(state):
         scores = pv_mcts_scores(model, state, temperature)
-        return np.random.choice(state.legal_actions(), p=scores)
+        return np.random.choice(state.get_list_of_legal_actions(), p=scores)
     return pv_mcts_action
 
 # ボルツマン分布
@@ -157,7 +156,6 @@ if __name__ == '__main__':
             for j in range(WIDTH):
                 print(area[i][j], end='')
             print()
-        
         print("敵の領域を表示")
         for i in range(HEIGHT):
             for j in range(WIDTH):

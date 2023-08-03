@@ -134,7 +134,7 @@ class State:
         return (self.num_area - self.num_enemy_area) * AREA_POINT + (self.num_walls - self.num_enemy_walls) * WALL_POINT
 
     def is_first_player(self) -> bool:
-        return (self.game_count%2 == 1)
+        return (self.game_count%2 == 0)
     def is_lose(self) -> bool:
         return self._calc_score_diff() < 0
     
@@ -267,6 +267,19 @@ class State:
                         pass       
         return True
     
+    # 合法手のリストを獲得する
+    def get_list_of_legal_actions(self):
+        actions = np.zeros(NUM_CRAFTSMEN*NUM_ACTION, dtype=np.bool8)
+        for i in range(NUM_CRAFTSMEN):
+            legal_actions = []
+            for j in range(NUM_ACTION):
+                actions[i*NUM_ACTION + j] = 1
+                if state.is_legal_action(actions, i+1):
+                    legal_actions.append(j)
+                actions[i*NUM_ACTION + j] = 0
+        
+        return legal_actions
+    
     # 文字列表示
     def __str__(self) -> str:
         string_board = [["N" for i in range(WIDTH)]for j in range(HEIGHT)]
@@ -275,7 +288,7 @@ class State:
         string_walls = [["N" for i in range(WIDTH)]for j in range(HEIGHT)]
         for i in range(HEIGHT):
             for j in range(WIDTH):
-                if self.game_count%2 == 1: # 先手だったら
+                if self.game_count%2 == 0: # 先手だったら
                     if self.craftsmen[i][j]:
                         string_board[i][j] = "A" #ally craftsmen
                     if self.enemy_craftsmen[i][j]:
@@ -333,9 +346,9 @@ if __name__ == '__main__':
         # 次の状態の取得
         state = state.next(random_action(state))
         if state.is_first_player():
-            print("先手プレイヤー")
+            print("後手プレイヤーの行動")
         else:
-            print("後手プレイヤー")
+            print("先手プレイヤーの行動")
 
         # 文字列表示
         board, area, enemy_area, walls = state.__str__()

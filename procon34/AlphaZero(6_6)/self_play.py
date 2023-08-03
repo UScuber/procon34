@@ -47,12 +47,12 @@ def play(model):
 
         # 学習データに状態と方策を追加
         policies = [0] * DN_OUTPUT_SIZE
-        for action, policy in zip(state.legal_actions(), scores):
+        for action, policy in zip(state.get_list_of_legal_actions(), scores):
             policies[action] = policy
-        history.append([[state.pieces_array()], policies, None])
+        history.append([[state.state_array()], policies, None])
 
         # 行動の取得
-        action = np.random.choice(state.legal_actions(), p=scores)
+        action = np.random.choice(state.get_list_of_legal_actions(), p=scores)
 
         # 次の状態の取得
         state = state.next(action)
