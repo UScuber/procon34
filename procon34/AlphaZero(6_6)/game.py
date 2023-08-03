@@ -11,6 +11,7 @@ WALL_POINT = 2
 AREA_POINT = 10
 
 NUM_CRAFTSMEN = 1
+NUM_ACTION = 17
 
 class State:
     # 局面の初期化
@@ -30,7 +31,7 @@ class State:
         # 方向
         self.directions = np.array([[0,1],[-1,0],[0,-1],[1,0],[-1,1],[-1,-1],[1,-1],[1,1]]) # 上、左、下、右、左上、左下、右下、右上
         # 行動
-        # self.actions = np.zeros(NUM_CRAFTSMEN*17, dtype=np.bool8) # 0~7: 移動、8~11: 建築、12~15: 解体、16: 滞在
+        # self.actions = np.zeros(NUM_CRAFTSMEN*NUM_ACTION, dtype=np.bool8) # 0~7: 移動、8~11: 建築、12~15: 解体、16: 滞在
 
         self.num_area, self.num_enemy_area = 0, 0
         self.num_walls, self.num_enemy_walls = 0, 0
@@ -60,7 +61,7 @@ class State:
             self.enemy_craftsmen[board == 2] = 1
     
     # デュアルネットワークの入力用の二次元配列
-    def pieces_array(self):
+    def state_array(self):
         return np.stack([self.craftsmen, self.enemy_craftsmen, self.walls, self.enemy_walls, self.areas, self.enemy_areas],2)
 
     # 領域の計算
@@ -153,9 +154,12 @@ class State:
         # 修正する
 
         for i in range(NUM_CRAFTSMEN):
-            for j in range(17):
+            for j in range(NUM_ACTION):
+                if not actions[i*NUM_ACTION + j]:
+                    continue
+
                 # 移動だったら
-                if 0<=j and j<=7 and actions[j*(i+1)]:
+                if j < 8:
                     direction = self.directions[j]
                     x = craftsmen[0][i]
                     y = craftsmen[1][i]
@@ -165,7 +169,7 @@ class State:
                     self.craftsmen[x][y] = 0
                     self.craftsmen[next_place_x][next_place_y] = 1
                 # 建築だったら
-                elif 8<=j and j<=11 and actions[j*(i+1)]:
+                elif j < 12:
                     direction = self.directions[j]
                     x = craftsmen[0][i]
                     y = craftsmen[1][i]
@@ -174,7 +178,7 @@ class State:
                     # 壁を建築する
                     self.walls[build_place_x][build_place_y] = 1
                 # 解体だったら
-                elif 12<=j and j<=15 and actions[j*(i+1)]:
+                elif j < 16:
                     direction = self.directions[j]
                     x = craftsmen[0][i]
                     y = craftsmen[1][i]
@@ -188,25 +192,31 @@ class State:
                     else:
                         pass
                 #滞在なら
-                elif j == 16 and actions[j*(i+1)]:
+                else:
                     pass
         
-        return State(craftsmen=self.enemy_craftsmen, enemy_craftsmen=self.craftsmen, walls=self.enemy_walls, enemy_walls=self.walls, areas=self.enemy_areas, enemy_areas=self.areas, game_count=(self.game_count+1))
-    # 合法手かどうか確認する
-    def is_legal_action(self, actions) -> bool:
+        return State(
+                    craftsmen=self.enemy_craftsmen, enemy_craftsmen=self.craftsmen,
+                    walls=self.enemy_walls, enemy_walls=self.walls,
+                    areas=self.enemy_areas, enemy_areas=self.areas,
+                    game_count=(self.game_count+1)
+                )
+    
+    # 合法手かどうか確認する (len:合法手か判定する人の数)
+    def is_legal_action(self, actions, check_num=NUM_CRAFTSMEN) -> bool:
         craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
         enemy_craftsmen = np.where(self.enemy_craftsmen == 1)
 
-        for i in range(NUM_CRAFTSMEN):
-            for j in range(17):
-                if actions[j*(i+1)]:
+        for i in range(check_num):
+            for j in range(NUM_ACTION):
+                if actions[i*NUM_ACTION + j]:
                     direction = self.directions[j]
                     x = craftsmen[0][i]
                     y = craftsmen[1][i]
                     next_place_x = x + direction[0]
                     next_place_y = y + direction[1]
                     # 移動
-                    if 0 <= j and j <= 7:
+                    if j < 8:
                         # フィールド外なら
                         if next_place_x < 0 or WIDTH <= next_place_x:
                             return False
@@ -219,7 +229,7 @@ class State:
                         if self.enemy_walls[next_place_x] == 1:
                             return False
                     # 建築
-                    if 8 <= j and j <= 11:
+                    elif j < 12:
                         # フィールド外なら
                         if next_place_x < 0 or WIDTH <= next_place_x:
                             return False
@@ -232,7 +242,7 @@ class State:
                         if self.enemy_walls[next_place_x][next_place_y] == 1 and self.walls[next_place_x][next_place_y]:
                             return False
                     # 解体
-                    if 12 <= j and j <= 15:
+                    elif j < 16:
                         # フィールド外なら
                         if next_place_x < 0 or WIDTH <= next_place_x:
                             return False
@@ -242,8 +252,8 @@ class State:
                         if self.walls[next_place_x][next_place_y] or self.enemy_walls[next_place_x][next_place_y]:
                             return False
                     
-                    if j == 16:
-                        return True        
+                    else:
+                        pass       
         return True
     
     # 文字列表示
@@ -273,24 +283,16 @@ class State:
 # ランダムに行動させる関数
 # あとで、前職人がいた場所に行動できないのを実装する
 def random_action(state: State):
-    while True:
-        action = np.random.choice(3) # ランダムに、移動、建築、解体、滞在を選択
-        if action == 0: # 移動だったら
-            direction = np.random.choice(7)
-            action = direction
-        elif action == 1: # 建築だったら
-            direction = np.random.choice(3)
-            action = 8 + direction
-        elif action == 2: # 解体だったら
-            direction = np.random.choice(3)
-            action = 12 + direction
-        else: # 滞在だったら
-            action = 16
-        
-        if state.is_legal_action(action):
-            break
-    
-    return action, direction
+    actions = np.zeros(NUM_CRAFTSMEN*NUM_ACTION, dtype=np.bool8)
+    for i in range(NUM_CRAFTSMEN):
+        legal_actions = []
+        for j in range(NUM_ACTION):
+            actions[i*NUM_ACTION + j] = 1
+            if state.is_legal_action(actions, i+1):
+                legal_actions.append(j)
+            actions[i*NUM_ACTION + j] = 0
+        actions[i*NUM_ACTION + random.choice(legal_actions)] = 1
+    return actions
 
 
 if __name__ == '__main__':
