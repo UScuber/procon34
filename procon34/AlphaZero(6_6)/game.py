@@ -214,6 +214,58 @@ class State:
         for i in range(check_num):
             for j in range(NUM_ACTION):
                 if actions[i*NUM_ACTION + j]:
+                    # 職人の数が各チーム一人ならこちらのコード
+                    x = int(craftsmen[0])
+                    y = int(craftsmen[1])
+                    # 移動
+                    if j < 8:
+                        direction = self.directions[j]
+                        next_place_x = x + direction[0]
+                        next_place_y = y + direction[1]
+                        # フィールド外なら
+                        if next_place_x < 0 or WIDTH <= next_place_x:
+                            return False
+                        if next_place_y < 0 or HEIGHT <= next_place_y:
+                            return False
+                        # 相手の職人がいたら（あとで自分の職人とも重なっていないかの判定を加える）
+                        if next_place_x == enemy_craftsmen[0] and next_place_y == enemy_craftsmen[1]:
+                            return False
+                        # 相手の壁があったら
+                        if self.enemy_walls[next_place_x][next_place_y]:
+                            return False
+                    # 建築
+                    elif j < 12:
+                        direction = self.directions[j-8]
+                        next_place_x = x + direction[0]
+                        next_place_y = y + direction[1]
+                        # フィールド外なら
+                        if next_place_x < 0 or WIDTH <= next_place_x:
+                            return False
+                        if next_place_y < 0 or HEIGHT <= next_place_y:
+                            return False
+                        # 相手の職人がいたら
+                        if next_place_x == enemy_craftsmen[0] and next_place_y == enemy_craftsmen[1]:
+                            return False
+                        # 壁があったら
+                        if self.enemy_walls[next_place_x][next_place_y] == 1 and self.walls[next_place_x][next_place_y]:
+                            return False
+                    # 解体
+                    elif j < 16:
+                        direction = self.directions[j-12]
+                        next_place_x = x + direction[0]
+                        next_place_y = y + direction[1]
+                        # フィールド外なら
+                        if next_place_x < 0 or WIDTH <= next_place_x:
+                            return False
+                        if next_place_y < 0 or HEIGHT <= next_place_y:
+                            return False
+                        # 指定先に壁がなかったら
+                        if self.walls[next_place_x][next_place_y] or self.enemy_walls[next_place_x][next_place_y]:
+                            return False
+                    
+                    else:
+                        pass
+                    '''職人の数が二人以上ならこちらのコードを使用する
                     x = craftsmen[0][i]
                     y = craftsmen[1][i]
                     
@@ -264,7 +316,8 @@ class State:
                             return False
                     
                     else:
-                        pass       
+                        pass
+                    '''
         return True
     
     # 合法手のリストを獲得する
@@ -274,7 +327,7 @@ class State:
             legal_actions = []
             for j in range(NUM_ACTION):
                 actions[i*NUM_ACTION + j] = 1
-                if state.is_legal_action(actions, i+1):
+                if self.is_legal_action(actions, i+1):
                     legal_actions.append(j)
                 actions[i*NUM_ACTION + j] = 0
         
