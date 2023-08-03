@@ -244,7 +244,7 @@ class State:
                         if next_place_y < 0 or HEIGHT <= next_place_y:
                             return False
                         # 相手の職人がいたら
-                        if next_place_x == enemy_craftsmen[0] and next_place_y == enemy_craftsmen[1]:
+                        if next_place_x == int(enemy_craftsmen[0]) and next_place_y == int(enemy_craftsmen[1]):
                             return False
                         # 壁があったら
                         if self.enemy_walls[next_place_x][next_place_y] == 1 and self.walls[next_place_x][next_place_y]:
