@@ -132,7 +132,9 @@ class State:
     
     def _calc_score_diff(self) -> int:
         return (self.num_area - self.num_enemy_area) * AREA_POINT + (self.num_walls - self.num_enemy_walls) * WALL_POINT
-    
+
+    def is_first_player(self) -> bool:
+        return (self.game_count%2 == 1)
     def is_lose(self) -> bool:
         return self._calc_score_diff() < 0
     
@@ -273,7 +275,7 @@ class State:
         string_walls = [["N" for i in range(WIDTH)]for j in range(HEIGHT)]
         for i in range(HEIGHT):
             for j in range(WIDTH):
-                if self.game_count%2 == 0: # 先手だったら
+                if self.game_count%2 == 1: # 先手だったら
                     if self.craftsmen[i][j]:
                         string_board[i][j] = "A" #ally craftsmen
                     if self.enemy_craftsmen[i][j]:
@@ -330,6 +332,10 @@ if __name__ == '__main__':
 
         # 次の状態の取得
         state = state.next(random_action(state))
+        if state.is_first_player():
+            print("先手プレイヤー")
+        else:
+            print("後手プレイヤー")
 
         # 文字列表示
         board, area, enemy_area, walls = state.__str__()
