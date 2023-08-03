@@ -170,7 +170,7 @@ class State:
                     self.craftsmen[next_place_x][next_place_y] = 1
                 # 建築だったら
                 elif j < 12:
-                    direction = self.directions[j]
+                    direction = self.directions[j-8]
                     x = craftsmen[0][i]
                     y = craftsmen[1][i]
                     build_place_x = x + direction[0]
@@ -179,7 +179,7 @@ class State:
                     self.walls[build_place_x][build_place_y] = 1
                 # 解体だったら
                 elif j < 16:
-                    direction = self.directions[j]
+                    direction = self.directions[j-12]
                     x = craftsmen[0][i]
                     y = craftsmen[1][i]
                     dismantle_place_x = x + direction[0]
@@ -210,13 +210,14 @@ class State:
         for i in range(check_num):
             for j in range(NUM_ACTION):
                 if actions[i*NUM_ACTION + j]:
-                    direction = self.directions[j]
                     x = craftsmen[0][i]
                     y = craftsmen[1][i]
-                    next_place_x = x + direction[0]
-                    next_place_y = y + direction[1]
+                    
                     # 移動
                     if j < 8:
+                        direction = self.directions[j]
+                        next_place_x = x + direction[0]
+                        next_place_y = y + direction[1]
                         # フィールド外なら
                         if next_place_x < 0 or WIDTH <= next_place_x:
                             return False
@@ -226,10 +227,13 @@ class State:
                         if next_place_x == enemy_craftsmen[0][i] and next_place_y == enemy_craftsmen[1][i]:
                             return False
                         # 相手の壁があったら
-                        if self.enemy_walls[next_place_x] == 1:
+                        if self.enemy_walls[next_place_x][next_place_y]:
                             return False
                     # 建築
                     elif j < 12:
+                        direction = self.directions[j-8]
+                        next_place_x = x + direction[0]
+                        next_place_y = y + direction[1]
                         # フィールド外なら
                         if next_place_x < 0 or WIDTH <= next_place_x:
                             return False
@@ -243,6 +247,9 @@ class State:
                             return False
                     # 解体
                     elif j < 16:
+                        direction = self.directions[j-12]
+                        next_place_x = x + direction[0]
+                        next_place_y = y + direction[1]
                         # フィールド外なら
                         if next_place_x < 0 or WIDTH <= next_place_x:
                             return False
