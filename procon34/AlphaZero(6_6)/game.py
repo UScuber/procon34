@@ -15,17 +15,17 @@ NUM_ACTION = 17
 
 class State:
     # 局面の初期化
-    def __init__(self, craftsmen=None, enemy_craftsmen=None, walls=None, enemy_walls=None, areas=None, enemy_areas=None, game_count=None):
+    def __init__(self, craftsmen=np.full((WIDTH, HEIGHT), None), enemy_craftsmen=np.full((WIDTH, HEIGHT), None), walls=np.full((WIDTH, HEIGHT), None), enemy_walls=np.full((WIDTH, HEIGHT), None), areas=np.full((WIDTH, HEIGHT), None), enemy_areas=np.full((WIDTH, HEIGHT), None), game_count=None):
         # フィールドの初期化
         # 職人の位置
-        self.craftsmen = craftsmen if craftsmen != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
-        self.enemy_craftsmen = enemy_craftsmen if enemy_craftsmen != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
+        self.craftsmen = craftsmen if craftsmen.all() != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
+        self.enemy_craftsmen = enemy_craftsmen if enemy_craftsmen.all() != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
         # 壁の位置
-        self.walls = walls if walls != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
-        self.enemy_walls = enemy_walls if enemy_walls != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
+        self.walls = walls if walls.all() != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
+        self.enemy_walls = enemy_walls if enemy_walls.all() != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
         # 領域の位置
-        self.areas = areas if areas != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
-        self.enemy_areas = enemy_areas if enemy_areas != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
+        self.areas = areas if areas.all() != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
+        self.enemy_areas = enemy_areas if enemy_areas.all() != None else np.zeros((WIDTH, HEIGHT), dtype=np.bool8)
         # 現在のターン数
         self.game_count = game_count if game_count != None else 0
         # 方向
@@ -37,7 +37,7 @@ class State:
         self.num_walls, self.num_enemy_walls = 0, 0
         
         # 各職人をランダムにフィールドに配置
-        if craftsmen == None and enemy_craftsmen == None:
+        if craftsmen.all() == None and enemy_craftsmen.all() == None:
             board = np.zeros((WIDTH, HEIGHT), dtype=np.uint8)
             while True:
                 x = np.random.choice(WIDTH, NUM_CRAFTSMEN*2)
@@ -124,6 +124,8 @@ class State:
 
         self.num_area, self.num_enemy_area = self.areas.sum(), self.enemy_areas.sum()
 
+    def get_game_count(self):
+        return self.game_count
     
     def get_areas(self):
         return self.areas, self.enemy_areas
@@ -265,17 +267,17 @@ class State:
     
     # 文字列表示
     def __str__(self) -> str:
-        string_board = [["" for i in range(WIDTH)]for j in range(HEIGHT)]
-        string_area = [["" for i in range(WIDTH)]for j in range(HEIGHT)]
-        string_enemy_area = [["" for i in range(WIDTH)]for j in range(HEIGHT)]
-        string_walls = [["" for i in range(WIDTH)]for j in range(HEIGHT)]
+        string_board = [["N" for i in range(WIDTH)]for j in range(HEIGHT)]
+        string_area = [["N" for i in range(WIDTH)]for j in range(HEIGHT)]
+        string_enemy_area = [["N" for i in range(WIDTH)]for j in range(HEIGHT)]
+        string_walls = [["N" for i in range(WIDTH)]for j in range(HEIGHT)]
         for i in range(HEIGHT):
             for j in range(WIDTH):
                 if self.game_count%2 == 0: # 先手だったら
                     if self.craftsmen[i][j]:
-                        string_board[i][j] = "AC" #ally craftsmen
+                        string_board[i][j] = "A" #ally craftsmen
                     if self.enemy_craftsmen[i][j]:
-                        string_board[i][j] = "EC" #enemy craftsmen
+                        string_board[i][j] = "E" #enemy craftsmen
                     if self.areas[i][j]:
                         string_area[i][j] = "#"
                     if self.enemy_areas[i][j]:
@@ -286,9 +288,9 @@ class State:
                         string_walls[i][j] = "*"
                 elif self.game_count%2 == 1: # 後手だったら
                     if self.enemy_craftsmen[i][j]:
-                        string_board[i][j] = "AC" #ally craftsmen
+                        string_board[i][j] = "A" #ally craftsmen
                     if self.craftsmen[i][j]:
-                        string_board[i][j] = "EC" #enemy craftsmen
+                        string_board[i][j] = "E" #enemy craftsmen
                     if self.enemy_areas[i][j]:
                         string_area[i][j] = "#"
                     if self.areas[i][j]:
@@ -330,23 +332,28 @@ if __name__ == '__main__':
         state = state.next(random_action(state))
 
         # 文字列表示
-        board, area, enemy_area, walls = state.__str__
-        print("各職人の位置(AC:味方の職人, EC:敵の職人)")
+        board, area, enemy_area, walls = state.__str__()
+        print("{}ターン目".format(state.get_game_count()))
+        print("各職人の位置(A:味方の職人, E:敵の職人)")
         for i in range(HEIGHT):
             for j in range(WIDTH):
-                print(board[i][j])
+                print(board[i][j], end='')
+            print()
 
         print("味方の領域を表示")
         for i in range(HEIGHT):
             for j in range(WIDTH):
-                print(area)
+                print(area[i][j], end='')
+            print()
         
         print("敵の領域を表示")
         for i in range(HEIGHT):
             for j in range(WIDTH):
-                print(enemy_area)
+                print(enemy_area[i][j], end='')
+            print()
         
         print("建てられた壁を表示(=:味方の壁, *:敵の壁)")
         for i in range(HEIGHT):
             for j in range(WIDTH):
-                print(walls)
+                print(walls[i][j], end='')
+            print()
