@@ -1,4 +1,4 @@
-from game import State
+from game import State, HEIGHT, WIDTH
 from dual_network import DN_INPUT_SHAPE
 from math import sqrt
 from tensorflow.keras.models import load_model
@@ -12,7 +12,7 @@ PV_EVALUATE_COUNT = 50 # 1推論当たりのシミュレーション回数(本�
 def predict(model, state):
     # 推論のための入力データのシェイプの変換
     a, b, c = DN_INPUT_SHAPE
-    x = np.array(state.pieces_array())
+    x = state.pieces_array()
     x = x.reshape(c, a, b).transpose(1, 2, 0).reshape(1, a, b, c)
 
     # 推論
@@ -144,4 +144,28 @@ if __name__ == '__main__':
         state = state.next(action)
 
         # 文字列表示
-        print(state)
+        board, area, enemy_area, walls = state.__str__()
+        print("{}ターン目".format(state.get_game_count()))
+        print("各職人の位置(A:味方の職人, E:敵の職人)")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                print(board[i][j], end='')
+            print()
+
+        print("味方の領域を表示")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                print(area[i][j], end='')
+            print()
+        
+        print("敵の領域を表示")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                print(enemy_area[i][j], end='')
+            print()
+        
+        print("建てられた壁を表示(=:味方の壁, *:敵の壁)")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                print(walls[i][j], end='')
+            print()
