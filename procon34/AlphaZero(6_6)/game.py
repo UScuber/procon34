@@ -151,15 +151,15 @@ class State:
         return self.enemy_walls[x][y]
 
     # actionsから次の状態へ遷移
-    def next(self, actions):
+    def next(self, action):
         # 破壊建築移動の順番で作る(後で)
-        assert self.is_legal_action(actions)
+        assert self.is_legal_action(action)
         craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
         # 修正する
 
         for i in range(NUM_CRAFTSMEN):
             for j in range(NUM_ACTION):
-                if not actions[i*NUM_ACTION + j]:
+                if not action[i*NUM_ACTION + j]:
                     continue
 
                 # 移動だったら

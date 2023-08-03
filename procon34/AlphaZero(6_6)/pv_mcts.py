@@ -108,7 +108,7 @@ def pv_mcts_scores(model, state:State, temperature):
 
 # モンテカルロ木探索で行動選択
 def pv_mcts_action(model, temperature=0):
-    def pv_mcts_action(state):
+    def pv_mcts_action(state:State):
         scores = pv_mcts_scores(model, state, temperature)
         return np.random.choice(state.get_list_of_legal_actions(), p=scores)
     return pv_mcts_action
