@@ -13,12 +13,12 @@ using Pos = uint8_t; // y,x座標の型
 constexpr int max_height = 25;
 constexpr int max_width = 25;
 constexpr int max_agent_num = 6;
+constexpr int castles_coef = 10, area_coef = 3, wall_coef = 1;
 
 constexpr Pos dy[] = { (Pos)-1,0,1,0, (Pos)-1,1,1,(Pos)-1 };
 constexpr Pos dx[] = { 0,(Pos)-1,0,1, (Pos)-1,(Pos)-1,1,1 };
 
 int height = 0, width = 0; // fieldの大きさ
-int castles_coef = 0, area_coef = 0, wall_coef = 0; // 係数
 
 struct State {
   static const State None;

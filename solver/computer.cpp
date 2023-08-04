@@ -58,9 +58,6 @@ struct Game {
 
 int main(){
   srand(time(NULL));
-  castles_coef = 80;
-  area_coef = 3;
-  wall_coef = 2;
   std::cin >> height >> width;
   Field field = read_field(height, width);
   field.debug();

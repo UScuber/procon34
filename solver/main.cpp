@@ -2,12 +2,11 @@
 #include "base.hpp"
 #include "mcts.hpp"
 #include "thunder.hpp"
+#include "alphabeta.hpp"
+#include "simulated_annealing.hpp"
 
 int main(){
   srand(time(NULL));
-  castles_coef = 80;
-  area_coef = 3;
-  wall_coef = 2;
   //std::cin >> height >> width;
   height = width = 16;
   int side, vs_same;
@@ -15,7 +14,7 @@ int main(){
   std::cin >> side;
   std::cout << "auto ? ";
   std::cin >> vs_same;
-  Field field = create_random_field(height, width, 2+1, 1+3, 30*2);
+  Field field = create_random_field(height, width, 2, 1+3, 40*2);
   field.debug();
   while(!field.is_finished()){
     if((field.current_turn & 1) != side && !vs_same){
@@ -42,8 +41,10 @@ int main(){
     }else{
       Montecarlo::is_searching_ally = !(field.current_turn & 1);
       Thunder::is_searching_ally = !(field.current_turn & 1);
+      SimulatedAnnealing::is_searching_ally = !(field.current_turn & 1);
       //const auto res = montecarlo_tree_search(field, 1 << 12+1);
-      const auto res = (field.current_turn & 1) ? thunder_search(field, 1 << 9) : montecarlo_tree_search(field, 1 << 13);
+      //const auto res = (field.current_turn & 1) ? thunder_search(field, 1 << 9) : montecarlo_tree_search(field, 1 << 13);
+      const auto res = !(field.current_turn & 1) ? thunder_search(field, 1 << 9) : SA(field);
       const int m = res.size();
       std::vector<int> dirs(m);
       std::vector<std::string> cmd(m, "none");
