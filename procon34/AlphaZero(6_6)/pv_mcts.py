@@ -19,7 +19,7 @@ def predict(model, state:State):
     y = model.predict_on_batch(x)
 
     # 方策の取得
-    policies = y[0][0][state.get_list_of_legal_actions()] # 合法手のみ
+    policies = y[0][0][list(state.get_list_of_legal_actions())] # 合法手のみ
     policies /= sum(policies) if sum(policies) else 1 # 合計1の確率分布に変換
     # 価値の取得
     value = y[1][0][0]
@@ -108,7 +108,7 @@ def pv_mcts_scores(model, state:State, temperature):
 
 # モンテカルロ木探索で行動選択
 def pv_mcts_action(model, temperature=0):
-    def pv_mcts_action(state:State):
+    def pv_mcts_action(state):
         scores = pv_mcts_scores(model, state, temperature)
         return np.random.choice(state.get_list_of_legal_actions(), p=scores)
     return pv_mcts_action

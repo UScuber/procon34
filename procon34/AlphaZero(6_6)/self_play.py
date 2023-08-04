@@ -49,7 +49,7 @@ def play(model):
         policies = [0] * DN_OUTPUT_SIZE
         for action, policy in zip(state.get_list_of_legal_actions(), scores):
             policies[action] = policy
-        history.append([[state.state_array()], policies, None])
+        history.append([state.state_array(), policies, None])
 
         # 行動の取得
         action = np.random.choice(state.get_list_of_legal_actions(), p=scores)

@@ -411,21 +411,25 @@ if __name__ == '__main__':
             for j in range(WIDTH):
                 print(board[i][j], end='')
             print()
+        print()
 
         print("味方の領域を表示")
         for i in range(HEIGHT):
             for j in range(WIDTH):
                 print(area[i][j], end='')
             print()
+        print()
         
         print("敵の領域を表示")
         for i in range(HEIGHT):
             for j in range(WIDTH):
                 print(enemy_area[i][j], end='')
             print()
+        print()
         
         print("建てられた壁を表示(=:味方の壁, *:敵の壁)")
         for i in range(HEIGHT):
             for j in range(WIDTH):
                 print(walls[i][j], end='')
             print()
+        print()
