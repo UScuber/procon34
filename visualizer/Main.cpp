@@ -1,485 +1,202 @@
 ﻿# pragma once
-# include <Siv3D.hpp> // OpenSiv3D v0.6.9
-# include "Field.hpp"
+# include <Siv3D.hpp> // OpenSiv3D v0.6.10
+# include "Base.hpp"
+# include "Field.hpp";
 # include "Actor.hpp"
-# include "Menu.hpp"
-
-enum CELL {
-	POND = 1 << 0,
-	WALL_ENEM = 1 << 1,
-	WALL_ALLY = 1 << 2,
-	AREA_ENEM = 1 << 3,
-	AREA_ALLY = 1 << 4,
-	ENEM = 1 << 5,
-	ALLY = 1 << 6,
-	CASTLE = 1 << 7
-};
-
-enum TEAM {
-	RED = false,
-	BLUE = true
-};
-
-enum OPERATION_MODE {
-	MOVE = 0,
-	BUILD = 1,
-	BREAK = 2
-};
-
-enum GAME_MODE {
-	PlayerVSPlayer = 0,
-	PlayerVSComputer = 1,
-	ComputerVSComputer = 2
-};
-
-
 
 // フィールドの縦横
 size_t HEIGHT;
 size_t WIDTH;
 // 一つのセルの大きさ(正方形)
-size_t CELL_SIZE;
-// フィールドの左上に開ける空白
-size_t BLANK_LEFT;
-size_t BLANK_TOP;
+size_t CELL_SIZE = 25;
+// フィールドの左上に開ける余白
+size_t BLANK_LEFT = 50;
+size_t BLANK_TOP = 50;
 
-// 職人の移動範囲
-const Array<Point> dydx_craftsman = { {0,-1},{-1,0},{0,1},{1,0},{-1,-1},{-1,1},{1,1},{1,-1} };
-// 城壁の建築範囲
-const Array<Point> dydx_wall = { {0,-1},{-1,0},{0,1},{1,0} };
+using App = SceneManager<String, Field>;
 
-/*
-void Main() {
-	Scene::SetBackground(Palette::Lightsteelblue);
-	Window::Resize(1280, 720);
-
-	int GAME_MODE = 0;
-	while (System::Update()) {
-		if (SimpleGUI::Button(U"PlayerVSPlayer", {100, 100})) {
-			GAME_MODE = GAME_MODE::PlayerVSPlayer;
-			break;
-		}
-		if (SimpleGUI::Button(U"PlayerVSComputer", { 100, 200 })) {
-			GAME_MODE = GAME_MODE::PlayerVSComputer;
-			break;
-		}
-		if (SimpleGUI::Button(U"ComputerVSComputer", { 100, 300 })) {
-			GAME_MODE = GAME_MODE::ComputerVSComputer;
-			break;
-		}
-	}
-
-	HEIGHT = Random(11, 25);
-	WIDTH = Random(11, 25);
-	CELL_SIZE = 20;
-	BLANK_LEFT = 100;
-	BLANK_TOP = 100;
-
-	Field field;
-
-	size_t MODE = 0;
-
-
-	size_t CountTurn = 0;
-	size_t BlueArea = 0;
-	size_t RedArea = 0;
-
-	size_t NumTurn = Random(15, 100) * 2;
-	size_t NumPond = Random(0, 20);
-	size_t NumCastle = Random(1, 6);
-	size_t NumCraftsman = Random(2, 6);
-
-	// trueなら味方(青)チーム, falseなら敵(赤)チーム
-	bool turn = Random(0, 1);
-
-	Array<Craftsman> craftsmen;
-	Array<Craftsman> craftsmen_blue;
+class Game {
+protected:
+	void operate_gui(Field& field);
+	void operate_craftsman(Array<Craftsman>& craftsmen, Field& field);
+	void display_field(void) const ;
+	void display_details(Field& field) const;
+	// 職人の配列
 	Array<Craftsman> craftsmen_red;
-
-	Array<std::pair<size_t, size_t>> ponds;
-	Array<std::pair<size_t, size_t>> castles;
-
-	field.Initialize(NumPond, NumCastle, NumCraftsman);
-
-	for (size_t i = 0; i < HEIGHT; i++) {
-		for (size_t j = 0; j < WIDTH; j++) {
-			if (field.grid[i][j] & CELL::ALLY) {
-				craftsmen_blue << Craftsman(field, i, j, TEAM::BLUE);
-				craftsmen << Craftsman(field, i, j, TEAM::BLUE);
-			}
-			else if (field.grid[i][j] & CELL::ENEM) {
-				craftsmen_red << Craftsman(field, i, j, TEAM::RED);
-				craftsmen << Craftsman(field, i, j, TEAM::RED);
-			}
-			else if (field.grid[i][j] & CELL::POND) {
-				ponds << std::make_pair(i, j);
-			}
-			else if (field.grid[i][j] & CELL::CASTLE) {
-				castles << std::make_pair(i, j);
-			}
-		}
-	}
-
-
-	// 職人を選択中かどうか
-	bool isTargeting = false;
-
-	const Font font{ 50, U"SourceHanSansJP-Medium.otf" };
-
-	while (System::Update()) {
-
-		if (CountTurn >= NumTurn) {
-			break;
-		}
-
-		if (turn == TEAM::BLUE) {
-			font(U"青チームの手番").draw(100, 600, Palette::Blue);
-		}
-		else {
-			font(U"赤チームの手番").draw(100, 600, Palette::Red);
-		}
-
-		font(U"ターン数:{}/{}"_fmt(CountTurn, NumTurn)).draw(800, 50, Palette::Black);
-		font(U"青エリア:{}"_fmt(BlueArea)).draw(800, 150, Palette::Black);
-		font(U"赤エリア:{}"_fmt(RedArea)).draw(800, 250, Palette::Black);
-
-
-		// 上書きする場合もあるため始めに描画する
-		field.DisplayGrid();
-		field.DrawActors();
-
-		if (SimpleGUI::Button(U"移動", { 700, 100 })) {
-			MODE = OPERATION_MODE::MOVE;
-		}
-		else if (SimpleGUI::Button(U"建設", { 700, 200 })) {
-			MODE = OPERATION_MODE::BUILD;
-		}
-		else if (SimpleGUI::Button(U"破壊", { 700, 300 })) {
-			MODE = OPERATION_MODE::BREAK;
-		}
-
-		if (SimpleGUI::Button(U"ターン終了", { 700, 500 })) {
-			field.SearchArea();
-			RedArea = field.CountArea(TEAM::RED);
-			BlueArea = field.CountArea(TEAM::BLUE);
-			for (Craftsman& craftsman : craftsmen) {
-				craftsman.Initialize();
-			}
-			turn ^= true;
-			CountTurn++;
-		}
-
-
-		// 職人の行動
-		for (Craftsman& craftsman : craftsmen) {
-			// そのターンの職人でなければスルー
-			if (craftsman.team != turn) {
-				continue;
-			}
-			// 行動済みの職人だったら灰色で上塗りしてcontinue
-			if (craftsman.isActed) {
-				GetGridCircle(craftsman.y_coordinate, craftsman.x_coordinate).draw(Palette::Gray);
-				continue;
-			}
-			// 動かす対象の職人を決める
-			if ((not isTargeting or craftsman.isTarget) and GetGridRect(craftsman.y_coordinate, craftsman.x_coordinate).leftClicked()) {
-				craftsman.isTarget ^= true;
-				isTargeting ^= true;
-			}
-			// 対象の職人は黄色の枠で囲う
-			if (craftsman.isTarget) {
-				GetGridRect(craftsman.y_coordinate, craftsman.x_coordinate).drawFrame(2, 2, Palette::Yellow);
-			}
-			else {
-				continue;
-			}
-			switch (MODE) {
-				// 移動モード
-			case OPERATION_MODE::MOVE:
-				// 職人の周囲8マスがクリックされたらそこに移動
-				for (auto& d : dydx_craftsman) {
-					std::pair<int, int> next = { craftsman.y_coordinate + d.first, craftsman.x_coordinate + d.second };
-					if (not isInField(next.first, next.second)) {
-						continue;
-					}
-					if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Move(field, d.first, d.second)) {
-						isTargeting = false;
-					}
-				}
-				break;
-
-				// 城壁の建設
-			case OPERATION_MODE::BUILD:
-				for (auto& d : dydx_wall) {
-					std::pair<int, int> next = { craftsman.y_coordinate + d.first, craftsman.x_coordinate + d.second };
-					if (not isInField(next.first, next.second)) {
-						continue;
-					}
-					if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Build(field, d.first, d.second)) {
-						isTargeting = false;
-					}
-				}
-				break;
-
-
-				// 城壁の破壊
-			case OPERATION_MODE::BREAK:
-				for (auto& d : dydx_wall) {
-					std::pair<int, int> next = { craftsman.y_coordinate + d.first, craftsman.x_coordinate + d.second };
-					if (not isInField(next.first, next.second)) {
-						continue;
-					}
-					if (GetGridRect(next.first, next.second).leftClicked() and craftsman.Break(field, d.first, d.second)) {
-						isTargeting = false;
-					}
-				}
-				break;
-			}
-		}
-	}
-
-	while (System::Update()) {
-		field.DisplayGrid();
-		field.DrawActors();
-		font(U"ターン数:{}/{}"_fmt(CountTurn, NumTurn)).draw(800, 50, Palette::Black);
-		font(U"青エリア:{}"_fmt(BlueArea)).draw(800, 150, Palette::Black);
-		font(U"赤エリア:{}"_fmt(RedArea)).draw(800, 250, Palette::Black);
-	}
-
-}
-*/
-
-void Main() {
-
-	ChildProcess child{ U"solver.exe", Pipe::StdInOut };
-
-	Scene::SetBackground(Palette::Lightsteelblue);
-	Window::Resize(1280, 720);
-
-	HEIGHT = Random(11, 25);
-	WIDTH = Random(11, 25);
-	CELL_SIZE = 20;
-	BLANK_LEFT = 100;
-	BLANK_TOP = 100;
-
-	Field field;
-
-	size_t MODE = 0;
-
-
-	size_t CountTurn = 0;
-	size_t BlueArea = 0;
-	size_t RedArea = 0;
-
-	size_t NumTurn = Random(15, 100) * 2;
-	size_t NumPond = Random(0, 20);
-	size_t NumCastle = Random(1, 6);
-	size_t NumCraftsman = Random(2, 6);
-
-	// trueなら味方(青)チーム, falseなら敵(赤)チーム
-	bool turn = Random(0, 1);
-
 	Array<Craftsman> craftsmen_blue;
-	Array<Craftsman> craftsmen_red;
+	// solverプログラム
+	// ChildProcess child{ U"solver.exe", Pipe::StdInOut };
+	// 現在のターン、ポイント数のフォント
+	Font normal_font{ 50, U"SourceHanSansJP-Medium.otf" };
+	// 建築物の数のフォント
+	Font small_font{ 25, U"SourceHanSansJP-Medium.otf" };
+	// 現在のターン
+	bool now_turn = TEAM::RED;
+	// 操作モード
+	char operation_mode = ACT::MOVE;
+	// 職人を選択しているか
+	bool is_targeting = false;
+};
 
-	Array<Point> ponds;
-	Array<Point> castles;
-
-	field.Initialize(NumPond, NumCastle, NumCraftsman);
-
-	for (int i = 0; i < HEIGHT; i++) {
-		for (int j = 0; j < WIDTH; j++) {
-			if (field.getGrid(i, j) & CELL::ALLY) {
-				craftsmen_blue << Craftsman(field, i, j, TEAM::BLUE);
-			}
-			else if (field.getGrid(i, j) & CELL::ENEM) {
-				craftsmen_red << Craftsman(field, i, j, TEAM::RED);
-			}
-			else if (field.getGrid(i, j) & CELL::POND) {
-				ponds << Point(j, i);
-			}
-			else if (field.getGrid(i, j) & CELL::CASTLE) {
-				castles << Point(j, i);
-			}
-		}
+// GUIによる操作
+void Game::operate_gui(Field& field) {
+	// 操作モードの変更
+	if (SimpleGUI::Button(U"移動", { 700, 100 }) or Key1.down()) {
+		operation_mode = ACT::MOVE;
+	}if (SimpleGUI::Button(U"建設", { 700, 200 }) or Key2.down()) {
+		operation_mode = ACT::BUILD;
+	}if (SimpleGUI::Button(U"破壊", { 700, 300 }) or Key3.down()) {
+		operation_mode = ACT::DESTROY;
 	}
-
-
-	// solverに渡す
-	child.ostream() << HEIGHT << std::endl << WIDTH << std::endl;
-	child.ostream() << ((turn == TEAM::RED) ? 0 : 1) << std::endl;
-	child.ostream() << NumTurn << std::endl;
-	child.ostream() << NumPond << std::endl;
-	for (const auto& p : ponds) {
-		child.ostream() << p.y << std::endl << p.x << std::endl;
-	}
-	child.ostream() << NumCastle << std::endl;
-	for (const auto& p : castles) {
-		child.ostream() << p.y << std::endl << p.x << std::endl;
-	}
-	child.ostream() << NumCraftsman << std::endl;
-	for (const auto& p : craftsmen_red) {
-		child.ostream() << p.pos.y << std::endl << p.pos.x << std::endl;
-	}
-	child.ostream() << NumCraftsman << std::endl;
-	for (const auto& p : craftsmen_blue) {
-		child.ostream() << p.pos.y << std::endl << p.pos.x << std::endl;
-	}
-
-
-
-
-	// 職人を選択中かどうか
-	bool isTargeting = false;
-
-	Font font{ 50, U"SourceHanSansJP-Medium.otf" };
-
-	Array<Craftsman > pre_craftsmen = craftsmen_blue;
-
-	Field pre_field = field;
-
-	Font font_menu{ 40, U"SourceHanSansJP-Medium.otf" };
-	MenuTab menutab(4, 50, font_menu);
-
-	while (System::Update()) {
-
-		menutab.DrawMenuTab();
-
-		if (CountTurn >= NumTurn) {
-			break;
+	// ターン終了
+	if (SimpleGUI::Button(U"ターン終了", { 700, 500 }) or KeyE.down()) {
+		field.calc_area();
+		field.calc_point(TEAM::RED);
+		field.calc_point(TEAM::BLUE);
+		for (Craftsman& craftsman : craftsmen_red) {
+			craftsman.initialize();
 		}
-
-		if (turn == TEAM::BLUE) {
-			font(U"青チームの手番").draw(100, 600, Palette::Blue);
-		}
-		else {
-			font(U"赤チームの手番").draw(100, 600, Palette::Red);
-		}
-
-		font(U"ターン数:{}/{}"_fmt(CountTurn, NumTurn)).draw(800, 50, Palette::Black);
-		font(U"青エリア:{}"_fmt(BlueArea)).draw(800, 150, Palette::Black);
-		font(U"赤エリア:{}"_fmt(RedArea)).draw(800, 250, Palette::Black);
-
-		if (turn == TEAM::RED) {
-			Print << U"called";
-			// 手動の操作をプログラムに入力
-			for (Craftsman& craftsman : craftsmen_blue) {
-				if (craftsman.Act == U"") {
-					child.ostream() << "0" << std::endl << "none" << std::endl;
-				}
-				else {
-					child.ostream() << craftsman.Direction << std::endl << craftsman.Act << std::endl;
-				}
-				craftsman.Initialize();
-			}
-			System::Sleep(1.3s);
-			// プログラムからの出力を受け取る
-			for (Craftsman& craftsman : craftsmen_red) {
-				child.istream() >> craftsman.Direction >> craftsman.Act;
-				Print << craftsman.Direction << U" " << craftsman.Act;
-				const Point dydx = dydx_craftsman[craftsman.Direction];
-				if (craftsman.Act == U"move") {
-					craftsman.Move(field, dydx);
-				}
-				else if (craftsman.Act == U"build") {
-					craftsman.Build(field, dydx);
-				}
-				else if (craftsman.Act == U"break") {
-					craftsman.Break(field, dydx);
-				}
-				craftsman.Initialize();
-			}
-			field.SearchArea();
-			BlueArea = field.CountArea(TEAM::BLUE);
-			RedArea = field.CountArea(TEAM::RED);
-			turn = TEAM::BLUE;
-			CountTurn++;
-		}
-
-
-
-		// 上書きする場合もあるため始めに描画する
-		field.DisplayGrid();
-		field.DrawActors();
-
-		if (SimpleGUI::Button(U"移動", { 700, 100 })) {
-			MODE = OPERATION_MODE::MOVE;
-		}
-		else if (SimpleGUI::Button(U"建設", { 700, 200 })) {
-			MODE = OPERATION_MODE::BUILD;
-		}
-		else if (SimpleGUI::Button(U"破壊", { 700, 300 })) {
-			MODE = OPERATION_MODE::BREAK;
-		}
-		else if (SimpleGUI::Button(U"手番開始時に戻す", { 700,400 })) {
-
-		}
-		if (SimpleGUI::Button(U"ターン終了", { 700, 500 })) {
-			for (Craftsman& craftsman : craftsmen_blue) {
-				craftsman.Initialize();
-			}
-			turn = TEAM::RED;
-			CountTurn++;
-		}
-
-
-		// 職人の行動
 		for (Craftsman& craftsman : craftsmen_blue) {
-			// 行動済みの職人だったら灰色で上塗りしてcontinue
-			if (craftsman.isActed) {
-				GetGridCircle(craftsman.pos).draw(Palette::Gray);
-				continue;
-			}
-			// 動かす対象の職人を決める
-			if ((not isTargeting or craftsman.isTarget) and GetGridRect(craftsman.pos).leftClicked()) {
-				craftsman.isTarget ^= true;
-				isTargeting ^= true;
-			}
-			// 対象の職人は黄色の枠で囲う
-			if (craftsman.isTarget) {
-				GetGridRect(craftsman.pos).drawFrame(2, 2, Palette::Yellow);
-			}
-			else {
-				continue;
-			}
-			Optional<Point> d; // クリックされたdydxの値
-			switch (MODE) {
-				// 移動モード
-			case OPERATION_MODE::MOVE:
-				// 職人の周囲8マスがクリックされたらそこに移動
-				d = get_clicked_pos(craftsman.pos, dydx_craftsman);
-				if (d && craftsman.Move(field, *d)) {
-					isTargeting = false;
-				}
-				break;
+			craftsman.initialize();
+		}
+		now_turn ^= true;
+		is_targeting = false;
+	}
+}
 
-				// 城壁の建設
-			case OPERATION_MODE::BUILD:
-				d = get_clicked_pos(craftsman.pos, dydx_wall);
-				if (d && craftsman.Build(field, *d)) {
-					isTargeting = false;
-				}
-				break;
+// マウスクリックによる操作
+void Game::operate_craftsman(Array<Craftsman>& craftsmen, Field& field) {
+	for (Craftsman& craftsman : craftsmen) {
+		// 行動済みならcontinue
+		if (craftsman.is_acted) {
+			continue;
+		}
+		// 動かす対象の職人を決める
+		if ((not is_targeting or craftsman.is_target) and get_grid_rect(craftsman.pos).leftClicked()) {
+			craftsman.is_target ^= true;
+			is_targeting ^= true;
+		}
+		// 動かす対象でなければcontinue
+		if (not craftsman.is_target) {
+			continue;
+		}
+		// クリックされた移動方向
+		Optional<Point> direction;
+		switch (operation_mode) {
+			// 移動モード
+		case ACT::MOVE:
+			direction = get_clicked_pos(craftsman.pos, range_move);
+			if (direction and craftsman.move(field, *direction)) {
+				is_targeting = false;
+			}
+			break;
+			// 建築モード
+		case ACT::BUILD:
+			direction = get_clicked_pos(craftsman.pos, range_wall);
+			if (direction and craftsman.build(field, *direction)) {
+				is_targeting = false;
+			}
+			break;
+			// 破壊モード
+		case ACT::DESTROY:
+			direction = get_clicked_pos(craftsman.pos, range_wall);
+			if (direction and craftsman.destroy(field, *direction)) {
+				is_targeting = false;
+			}
+			break;
+		}
+	}
+}
+
+// フィールドの表示
+void Game::display_field(void) const {
+	for (const Craftsman& craftsman : craftsmen_red) {
+		if (craftsman.is_acted) {
+			get_grid_circle(craftsman.pos).draw(Palette::Gray);
+		}else if (craftsman.is_target) {
+			get_grid_rect(craftsman.pos).drawFrame(2, 2, Palette::Yellow);
+		}
+	}
+	for (const Craftsman& craftsman : craftsmen_blue) {
+		if (craftsman.is_acted) {
+			get_grid_circle(craftsman.pos).draw(Palette::Gray);
+		}else if (craftsman.is_target) {
+			get_grid_rect(craftsman.pos).drawFrame(2, 2, Palette::Yellow);
+		}
+	}
+}
+
+// 詳細表示
+void Game::display_details(Field &field) const {
+	if (now_turn == TEAM::RED) {
+		normal_font(U"赤チームの手番").draw(100, 600, Palette::Red);
+	}
+	else {
+		normal_font(U"青チームの手番").draw(100, 600, Palette::Blue);
+	}
+	Array<size_t> building_red = field.get_building(TEAM::RED);
+	Array<size_t> building_blue = field.get_building(TEAM::BLUE);
+	normal_font(U"赤ポイント:{}"_fmt(field.get_point(TEAM::RED))).draw(800, 100, Palette::Black);
+	small_font(U"城壁:{}  陣地:{}  城:{}"_fmt(building_red[0], building_red[1], building_red[2])).draw(850, 175, Palette::Black);
+	normal_font(U"青ポイント:{}"_fmt(field.get_point(TEAM::BLUE))).draw(800, 250, Palette::Black);
+	small_font(U"城壁:{}  陣地:{}  城:{}"_fmt(building_blue[0], building_blue[1], building_blue[2])).draw(850, 325, Palette::Black);
+}
 
 
-				// 城壁の破壊
-			case OPERATION_MODE::BREAK:
-				d = get_clicked_pos(craftsman.pos, dydx_wall);
-				if (d && craftsman.Break(field, *d)) {
-					isTargeting = false;
-				}
-				break;
+// 人対人
+class PvP : public App::Scene, public Game {
+public:
+	PvP(const InitData& init);
+	void update() override;
+	void draw() const override;
+};
+
+// コンストラクタで職人配列をセット
+PvP::PvP(const InitData& init) : IScene{ init } {
+	for (size_t h = 0; h < HEIGHT; h++) {
+		for (size_t w = 0; w < WIDTH; w++) {
+			if (getData().get_cell(h, w) & CELL::CRAFTSMAN_RED) {
+				craftsmen_red.push_back(Craftsman(h, w, TEAM::RED));
+			}
+			else if (getData().get_cell(h, w) & CELL::CRAFTSMAN_BLUE) {
+				craftsmen_blue.push_back(Craftsman(h, w, TEAM::BLUE));
 			}
 		}
 	}
+}
 
-	while (System::Update()) {
-		field.DisplayGrid();
-		field.DrawActors();
-		font(U"ターン数:{}/{}"_fmt(CountTurn, NumTurn)).draw(800, 50, Palette::Black);
-		font(U"青エリア:{}"_fmt(BlueArea)).draw(800, 150, Palette::Black);
-		font(U"赤エリア:{}"_fmt(RedArea)).draw(800, 250, Palette::Black);
+void PvP::update() {
+	operate_gui(getData());
+	if (now_turn == TEAM::RED) {
+		operate_craftsman(craftsmen_red, getData());
+	}
+	else if (now_turn == TEAM::BLUE) {
+		operate_craftsman(craftsmen_blue, getData());
+	}
+}
+
+void PvP::draw() const {
+	getData().display_grid();
+	getData().display_actors();
+	display_field();
+	display_details(getData());
+}
+
+
+
+void Main(){
+
+	// ウィンドウ設定
+	Scene::SetBackground(Palette::Lightgreen);
+	Window::Resize(1280, 720);
+
+	App manager;
+	manager.add<PvP>(U"PvP");
+
+	while (System::Update()){
+		if (not manager.update()) {
+			break;
+		}
 	}
 
 }
-

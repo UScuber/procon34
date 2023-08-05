@@ -1,9 +1,11 @@
-/.vs
 .editorconfig
 stdafx.cpp
 stdafx.h
-visualizer.*
-Intermediate
+visualizer.sln
+visualizer.vcxproj
+visualizer.vcxproj.filters
+visualizer.vcxproj.user
+App/AS_DEBUG
 App/dll
 App/engine
 App/example
@@ -11,5 +13,6 @@ App/icon.ico
 App/Resource.rc
 App/visualizer(debug).exe
 App/visualizer.exe
-App/AS_DEBUG
 App/solver.exe
+Intermediate
+.vs
