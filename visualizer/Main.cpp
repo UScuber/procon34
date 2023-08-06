@@ -45,7 +45,7 @@ protected:
 	// 建築物の数のフォント
 	Font small_font{ 25, U"SourceHanSansJP-Medium.otf" };
 	// ターン数
-	int8 turn_num = 200;
+	size_t turn_num = 200;
 	// 現在のターン
 	bool now_turn = TEAM::RED;
 	// 操作モード
@@ -148,6 +148,8 @@ void Game::give_solver_initialize(bool team, Field& field) {
 	child.ostream() << HEIGHT << std::endl << WIDTH << std::endl;
 	// プログラム側を赤色とする
 	child.ostream() << ((team == TEAM::RED) ? 0 : 1) << std::endl;
+	// ターン数
+	child.ostream() << turn_num << std::endl;
 	// 池の数と座標
 	child.ostream() << field.get_ponds().size() << std::endl;
 	for (Point& p : field.get_ponds()) {
@@ -168,7 +170,6 @@ void Game::give_solver_initialize(bool team, Field& field) {
 	for (Point& p : field.get_craftsmen(not team)) {
 		child.ostream() << p.y << std::endl << p.x << std::endl;
 	}
-
 }
 void Game::give_solver(bool team, Field& field) {
 	for (Craftsman& craftsman : craftsmen[not team]) {
