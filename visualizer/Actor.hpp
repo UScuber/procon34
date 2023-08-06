@@ -22,7 +22,9 @@ public:
 	// 職人の移動
 	bool move(Field& field, const Point direction);
 	// 行動情報の出力
-	String output_act(void);
+	void output_act(ChildProcess &child);
+	// 行動情報を受け取って動かす
+	void input_act(ChildProcess& child, Field& field);
 
 // private:
 	// 職人の座標
@@ -34,9 +36,9 @@ public:
 	// 職人のチーム
 	bool team = TEAM::RED;
 	// 行動をした方向
-	char direction = 0;
+	int direction = 0;
 	// 行動の種類
-	char act = ACT::NOTHING;
+	int act = ACT::NOTHING;
 };
 
 // 職人の移動範囲
@@ -143,4 +145,35 @@ bool Craftsman::move(Field& field, const Point direction) {
 		}
 	}
 	return true;
+}
+
+void Craftsman::output_act(ChildProcess& child) {
+	child.ostream() << direction << std::endl;
+	Console << direction << U" " << act;
+	if (act == ACT::BUILD) {
+		child.ostream() << "build" << std::endl;
+	}else if (act == ACT::DESTROY) {
+		child.ostream() << "break" << std::endl;
+	}else if (act == ACT::MOVE) {
+		child.ostream() << "move" << std::endl;
+	}else {
+		child.ostream() << "none" << std::endl;
+	}
+}
+
+void Craftsman::input_act(ChildProcess& child, Field& field) {
+	int direction_num;
+	std::string act_str;
+	child.istream() >> direction_num >> act_str;
+	const Point direction_point = range_move[direction_num];
+	if (act_str == "move") {
+		this->act = ACT::MOVE;
+		move(field, direction_point);
+	}else if (act_str == "build") {
+		this->act = ACT::BUILD;
+		build(field, direction_point);
+	}else if (act_str == "break") {
+		this->act = ACT::DESTROY;
+		destroy(field, direction_point);
+	}
 }

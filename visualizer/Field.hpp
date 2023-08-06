@@ -30,6 +30,10 @@ public:
 	Field(String path);
 	// 18種の内のランダムな盤面をセット
 	Field(void);
+	// 池、城、職人の座標配列を返す
+	Array<Point> get_ponds(void) const;
+	Array<Point> get_castles(void) const;
+	Array<Point> get_craftsmen(bool team) const;
 	// セルの情報を取得する
 	char get_cell(const int y, const int x) const;
 	char get_cell(const Point p) const;
@@ -59,6 +63,10 @@ private:
 	void wall_bfs(Point start, Array<Array<bool>>& visited, bool team);
 	// 盤面情報
 	Array<Array<char>> grid;
+	// 池、城、職人の座標配列
+	Array<Point> ponds;
+	Array<Point> castles;
+	Array<Array<Point>> craftsmen;
 	// それぞれの係数
 	size_t point_castle = 100;
 	size_t point_area = 30;
@@ -74,20 +82,26 @@ private:
 
 // 指定したcsvファイルから盤面を読み込む
 Field::Field(String path) {
+	craftsmen.resize(2);
 	const CSV csv{ path };
 	HEIGHT = csv.rows();
 	WIDTH = csv.columns(0);
 	this->grid.resize(HEIGHT, Array<char>(WIDTH, 0));
 	for (int8 row = 0; row < csv.rows(); row++) {
+		this->grid[row].resize(WIDTH);
 		for (int8 col = 0; col < csv.columns(row); col++) {
 			if (csv[row][col] == U"1") {
 				set_bit(row, col, CELL::POND);
+				ponds.push_back({ row, col });
 			}else if (csv[row][col] == U"2") {
 				set_bit(row, col, CELL::CASTLE);
+				castles.push_back({ row, col });
 			}else if (csv[row][col] == U"a") {
 				set_bit(row, col, CELL::CRAFTSMAN_RED);
+				craftsmen[TEAM::RED].push_back({row, col});
 			}else if (csv[row][col] == U"b") {
 				set_bit(row, col, CELL::CRAFTSMAN_BLUE);
+				craftsmen[TEAM::BLUE].push_back({row,col});
 			}
 		}
 	}
@@ -96,6 +110,7 @@ Field::Field(String path) {
 
 // ランダムで選んだcsvファイルから盤面を読み込む
 Field::Field(void) {
+	craftsmen.resize(2);
 	FilePath path = FileSystem::DirectoryContents(U"field", Recursive::No).choice();
 	const CSV csv{ path };
 	HEIGHT = csv.rows();
@@ -105,20 +120,31 @@ Field::Field(void) {
 		this->grid[row].resize(WIDTH);
 		for (int8 col = 0; col < csv.columns(row); col++) {
 			if (csv[row][col] == U"1") {
-				this->grid[row][col] = CELL::POND;
-			}
-			else if (csv[row][col] == U"2") {
-				this->grid[row][col] = CELL::CASTLE;
-			}
-			else if (csv[row][col] == U"a") {
-				this->grid[row][col] = CELL::CRAFTSMAN_RED;
-			}
-			else if (csv[row][col] == U"b") {
-				this->grid[row][col] = CELL::CRAFTSMAN_BLUE;
+				set_bit(row, col, CELL::POND);
+				ponds.push_back({ row, col });
+			}else if (csv[row][col] == U"2") {
+				set_bit(row, col, CELL::CASTLE);
+				castles.push_back({ row, col });
+			}else if (csv[row][col] == U"a") {
+				set_bit(row, col, CELL::CRAFTSMAN_RED);
+				craftsmen[TEAM::RED].push_back({row, col});
+			}else if (csv[row][col] == U"b") {
+				set_bit(row, col, CELL::CRAFTSMAN_BLUE);
+				craftsmen[TEAM::BLUE].push_back({row,col});
 			}
 		}
 	}
 	return;
+}
+
+Array<Point> Field::get_ponds(void) const{
+	return ponds;
+}
+Array<Point> Field::get_castles(void) const {
+	return castles;
+}
+Array<Point> Field::get_craftsmen(bool team) const {
+	return craftsmen[team];
 }
 
 // セルの情報を取得
@@ -153,33 +179,35 @@ void Field::display_grid(void) const {
 
 void Field::display_actors(void) const {
 	for (size_t i = 0; i < (HEIGHT * WIDTH); i++) {
-		char target_cell = grid[i / WIDTH][i % WIDTH];
+		int y = i / WIDTH;
+		int x = i % WIDTH;
+		char target_cell = grid[y][x];
 		if (target_cell & CELL::POND) {
-			Rect((i % WIDTH) * CELL_SIZE + BLANK_LEFT, (i / WIDTH) * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(Palette::Black);
+			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(Palette::Black);
 		}
 		if (target_cell & CELL::WALL_RED) {
-			Rect(Arg::center((i % WIDTH) * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, (i / WIDTH) * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.6).draw(Palette::Red);
+			Rect(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.6).draw(Palette::Red);
 		}
 		if (target_cell & CELL::WALL_BLUE) {
-			Rect(Arg::center((i % WIDTH) * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, (i / WIDTH) * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.6).draw(Palette::Blue);
+			Rect(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.6).draw(Palette::Blue);
 		}
 		if (target_cell & CELL::AREA_RED and target_cell & CELL::AREA_BLUE) {
-			Rect((i % WIDTH) * CELL_SIZE + BLANK_LEFT, (i / WIDTH) * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(1.0, 0.0, 1.0, 0.5));
+			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(1.0, 0.0, 1.0, 0.5));
 		}
 		else 	if (target_cell & CELL::AREA_RED) {
-			Rect((i % WIDTH) * CELL_SIZE + BLANK_LEFT, (i / WIDTH) * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(1.0, 0.0, 0.0, 0.25));
+			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(1.0, 0.0, 0.0, 0.25));
 		}
 		else 	if (target_cell & CELL::AREA_BLUE) {
-			Rect((i % WIDTH) * CELL_SIZE + BLANK_LEFT, (i / WIDTH) * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(0.0, 0.0, 1.0, 0.25));
+			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(0.0, 0.0, 1.0, 0.25));
 		}
 		if (target_cell & CELL::CRAFTSMAN_RED) {
-			Circle(Arg::center((i % WIDTH) * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, (i / WIDTH) * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4).draw(Palette::Red);
+			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4).draw(Palette::Red);
 		}
 		if (target_cell & CELL::CRAFTSMAN_BLUE) {
-			Circle(Arg::center((i% WIDTH)* CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, (i / WIDTH)* CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4).draw(Palette::Blue);
+			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y* CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4).draw(Palette::Blue);
 		}
 		if (target_cell & CELL::CASTLE) {
-			Shape2D::Star(CELL_SIZE * 0.6, Vec2{ (i % WIDTH) * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, (i / WIDTH) * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2 }).draw(Palette::Black);
+			Shape2D::Star(CELL_SIZE * 0.6, Vec2{ x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2 }).draw(Palette::Black);
 		}
 	}
 }
