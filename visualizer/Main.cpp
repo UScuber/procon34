@@ -4,19 +4,20 @@
 # include "Field.hpp";
 # include "Actor.hpp"
 
-// +--------------+
-//  |  先攻 : 赤   |
-//  |  後攻 : 青   |
-// +--------------+
+// +-------------+
+//  |  先攻 : 赤  |
+//  |  後攻 : 青  |
+// +-------------+
 
 // フィールドの縦横
 size_t HEIGHT;
 size_t WIDTH;
 // 一つのセルの大きさ(正方形)
-size_t CELL_SIZE = 25;
+size_t CELL_SIZE = 20;
 // フィールドの左上に開ける余白
-size_t BLANK_LEFT = 50;
-size_t BLANK_TOP = 50;
+size_t BLANK_LEFT = 100;
+size_t BLANK_TOP = 100;
+
 
 using App = SceneManager<String, Field>;
 
@@ -213,6 +214,7 @@ void PvP::draw() const {
 	getData().display_actors();
 	display_field();
 	display_details(getData());
+
 }
 
 
@@ -265,6 +267,9 @@ void PvC::operate_gui(Field& field) {
 		}
 		now_turn ^= true;
 		is_targeting = false;
+		field.calc_area();
+		field.calc_point(TEAM::RED);
+		field.calc_point(TEAM::BLUE);
 	}
 }
 void PvC::update() {
