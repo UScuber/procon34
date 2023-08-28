@@ -161,14 +161,14 @@ void Game::give_solver_initialize(bool team, Field& field) {
 	for (Point& p : field.get_castles()) {
 		child.ostream() << p.y << std::endl << p.x << std::endl;
 	}
-	// solverのチームの職人
-	child.ostream() << field.get_craftsmen(team).size() << std::endl;
-	for (Point& p : field.get_craftsmen(team)) {
+	// REDのチームの職人
+	child.ostream() << field.get_craftsmen(TEAM::RED).size() << std::endl;
+	for (Point& p : field.get_craftsmen(TEAM::RED)) {
 		child.ostream() << p.y << std::endl << p.x << std::endl;
 	}
-	// solverでないチーム職人
-	child.ostream() << field.get_craftsmen(not team).size() << std::endl;
-	for (Point& p : field.get_craftsmen(not team)) {
+	// BLUEチームの職人
+	child.ostream() << field.get_craftsmen(TEAM::BLUE).size() << std::endl;
+	for (Point& p : field.get_craftsmen(TEAM::BLUE)) {
 		child.ostream() << p.y << std::endl << p.x << std::endl;
 	}
 }

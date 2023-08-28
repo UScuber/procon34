@@ -92,16 +92,16 @@ Field::Field(String path) {
 		for (int8 col = 0; col < csv.columns(row); col++) {
 			if (csv[row][col] == U"1") {
 				set_bit(row, col, CELL::POND);
-				ponds.push_back({ row, col });
+				ponds.push_back({ col, row });
 			}else if (csv[row][col] == U"2") {
 				set_bit(row, col, CELL::CASTLE);
-				castles.push_back({ row, col });
+				castles.push_back({ col, row });
 			}else if (csv[row][col] == U"a") {
 				set_bit(row, col, CELL::CRAFTSMAN_RED);
-				craftsmen[TEAM::RED].push_back({row, col});
+				craftsmen[TEAM::RED].push_back({ col, row });
 			}else if (csv[row][col] == U"b") {
 				set_bit(row, col, CELL::CRAFTSMAN_BLUE);
-				craftsmen[TEAM::BLUE].push_back({row,col});
+				craftsmen[TEAM::BLUE].push_back({ col, row });
 			}
 		}
 	}
@@ -121,16 +121,16 @@ Field::Field(void) {
 		for (int8 col = 0; col < csv.columns(row); col++) {
 			if (csv[row][col] == U"1") {
 				set_bit(row, col, CELL::POND);
-				ponds.push_back({ row, col });
+				ponds.push_back({ col, row });
 			}else if (csv[row][col] == U"2") {
 				set_bit(row, col, CELL::CASTLE);
-				castles.push_back({ row, col });
+				castles.push_back({ col, row });
 			}else if (csv[row][col] == U"a") {
 				set_bit(row, col, CELL::CRAFTSMAN_RED);
-				craftsmen[TEAM::RED].push_back({row, col});
+				craftsmen[TEAM::RED].push_back({ col, row });
 			}else if (csv[row][col] == U"b") {
 				set_bit(row, col, CELL::CRAFTSMAN_BLUE);
-				craftsmen[TEAM::BLUE].push_back({row,col});
+				craftsmen[TEAM::BLUE].push_back({ col, row });
 			}
 		}
 	}
