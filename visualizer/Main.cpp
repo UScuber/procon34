@@ -227,7 +227,7 @@ public:
 	void update() override;
 	void draw() const override;
 private:
-	bool team_solver = TEAM::BLUE;
+	bool team_solver = TEAM::RED;
 };
 PvC::PvC(const InitData& init) : IScene{ init } {
 	craftsmen.resize(2);
@@ -241,6 +241,21 @@ PvC::PvC(const InitData& init) : IScene{ init } {
 		}
 	}
 	give_solver_initialize(team_solver, getData());
+
+	// Computerが先手の場合
+	if (team_solver == TEAM::RED) {
+		System::Sleep(1.5s);
+		now_turn ^= true;
+		receive_solver(team_solver, getData());
+		for (Array<Craftsman>& ary : craftsmen) {
+			for (Craftsman& craftsman : ary) {
+				craftsman.initialize();
+			}
+		}
+		getData().calc_area();
+		getData().calc_point(TEAM::RED);
+		getData().calc_point(TEAM::BLUE);
+	}
 }
 void PvC::operate_gui(Field& field) {
 	// 操作モードの変更
