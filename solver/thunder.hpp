@@ -73,7 +73,7 @@ std::vector<Action> thunder_search(const Field &field, const int search_num){
   }
   int best_act_searched_idx = -1;
   int best_act_idx = -1;
-  assert(legal_actions.size() == root_node.child_nodes.size());
+  Assert(legal_actions.size() == root_node.child_nodes.size());
   for(int i = 0; i < (int)legal_actions.size(); i++){
     const int n = root_node.child_nodes[i].n;
     if(n > best_act_searched_idx){

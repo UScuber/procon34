@@ -2,7 +2,8 @@
 
 #include <vector>
 #include <iostream>
-#include <cassert>
+#include <algorithm>
+#include <cstdint>
 
 using uchar = unsigned char;
 using uint = unsigned int;
@@ -19,6 +20,72 @@ constexpr Pos dy[] = { (Pos)-1,0,1,0, (Pos)-1,1,1,(Pos)-1 };
 constexpr Pos dx[] = { 0,(Pos)-1,0,1, (Pos)-1,(Pos)-1,1,1 };
 
 int height = 0, width = 0; // fieldの大きさ
+
+// error出力
+#ifndef NOERRFILE
+  #include <fstream>
+  std::ofstream cerr("stderr.txt");
+#else
+  using std::cerr;
+#endif
+
+
+// stacktrace
+#include <sstream>
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+  #define __posix__
+  #include <execinfo.h>
+#elif defined(__MINGW32__)
+  #include <windows.h>
+#endif
+
+std::string get_backtrace_info(){
+  std::string result;
+#if defined(__posix__)
+  static constexpr ll trace_frames_max = 100;
+  void *trace_frames[trace_frames_max] = {};
+  const int size = ::backtrace(trace_frames, trace_frames_max);
+  if(size < 0 || size >= trace_frames_max){
+    return "get_backtrace_info error: backtrace failed";
+  }
+  char **trace_symbols = ::backtrace_symbols(trace_frames, trace_frames_max);
+  if(!trace_symbols){
+    return "get_backtrace_info error: get symbol failed";
+  }
+  for(ll i = 1; i < size; i++){
+    result.append(trace_symbols[i]);
+    result.append("\n");
+  }
+  free(trace_symbols);
+  trace_symbols = nullptr;
+#elif defined(__MINGW32__)
+  static constexpr ll trace_frames_max = 50;
+  void *trace_frames[trace_frames_max] = {};
+  const int size = ::CaptureStackBackTrace(0, trace_frames_max, trace_frames, nullptr);
+  if (size < 0 || size >= trace_frames_max){
+    return "get_backtrace_info error: backtrace failed";
+  }
+  std::ostringstream address_str;
+  for(ll i = 1; i < size; i++){
+    const ll address = reinterpret_cast<ll>(trace_frames[i]);
+    address_str << i << ": 0x" << std::hex << address << "\n";
+  }
+  result.assign(address_str.str());
+#else
+  return  "get_backtrace_info error: unknow platform";
+#endif
+  return result;
+}
+
+void assertion_failed(char const* expr){
+  const auto info = get_backtrace_info();
+  cerr << "Expression '" << expr << "' is false in\n" << info << "\n";
+  std::abort();
+}
+
+#define Assert(expr) { if(!(expr)){ cerr << "Assertion Failed!!! " << __FILE__ << ", " << __LINE__ << "\n"; assertion_failed(#expr); } }
+
+
 
 struct State {
   static const State None;

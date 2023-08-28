@@ -6,8 +6,8 @@
 Actions enumerate_next_agent_acts(const Point &agent, const Field &field, const bool use_assert=true){
   const State ally = field.get_state(agent) & State::Human; // agentから見た味方
   const State enemy = ally ^ State::Human; // agentから見た敵
-  if(use_assert) assert((ally == State::Enemy) == (field.current_turn & 1));
-  if(use_assert) assert(ally == State::Ally || ally == State::Enemy);
+  if(use_assert) Assert((ally == State::Enemy) == (field.current_turn & 1));
+  if(use_assert) Assert(ally == State::Ally || ally == State::Enemy);
 
   const State ally_wall = ally == State::Ally ? State::WallAlly : State::WallEnemy; // agentから見た味方のwall
   const State enemy_wall = ally_wall ^ State::Wall; // agentから見た敵のwall
@@ -37,7 +37,7 @@ Actions select_random_next_agents_acts(const std::vector<Point> &agents, const F
   Actions result;
   std::set<Action> cnt;
   for(const auto &agent : agents){
-    assert(((field.get_state(agent) & State::Human) == State::Enemy) == (field.current_turn & 1));
+    Assert(((field.get_state(agent) & State::Human) == State::Enemy) == (field.current_turn & 1));
     auto acts = enumerate_next_agent_acts(agent, field);
     if(acts.empty()) acts.emplace_back(Action(agent, Action::None));
     int num = 0;
@@ -184,6 +184,7 @@ int calc_wall_by_enemy(const Field &field, const Agents &enemy_agents, const Sta
 }
 
 double evaluate_field(const Field &field){
+  /*
   // eval #1: 各職人から一番近い城までの距離^2の総和
   const int dc = calc_agent_min_dist(field, field.ally_agents, State::AreaAlly) - calc_agent_min_dist(field, field.enemy_agents, State::AreaEnemy);
   // eval #2: 各城壁から一番近い城との距離の総和
@@ -214,6 +215,8 @@ double evaluate_field(const Field &field){
   res += n * 0.1;
   res -= wn * f;
   return res * 0.5;
+  */
+  return field.calc_final_score() * 0.1 * 0.5;
 }
 
 double evaluate_field2(const Field &field){

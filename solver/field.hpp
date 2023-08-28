@@ -15,7 +15,7 @@ struct Action {
 
   // posは移動先を表す、構築/破壊はその対象の場所がposになる
   inline constexpr Action(const Point &_p, const uchar _cmd, const int _agent_idx=-1) : pos(_p), command(_cmd), agent_idx(_agent_idx){
-    assert(0 <= command && command < 4);
+    Assert(0 <= command && command < 4);
   }
   inline constexpr bool operator<(const Action &act) const{
     if(command != act.command) return command < act.command;
@@ -48,9 +48,9 @@ struct Field {
       enemy_agents(_enemy_agents),
       castles(_castles),
       side(_side),
-      current_turn(_side),
+      current_turn(0),
       final_turn(_final_turn){
-    assert(ally_agents.size() == enemy_agents.size()); // check
+    Assert(ally_agents.size() == enemy_agents.size()); // check
 
     for(const auto &p : ponds) field[p.y][p.x] |= State::Pond;
     for(const auto &p : castles) field[p.y][p.x] |= State::Castle;
@@ -59,15 +59,15 @@ struct Field {
   }
   
   inline State get_state(const int y, const int x) const noexcept{
-    assert(is_valid(y, x));
+    Assert(is_valid(y, x));
     return field[y][x];
   }
   inline State get_state(const Point &p) const noexcept{
-    assert(is_valid(p.y, p.x));
+    Assert(is_valid(p.y, p.x));
     return get_state(p.y, p.x);
   }
   inline void set_state(const int y, const int x, const State state) noexcept{
-    assert(is_valid(y, x));
+    Assert(is_valid(y, x));
     field[y][x] = state;
   }
   inline void set_state(const Point &p, const State state) noexcept{ set_state(p.y, p.x, state); }
@@ -180,23 +180,23 @@ struct Field {
   // bug: 移動に問題あり、職人がいた場所に職人が移動できてしまう
   // side: 味方:0, 敵:1
   void update_field(const Actions &acts){
-    assert(acts.size() == ally_agents.size());
+    Assert(acts.size() == ally_agents.size());
     Actions act_list[4];
     for(const auto &act : acts){
       act_list[act.command].emplace_back(act);
-      assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
+      Assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
     }
     if(!(current_turn & 1)){
       // break
       for(const auto &act : act_list[Action::Break]){
         const State st = get_state(act.pos);
-        assert(st & State::Wall);
+        Assert(st & State::Wall);
         set_state(act.pos, st & ~State::Wall);
       }
       // build
       for(const auto &act : act_list[Action::Build]){
         const State st = get_state(act.pos);
-        assert(!(st & (State::WallEnemy | State::Enemy | State::Castle)));
+        Assert(!(st & (State::WallEnemy | State::Enemy | State::Castle)));
         if(st & State::WallAlly){ // someone already built
           continue;
         }
@@ -205,7 +205,7 @@ struct Field {
       // move
       for(const auto &act : act_list[Action::Move]){
         const State st = get_state(act.pos);
-        assert(!(st & (State::Human | State::Pond | State::WallEnemy)));
+        Assert(!(st & (State::Human | State::Pond | State::WallEnemy)));
         const auto from = ally_agents[act.agent_idx];
         set_state(from, get_state(from) ^ State::Ally);
         set_state(act.pos, st | State::Ally);
@@ -215,13 +215,13 @@ struct Field {
       // break
       for(const auto &act : act_list[Action::Break]){
         const State st = get_state(act.pos);
-        assert(st & State::Wall);
+        Assert(st & State::Wall);
         set_state(act.pos, st & ~State::Wall);
       }
       // build
       for(const auto &act : act_list[Action::Build]){
         const State st = get_state(act.pos);
-        assert(!(st & (State::WallAlly | State::Ally | State::Castle)));
+        Assert(!(st & (State::WallAlly | State::Ally | State::Castle)));
         if(st & State::WallEnemy){ // someone already built
           continue;
         }
@@ -230,7 +230,7 @@ struct Field {
       // move
       for(const auto &act : act_list[Action::Move]){
         const State st = get_state(act.pos);
-        assert(!(st & (State::Human | State::Pond | State::WallAlly)));
+        Assert(!(st & (State::Human | State::Pond | State::WallAlly)));
         const auto from = enemy_agents[act.agent_idx];
         set_state(from, get_state(from) ^ State::Enemy);
         set_state(act.pos, st | State::Enemy);
@@ -282,11 +282,11 @@ struct Field {
         region[i] += c;
       }
     }
-    std::cerr << "board" << std::string(width-4, ' ') << ": walls" << std::string(width-4, ' ') << ": region\n";
+    cerr << "board" << std::string(width-4, ' ') << ": walls" << std::string(width-4, ' ') << ": region\n";
     for(int i = 0; i < height; i++){
-      std::cerr << board[i] << " : " << wall[i] << " : " << region[i] << "\n";
+      cerr << board[i] << " : " << wall[i] << " : " << region[i] << "\n";
     }
-    std::cerr << "\n";
+    cerr << "\n";
   }
 };
 
@@ -337,7 +337,7 @@ Field read_field(const int h, const int w){
   auto get_points = []() -> std::vector<Point> {
     int num;
     std::cin >> num;
-    assert(0 <= num);
+    Assert(0 <= num);
     std::vector<Point> res(num);
     for(int i = 0; i < num; i++) std::cin >> res[i];
     return res;
@@ -346,7 +346,7 @@ Field read_field(const int h, const int w){
   int side; // 先行:0,後攻:1
   int final_turn;
   std::cin >> side >> final_turn;
-  assert(side == 0 || side == 1);
+  Assert(side == 0 || side == 1);
   const auto ponds = get_points();
   const auto castles = get_points();
   const auto ally_agents = get_points();

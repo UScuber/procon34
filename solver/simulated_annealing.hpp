@@ -4,7 +4,7 @@
 
 namespace SimulatedAnnealing {
 
-constexpr int max_depth = 3;
+constexpr int max_depth = 4;
 constexpr double limit_time = 1.0;
 
 using Score = double;
@@ -37,19 +37,19 @@ std::vector<Actions> enumerate_agent_moves(const Point &agent, const int agent_i
 // 動けないような移動が与えられた場合はNoneの行動になり、1が返る(建設や破壊は一応問題ない)
 // 次に動かす敵の行動はすべてNone
 std::vector<int> advance_field(const Actions &acts, Field &field){
-  assert(acts.size() == field.ally_agents.size());
+  Assert(acts.size() == field.ally_agents.size());
   std::vector<int> cannot_move(acts.size());
   Agents last_move_ally_agents, last_move_enemy_agents;
   Actions act_list[4];
   for(const auto &act : acts){
     act_list[act.command].emplace_back(act);
-    assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
+    Assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
   }
   if(!(field.current_turn & 1)){
     // break
     for(const auto &act : act_list[Action::Break]){
       const State st = field.get_state(act.pos);
-      assert(!(st & State::Castle));
+      Assert(!(st & State::Castle));
       if(!(st & State::Wall)){
         continue;
       }
@@ -58,7 +58,7 @@ std::vector<int> advance_field(const Actions &acts, Field &field){
     // build
     for(const auto &act : act_list[Action::Build]){
       const State st = field.get_state(act.pos);
-      assert(!(st & State::Castle));
+      Assert(!(st & State::Castle));
       // この操作だけ行動できないだけ
       if(st & (State::Wall | State::Enemy)){
         continue;
@@ -82,7 +82,7 @@ std::vector<int> advance_field(const Actions &acts, Field &field){
     // break
     for(const auto &act : act_list[Action::Break]){
       const State st = field.get_state(act.pos);
-      assert(!(st & State::Castle));
+      Assert(!(st & State::Castle));
       if(!(st & State::Wall)){
         continue;
       }
@@ -91,7 +91,7 @@ std::vector<int> advance_field(const Actions &acts, Field &field){
     // build
     for(const auto &act : act_list[Action::Build]){
       const State st = field.get_state(act.pos);
-      assert(!(st & State::Castle));
+      Assert(!(st & State::Castle));
       // この操作だけ行動できないだけ
       if(st & (State::Wall | State::Ally)){
         continue;
@@ -188,8 +188,8 @@ Actions SA(const Field &field){
   static constexpr double t1 = 0.0005;
   double temp = t0;
 
-  std::cerr << "Start SA\n";
-  std::cerr << "first score: " << current_score << "\n";
+  cerr << "Start SA\n";
+  cerr << "first score: " << current_score << "\n";
   for(; ; trials++){
     static constexpr int mask = (1 << 4) - 1;
     if(!(trials & mask)){
@@ -210,7 +210,7 @@ Actions SA(const Field &field){
       good_indices = current_indices;
       updated_num++;
     }else if(std::exp((double)(score - good_score) * (is_searching_ally ? -1 : 1) / temp) > rnd(2048)/2048.0){
-      //std::cerr << score - good_score << " ";
+      //cerr << score - good_score << " ";
       good_score = score;
       good_indices = current_indices;
       updated_num++;
@@ -218,9 +218,9 @@ Actions SA(const Field &field){
       current_indices[pos] = last_idx_val;
     }
   }
-  std::cerr << "trials : " << trials << "\n";
-  std::cerr << "updated: " << updated_num << "\n";
-  std::cerr << "score  : " << best_score << "\n";
+  cerr << "trials : " << trials << "\n";
+  cerr << "updated: " << updated_num << "\n";
+  cerr << "score  : " << best_score << "\n";
 
   Actions result;
   int idx = 0;
