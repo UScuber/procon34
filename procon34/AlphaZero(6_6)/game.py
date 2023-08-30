@@ -155,61 +155,59 @@ class State:
         craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
         enemy_craftsmen = np.where(self.enemy_craftsmen == 1)
 
-        for j in range(NUM_ACTION):
-            if action == j:
-                # 職人の数が各チーム一人ならこちらのコード
-                x = craftsmen[0][0]
-                y = craftsmen[1][0]
-                e_x = enemy_craftsmen[0][0]
-                e_y = enemy_craftsmen[1][0]
-                # 移動
-                if j < 8:
-                    direction = self.directions[j]
-                    next_place_x = x + direction[0]
-                    next_place_y = y + direction[1]
-                    # フィールド外なら
-                    if next_place_x < 0 or WIDTH-1 < next_place_x:
-                        return False
-                    if next_place_y < 0 or HEIGHT-1 < next_place_y:
-                        return False
-                    # 相手の職人がいたら（あとで自分の職人とも重なっていないかの判定を加える）
-                    if next_place_x == e_x and next_place_y == e_y:
-                        return False
-                    # 相手の壁があったら
-                    if self.enemy_walls[next_place_x][next_place_y]:
-                        return False
-                # 建築
-                elif j < 12:
-                    direction = self.directions[j-8]
-                    next_place_x = x + direction[0]
-                    next_place_y = y + direction[1]
-                    # フィールド外なら
-                    if next_place_x < 0 or WIDTH <= next_place_x:
-                        return False
-                    if next_place_y < 0 or HEIGHT <= next_place_y:
-                        return False
-                    # 相手の職人がいたら
-                    if next_place_x == e_x and next_place_y == e_y:
-                        return False
-                    # 壁があったら
-                    if self.enemy_walls[next_place_x][next_place_y] or self.walls[next_place_x][next_place_y]:
-                        return False
-                # 解体
-                elif j < 16:
-                    direction = self.directions[j-12]
-                    next_place_x = x + direction[0]
-                    next_place_y = y + direction[1]
-                    # フィールド外なら
-                    if next_place_x < 0 or WIDTH <= next_place_x:
-                        return False
-                    if next_place_y < 0 or HEIGHT <= next_place_y:
-                        return False
-                    # 指定先に壁がなかったら
-                    if not (self.walls[next_place_x][next_place_y] or self.enemy_walls[next_place_x][next_place_y]):
-                        return False
-                
-                else:
-                    pass
+        # 職人の数が各チーム一人ならこちらのコード
+        x = craftsmen[0][0]
+        y = craftsmen[1][0]
+        e_x = enemy_craftsmen[0][0]
+        e_y = enemy_craftsmen[1][0]
+        # 移動
+        if action < 8:
+            direction = self.directions[action]
+            next_place_x = x + direction[0]
+            next_place_y = y + direction[1]
+            # フィールド外なら
+            if next_place_x < 0 or WIDTH <= next_place_x:
+                return False
+            if next_place_y < 0 or HEIGHT <= next_place_y:
+                return False
+            # 相手の職人がいたら（あとで自分の職人とも重なっていないかの判定を加える）
+            if next_place_x == e_x and next_place_y == e_y:
+                return False
+            # 相手の壁があったら
+            if self.enemy_walls[next_place_x][next_place_y]:
+                return False
+        # 建築
+        elif action < 12:
+            direction = self.directions[action-8]
+            next_place_x = x + direction[0]
+            next_place_y = y + direction[1]
+            # フィールド外なら
+            if next_place_x < 0 or WIDTH <= next_place_x:
+                return False
+            if next_place_y < 0 or HEIGHT <= next_place_y:
+                return False
+            # 相手の職人がいたら
+            if next_place_x == e_x and next_place_y == e_y:
+                return False
+            # 壁があったら
+            if self.enemy_walls[next_place_x][next_place_y] or self.walls[next_place_x][next_place_y]:
+                return False
+        # 解体
+        elif action < 16:
+            direction = self.directions[action-12]
+            next_place_x = x + direction[0]
+            next_place_y = y + direction[1]
+            # フィールド外なら
+            if next_place_x < 0 or WIDTH <= next_place_x:
+                return False
+            if next_place_y < 0 or HEIGHT <= next_place_y:
+                return False
+            # 指定先に壁がなかったら
+            if not (self.walls[next_place_x][next_place_y] or self.enemy_walls[next_place_x][next_place_y]):
+                return False
+        
+        else:
+            pass
         return True
 
     # actionsから次の状態へ遷移
@@ -217,10 +215,17 @@ class State:
         # 破壊建築移動の順番で作る(後で)
         #print(self.is_legal_action_integer(action))
         #print(action)
-        #assert self.is_legal_action_integer(action) # このactionはint型なので、int型用の合法手判定関数を使う
+
+        assert self.is_legal_action_integer(action) # このactionはint型なので、int型用の合法手判定関数を使う
+
         craftsmen = np.where(self.craftsmen == 1) # 職人がいる場所をタプルで返す
         # 修正する
         # 一人用
+
+        next_craftsmen = self.craftsmen.copy()
+        next_walls = self.walls.copy()
+        next_enemy_walls = self.enemy_walls.copy()
+
         # 移動だったら
         if action < 8:
             direction = self.directions[action]
@@ -229,8 +234,8 @@ class State:
             next_place_x = x + direction[0]
             next_place_y = y + direction[1]
             # 職人を移動させる
-            self.craftsmen[x][y] = 0
-            self.craftsmen[next_place_x][next_place_y] = 1
+            next_craftsmen[x][y] = 0
+            next_craftsmen[next_place_x][next_place_y] = 1
         # 建築だったら
         elif action < 12:
             direction = self.directions[action-8]
@@ -239,7 +244,7 @@ class State:
             build_place_x = x + direction[0]
             build_place_y = y + direction[1]
             # 壁を建築する
-            self.walls[build_place_x][build_place_y] = 1
+            next_walls[build_place_x][build_place_y] = 1
         # 解体だったら
         elif action < 16:
             direction = self.directions[action-12]
@@ -249,9 +254,9 @@ class State:
             dismantle_place_y = y + direction[1]
             # 壁を解体する
             if self.is_ally_wall(dismantle_place_x, dismantle_place_y): # 味方なら
-                self.walls[dismantle_place_x][dismantle_place_y] = 0
+                next_walls[dismantle_place_x][dismantle_place_y] = 0
             elif self.is_enemy_wall(dismantle_place_x, dismantle_place_y): # 敵なら
-                self.enemy_walls[dismantle_place_x][dismantle_place_y] = 0
+                next_enemy_walls[dismantle_place_x][dismantle_place_y] = 0
             else:
                 pass
         #滞在なら
@@ -259,8 +264,8 @@ class State:
             pass
         
         return State(
-                    craftsmen=self.enemy_craftsmen, enemy_craftsmen=self.craftsmen,
-                    walls=self.enemy_walls, enemy_walls=self.walls,
+                    craftsmen=self.enemy_craftsmen, enemy_craftsmen=next_craftsmen,
+                    walls=next_enemy_walls, enemy_walls=next_walls,
                     areas=self.enemy_areas, enemy_areas=self.areas,
                     game_count=(self.game_count+1)
                 )
@@ -335,9 +340,9 @@ class State:
                         next_place_x = x + direction[0]
                         next_place_y = y + direction[1]
                         # フィールド外なら
-                        if next_place_x < 0 or WIDTH-1 < next_place_x:
+                        if next_place_x < 0 or WIDTH <= next_place_x:
                             return False
-                        if next_place_y < 0 or HEIGHT-1 > next_place_y:
+                        if next_place_y < 0 or HEIGHT <= next_place_y:
                             return False
                         # 相手の職人がいたら（あとで自分の職人とも重なっていないかの判定を加える）
                         if next_place_x == e_x and next_place_y == e_y:
