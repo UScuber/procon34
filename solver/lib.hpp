@@ -24,7 +24,17 @@ int height = 0, width = 0; // fieldの大きさ
 // error出力
 #ifndef NOERRFILE
   #include <fstream>
-  std::ofstream cerr("stderr.txt");
+  struct Cerr {
+    Cerr(const std::string &filename) : os(filename){}
+    template <class T>
+    inline Cerr &operator<<(const T &val) noexcept{
+      os << val << std::flush;
+      return *this;
+    }
+  private:
+    std::ofstream os;
+  };
+  Cerr cerr("stderr.txt");
 #else
   using std::cerr;
 #endif
@@ -62,7 +72,7 @@ std::string get_backtrace_info(){
   static constexpr ll trace_frames_max = 50;
   void *trace_frames[trace_frames_max] = {};
   const int size = ::CaptureStackBackTrace(0, trace_frames_max, trace_frames, nullptr);
-  if (size < 0 || size >= trace_frames_max){
+  if(size < 0 || size >= trace_frames_max){
     return "get_backtrace_info error: backtrace failed";
   }
   std::ostringstream address_str;
@@ -72,18 +82,26 @@ std::string get_backtrace_info(){
   }
   result.assign(address_str.str());
 #else
-  return  "get_backtrace_info error: unknow platform";
+  return "get_backtrace_info error: unknow platform";
 #endif
   return result;
 }
 
-void assertion_failed(char const* expr){
+void _assertion_failed(char const *expr){
   const auto info = get_backtrace_info();
   cerr << "Expression '" << expr << "' is false in\n" << info << "\n";
   std::abort();
 }
 
-#define Assert(expr) { if(!(expr)){ cerr << "Assertion Failed!!! " << __FILE__ << ", " << __LINE__ << "\n"; assertion_failed(#expr); } }
+#ifndef NDEBUG
+  #define Assert(expr) \
+  (void) \
+  ((!!(expr)) || \
+  (cerr << "Assertion Failed!!! " << __FILE__ << ", " << __LINE__ << "\n", \
+  _assertion_failed(#expr), 0))
+#else
+  #define Assert(expr)
+#endif
 
 
 
@@ -157,24 +175,41 @@ inline constexpr bool is_valid(const Pos y, const Pos x) noexcept{
   return 0 <= y && y < height && 0 <= x && x < width;
 }
 
-inline constexpr bool is_valid(const Point &p) noexcept{
+inline constexpr bool is_valid(const Point p) noexcept{
   return 0 <= p.y && p.y < height && 0 <= p.x && p.x < width;
 }
 
-inline constexpr int manh_dist(const Point &p, const Point &q) noexcept{
+inline constexpr int manh_dist(const Point p, const Point q) noexcept{
   return abs(p.y - q.y) + abs(p.x - q.x);
 }
 
-inline constexpr int che_dist(const Point &p, const Point &q) noexcept{
+inline constexpr int che_dist(const Point p, const Point q) noexcept{
   return std::max(abs(p.y - q.y), abs(p.x - q.x));
 }
 
-inline constexpr int manche_dist(const Point &p, const Point &q) noexcept{
+inline constexpr int manche_dist(const Point p, const Point q) noexcept{
   return manh_dist(p, q) + che_dist(p, q);
 }
 
-inline constexpr bool is_neighbor(const Point &p, const Point &q) noexcept{
-  return manh_dist(p, q) <= 1;
+inline constexpr bool is_neighbor(const Point p, const Point q) noexcept{
+  return manh_dist(p, q) == 1;
+}
+
+inline constexpr bool is_around(const Point p, const Point q) noexcept{
+  return che_dist(p, q) == 1;
+}
+
+inline int to_idx(const Point p) noexcept{
+  return p.y*width + p.x;
+}
+
+template <class S, class T>
+inline constexpr bool chmin(S &a, const T &b){
+  return a > b ? (a = b, 1) : 0;
+}
+template <class S, class T>
+inline constexpr bool chmax(S &a, const T &b){
+  return a < b ? (a = b, 1) : 0;
 }
 
 constexpr Point dmove[] = {
