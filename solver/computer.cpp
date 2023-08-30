@@ -1,8 +1,8 @@
 #include <time.h>
 #include "base.hpp"
 //#include "thunder.hpp"
-#include "simulated_annealing.hpp"
-
+//#include "simulated_annealing.hpp"
+#include "tsp.hpp"
 
 struct Game {
   Field field;
@@ -12,8 +12,35 @@ struct Game {
     const auto &current_agents = field.get_now_turn_agents();
     //Thunder::is_searching_ally = !(field.current_turn & 1);
     //const auto res = thunder_search(field, 1 << 9);
-    SimulatedAnnealing::is_searching_ally = !(field.current_turn & 1);
-    const auto res = SA(field);
+    //SimulatedAnnealing::is_searching_ally = !(field.current_turn & 1);
+    //const auto res = SA(field);
+    cerr << "run\n";
+    // ** board 17 only
+    const std::vector<Point> build_walls = {
+      {11, 19},
+      {12, 18},
+      {13, 17},
+      {14, 16},
+      {15, 15},
+      {16, 14},
+      {17, 13},
+      {18, 12},
+      {19, 11},
+      {20, 12},
+      {21, 13},
+      {22, 14},
+      {21, 15},
+      {20, 16},
+      {19, 17},
+      {18, 18},
+      {17, 19},
+      {16, 20},
+      {15, 21},
+      {14, 22},
+      {13, 21},
+      {12, 20},
+    };
+    const auto res = calculate_build_route(build_walls, field);
     const int m = res.size();
     std::vector<int> dirs(m);
     std::vector<std::string> cmd(m, "none");
@@ -46,6 +73,7 @@ struct Game {
     for(int i = 0; i < (int)current_agents.size(); i++){
       int dir; std::string str;
       std::cin >> dir >> str;
+      cerr << dir << " " << str << "\n";
       uchar cmd = Action::None;
       if(str == "move") cmd = Action::Move;
       if(str == "build") cmd = Action::Build;
