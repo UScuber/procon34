@@ -202,6 +202,9 @@ inline constexpr bool is_around(const Point p, const Point q) noexcept{
 inline int to_idx(const Point p) noexcept{
   return p.y*width + p.x;
 }
+inline Point to_point(const int idx) noexcept{
+  return Point(idx / width, idx % width);
+}
 
 template <class S, class T>
 inline constexpr bool chmin(S &a, const T &b){
