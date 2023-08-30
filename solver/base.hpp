@@ -6,8 +6,8 @@
 Actions enumerate_next_agent_acts(const Point &agent, const Field &field, const bool use_assert=true){
   const State ally = field.get_state(agent) & State::Human; // agentから見た味方
   const State enemy = ally ^ State::Human; // agentから見た敵
-  if(use_assert) Assert((ally == State::Enemy) == (field.current_turn & 1));
-  if(use_assert) Assert(ally == State::Ally || ally == State::Enemy);
+  if(use_assert) assert((ally == State::Enemy) == (field.current_turn & 1));
+  if(use_assert) assert(ally == State::Ally || ally == State::Enemy);
 
   const State ally_wall = ally == State::Ally ? State::WallAlly : State::WallEnemy; // agentから見た味方のwall
   const State enemy_wall = ally_wall ^ State::Wall; // agentから見た敵のwall
@@ -37,7 +37,7 @@ Actions select_random_next_agents_acts(const std::vector<Point> &agents, const F
   Actions result;
   std::set<Action> cnt;
   for(const auto &agent : agents){
-    Assert(((field.get_state(agent) & State::Human) == State::Enemy) == (field.current_turn & 1));
+    assert(((field.get_state(agent) & State::Human) == State::Enemy) == (field.current_turn & 1));
     auto acts = enumerate_next_agent_acts(agent, field);
     if(acts.empty()) acts.emplace_back(Action(agent, Action::None));
     int num = 0;

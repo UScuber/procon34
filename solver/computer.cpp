@@ -8,7 +8,7 @@ struct Game {
   Field field;
   Game(const Field &f) : field(f){}
   void run(){
-    Assert(field.is_my_turn());
+    assert(field.is_my_turn());
     const auto &current_agents = field.get_now_turn_agents();
     //Thunder::is_searching_ally = !(field.current_turn & 1);
     //const auto res = thunder_search(field, 1 << 9);
@@ -48,7 +48,7 @@ struct Game {
       if(res[i].command == Action::Move) cmd[i] = "move";
       if(res[i].command == Action::Build) cmd[i] = "build";
       if(res[i].command == Action::Break) cmd[i] = "break";
-      Assert(i == res[i].agent_idx);
+      assert(i == res[i].agent_idx);
       for(int d = 0; d < 8; d++){
         if(current_agents[i] + dmove[d] == res[i].pos){
           dirs[i] = d;
@@ -66,7 +66,7 @@ struct Game {
   }
 
   void load(){
-    Assert(!field.is_my_turn());
+    assert(!field.is_my_turn());
     const auto &current_agents = field.get_now_turn_agents();
     std::vector<Action> res;
     cerr << "enemy turn\n";

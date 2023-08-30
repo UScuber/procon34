@@ -90,7 +90,7 @@ int calc_agent_move_cost(const Point agent, const std::vector<Point> &walls, con
 
 // 初めに建てるべき壁の建てる方向
 int find_agent_build_wall_dir(const Point agent, const std::vector<Point> &walls, const Field &field, const std::vector<std::vector<int>> &cost_table){
-  Assert(!walls.empty());
+  assert(!walls.empty());
 
   const int walls_num = walls.size();
   std::vector<std::vector<int>> dp(walls_num, std::vector<int>(4, 1024)), prev(walls_num, std::vector<int>(4, -1));
@@ -128,21 +128,21 @@ int find_agent_build_wall_dir(const Point agent, const std::vector<Point> &walls
   for(int i = walls_num-1; i > 0; i--){
     dir = prev[i][dir];
   }
-  Assert(dir != -1);
+  assert(dir != -1);
   return dir;
 }
 
 // 初めの壁と建てる向きから経路を出す
 Action get_first_action(const Point agent, const Point first_wall, const int dir, const Field &field, const State enemy_wall){
   const Point target = first_wall + dmove[dir];
-  Assert(is_valid(target));
+  assert(is_valid(target));
 
   // build or break
   if(agent == target){
     if(field.get_state(first_wall) & enemy_wall){
       return Action(first_wall, Action::Break);
     }else{
-      Assert(!(field.get_state(first_wall) & State::Wall));
+      assert(!(field.get_state(first_wall) & State::Wall));
       return Action(first_wall, Action::Build);
     }
   }
@@ -176,14 +176,14 @@ Action get_first_action(const Point agent, const Point first_wall, const int dir
       }
     }
   }
-  Assert(dist[to_idx(target)] < 1024);
+  assert(dist[to_idx(target)] < 1024);
 
   int nxt_pos = to_idx(target);
   while(prev[nxt_pos] != to_idx(agent)){
     nxt_pos = prev[nxt_pos];
   }
   const Point nxt(nxt_pos/width, nxt_pos%width);
-  Assert(is_around(agent, nxt));
+  assert(is_around(agent, nxt));
   return Action(nxt, Action::Move);
 }
 
@@ -193,8 +193,8 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
   const int agents_num = agents.size();
   const State ally = field.get_state(agents[0]) & State::Human; // agentから見た味方
   const State enemy = ally ^ State::Human; // agentから見た敵
-  Assert((ally == State::Enemy) == (field.current_turn & 1));
-  Assert(ally == State::Ally || ally == State::Enemy);
+  assert((ally == State::Enemy) == (field.current_turn & 1));
+  assert(ally == State::Ally || ally == State::Enemy);
 
   const State ally_wall = ally == State::Ally ? State::WallAlly : State::WallEnemy; // agentから見た味方のwall
   const State enemy_wall = ally_wall ^ State::Wall; // agentから見た敵のwall
@@ -216,7 +216,7 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
         best_idx = i;
       }
     }
-    Assert(best_idx != -1);
+    assert(best_idx != -1);
     wall_part[best_idx].emplace_back(wall);
   }
   

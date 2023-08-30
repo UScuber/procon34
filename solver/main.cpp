@@ -52,7 +52,7 @@ int main(){
         if(res[i].command == Action::Move) cmd[i] = "move";
         if(res[i].command == Action::Build) cmd[i] = "build";
         if(res[i].command == Action::Break) cmd[i] = "break";
-        Assert(i == res[i].agent_idx);
+        assert(i == res[i].agent_idx);
         for(int d = 0; d < 8; d++){
           if(field.get_now_turn_agents()[i] + dmove[d] == res[i].pos){
             dirs[i] = d;

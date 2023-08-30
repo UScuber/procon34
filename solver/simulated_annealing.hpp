@@ -37,19 +37,19 @@ std::vector<Actions> enumerate_agent_moves(const Point &agent, const int agent_i
 // 動けないような移動が与えられた場合はNoneの行動になり、1が返る(建設や破壊は一応問題ない)
 // 次に動かす敵の行動はすべてNone
 std::vector<int> advance_field(const Actions &acts, Field &field){
-  Assert(acts.size() == field.ally_agents.size());
+  assert(acts.size() == field.ally_agents.size());
   std::vector<int> cannot_move(acts.size());
   Agents last_move_ally_agents, last_move_enemy_agents;
   Actions act_list[4];
   for(const auto &act : acts){
     act_list[act.command].emplace_back(act);
-    Assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
+    assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
   }
   if(!(field.current_turn & 1)){
     // break
     for(const auto &act : act_list[Action::Break]){
       const State st = field.get_state(act.pos);
-      Assert(!(st & State::Castle));
+      assert(!(st & State::Castle));
       if(!(st & State::Wall)){
         continue;
       }
@@ -58,7 +58,7 @@ std::vector<int> advance_field(const Actions &acts, Field &field){
     // build
     for(const auto &act : act_list[Action::Build]){
       const State st = field.get_state(act.pos);
-      Assert(!(st & State::Castle));
+      assert(!(st & State::Castle));
       // この操作だけ行動できないだけ
       if(st & (State::Wall | State::Enemy)){
         continue;
@@ -82,7 +82,7 @@ std::vector<int> advance_field(const Actions &acts, Field &field){
     // break
     for(const auto &act : act_list[Action::Break]){
       const State st = field.get_state(act.pos);
-      Assert(!(st & State::Castle));
+      assert(!(st & State::Castle));
       if(!(st & State::Wall)){
         continue;
       }
@@ -91,7 +91,7 @@ std::vector<int> advance_field(const Actions &acts, Field &field){
     // build
     for(const auto &act : act_list[Action::Build]){
       const State st = field.get_state(act.pos);
-      Assert(!(st & State::Castle));
+      assert(!(st & State::Castle));
       // この操作だけ行動できないだけ
       if(st & (State::Wall | State::Ally)){
         continue;

@@ -40,7 +40,7 @@ int height = 0, width = 0; // fieldの大きさ
 #endif
 
 
-// stacktrace
+// stacktrace/
 #include <sstream>
 #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
   #define __posix__
@@ -94,13 +94,13 @@ void _assertion_failed(char const *expr){
 }
 
 #ifndef NDEBUG
-  #define Assert(expr) \
+  #define assert(expr) \
   (void) \
   ((!!(expr)) || \
   (cerr << "Assertion Failed!!! " << __FILE__ << ", " << __LINE__ << "\n", \
   _assertion_failed(#expr), 0))
 #else
-  #define Assert(expr)
+  #define assert(expr)
 #endif
 
 
