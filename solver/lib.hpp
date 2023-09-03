@@ -172,11 +172,11 @@ struct Point {
 };
 
 inline constexpr bool is_valid(const Pos y, const Pos x) noexcept{
-  return 0 <= y && y < height && 0 <= x && x < width;
+  return 0 <= y && y < (Pos)height && 0 <= x && x < (Pos)width;
 }
 
 inline constexpr bool is_valid(const Point p) noexcept{
-  return 0 <= p.y && p.y < height && 0 <= p.x && p.x < width;
+  return 0 <= p.y && p.y < (Pos)height && 0 <= p.x && p.x < (Pos)width;
 }
 
 inline constexpr int manh_dist(const Point p, const Point q) noexcept{

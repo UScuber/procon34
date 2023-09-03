@@ -8,50 +8,96 @@
 // 指定された場所に職人全員で壁を立てる
 namespace TSP {
 
+constexpr int inf = 1024;
+
+// 距離: 初手にたどり着くことができる職人を除いたグリッド上での移動距離
+// 敵の壁がある場合は+1される
+// 壁が目的地の場合、その時だけ入れるとする <- なくした
+void calc_move_min_cost(const Point start, const Field &field, const State enemy_wall, std::vector<int> &dist, std::vector<int> &prev){
+  static std::priority_queue<std::pair<int,Point>> que;
+
+  dist.assign(height*width, inf);
+  prev.assign(height*width, -1);
+  
+  // 0手目
+  dist[to_idx(start)] = 0;
+
+  // 1手目
+  for(int i = 0; i < 8; i++){
+    const Point nxt = start + dmove[i];
+    if(!is_valid(nxt)) continue;
+    const State st = field.get_state(nxt);
+    if(st & (State::Pond | State::Human)) continue;
+    int weight = 0;
+    if(i < 4){
+      if(st & enemy_wall) weight += 2;
+      else weight++;
+    }else{
+      if(st & enemy_wall) continue;
+      weight++;
+    }
+    dist[to_idx(nxt)] = weight;
+    prev[to_idx(nxt)] = to_idx(start);
+    que.emplace(weight, nxt);
+  }
+  
+  // 2手目~
+  while(!que.empty()){
+    int cost; Point p;
+    std::tie(cost, p) = que.top();
+    que.pop();
+    if(dist[to_idx(p)] < cost) continue;
+    for(int k = 0; k < 8; k++){
+      const Point nxt = p + dmove[k];
+      if(!is_valid(nxt)) continue;
+      const State st = field.get_state(nxt);
+
+      if(st & State::Pond) continue;
+      int weight = 0;
+      if(k < 4){
+        if(st & enemy_wall) weight += 2;
+        else weight++;
+      }else{
+        if(st & enemy_wall) continue;
+        weight++;
+      }
+      if(chmin(dist[to_idx(nxt)], cost + weight)){
+        prev[to_idx(nxt)] = to_idx(p);
+        que.emplace(cost+weight, nxt);
+      }
+      /*
+      int weight = 0;
+      if(k < 4){
+        if(st & enemy_wall) weight += 2;
+        else weight++;
+      }else{
+        if(st & (State::Pond | State::Human | enemy_wall)) continue;
+        weight++;
+      }
+      if(chmin(dist[to_idx(nxt)], cost + weight)){
+        prev[to_idx(nxt)] = to_idx(p);
+        if(!(st & (State::Pond | State::Human))){
+          que.emplace(cost+weight, nxt);
+        }
+      }
+      */
+    }
+  }
+}
+
+
 
 // 2点間の移動距離
 struct CostTable {
   CostTable(const Field &_field, const State _enemy_wall) : field(_field), enemy_wall(_enemy_wall){}
-  // 壁が目的地の場合、その時だけ入れるとする
-  std::vector<int> calc_move_cost(const Point st) const{
-    static std::priority_queue<std::pair<int,Point>> que;
-    std::vector<int> d(height*width, 1024);
-    que.emplace(0, st);
-    d[to_idx(st)] = 0;
-    
-    while(!que.empty()){
-      int cost; Point p;
-      std::tie(cost, p) = que.top();
-      que.pop();
-      if(d[to_idx(p)] < cost) continue;
-      for(int k = 0; k < 8; k++){
-        const Point nxt = p + dmove[k];
-        if(!is_valid(nxt)) continue;
-        const State st = field.get_state(nxt);
-        int weight = 0;
-        if(k < 4){
-          if(st & enemy_wall) weight += 2;
-          else weight++;
-        }else{
-          if(st & (State::Pond | State::Human | enemy_wall)) continue;
-          weight++;
-        }
-        if(chmin(d[to_idx(nxt)], cost + weight)){
-          if(!(st & (State::Pond | State::Human))){
-            que.emplace(cost+weight, nxt);
-          }
-        }
-      }
-    }
-    return d;
-  }
 
   inline const std::vector<int> &operator[](const int idx){
     assert(0 <= idx && idx < height*width);
-    if(data.count(idx)){
-      return data[idx];
+    if(!data.count(idx)){
+      std::vector<int> dist, prev;
+      calc_move_min_cost(to_point(idx), field, enemy_wall, dist, prev);
+      data[idx] = dist;
     }
-    data[idx] = calc_move_cost(to_point(idx));
     return data[idx];
   }
 
@@ -68,10 +114,11 @@ std::vector<Point> calc_tsp_route(const Point agent, std::vector<Point> walls, C
   return walls;
 }
 
+// 壁を順に建てる時の最小コストを計算
 int calc_agent_move_cost(const Point agent, const std::vector<Point> &walls, const Field &field, CostTable &cost_table){
   if(walls.empty()) return 0;
   const int walls_num = walls.size();
-  std::vector<std::vector<int>> dp(walls_num, std::vector<int>(4, 1024));
+  std::vector<std::vector<int>> dp(walls_num, std::vector<int>(4, inf));
   for(int i = 0; i < 4; i++){
     const Point p = walls[0] + dmove[i];
     if(!is_valid(p)) continue;
@@ -84,12 +131,12 @@ int calc_agent_move_cost(const Point agent, const std::vector<Point> &walls, con
       if(!is_valid(p)) continue;
       if(field.get_state(p) & State::Pond) continue;
       for(int k = 0; k < 4; k++){
-        if(dp[i-1][k] >= 1024) continue;
+        if(dp[i-1][k] >= inf) continue;
         chmin(dp[i][j], dp[i-1][k] + cost_table[to_idx(walls[i-1]+dmove[k])][to_idx(p)] + 1);
       }
     }
   }
-  int min_cost = 1024;
+  int min_cost = inf;
   for(int i = 0; i < 4; i++){
     chmin(min_cost, dp[walls_num-1][i]);
   }
@@ -101,7 +148,7 @@ int find_agent_build_wall_dir(const Point agent, const std::vector<Point> &walls
   assert(!walls.empty());
 
   const int walls_num = walls.size();
-  std::vector<std::vector<int>> dp(walls_num, std::vector<int>(4, 1024)), prev(walls_num, std::vector<int>(4, -1));
+  std::vector<std::vector<int>> dp(walls_num, std::vector<int>(4, inf)), prev(walls_num, std::vector<int>(4, -1));
 
   for(int i = 0; i < 4; i++){
     const Point p = walls[0] + dmove[i];
@@ -115,7 +162,7 @@ int find_agent_build_wall_dir(const Point agent, const std::vector<Point> &walls
       if(!is_valid(p)) continue;
       if(field.get_state(p) & State::Pond) continue;
       for(int k = 0; k < 4; k++){
-        if(dp[i-1][k] >= 1024) continue;
+        if(dp[i-1][k] >= inf) continue;
         const int c = dp[i-1][k] + cost_table[to_idx(walls[i-1]+dmove[k])][to_idx(p)] + 1;
         if(chmin(dp[i][j], c)){
           prev[i][j] = k;
@@ -126,7 +173,7 @@ int find_agent_build_wall_dir(const Point agent, const std::vector<Point> &walls
     }
   }
 
-  int min_cost = 1024;
+  int min_cost = inf;
   int dir = -1;
   for(int i = 0; i < 4; i++){
     if(chmin(min_cost, dp[walls_num-1][i])){
@@ -144,6 +191,7 @@ int find_agent_build_wall_dir(const Point agent, const std::vector<Point> &walls
 Action get_first_action(const Point agent, const Point first_wall, const int dir, const Field &field, const State enemy_wall){
   const Point target = first_wall + dmove[dir];
   assert(is_valid(target));
+  assert(!(field.get_state(target) & State::Pond));
 
   // build or break
   if(agent == target){
@@ -155,36 +203,11 @@ Action get_first_action(const Point agent, const Point first_wall, const int dir
     }
   }
 
-  std::priority_queue<std::pair<int,Point>> que;
-  std::vector<int> dist(height*width, 1024), prev(height*width, -1);
-  que.push({ 0, agent });
-  dist[to_idx(agent)] = 0;
+  std::vector<int> dist, prev;
   
-  while(!que.empty()){
-    int cost; Point p;
-    std::tie(cost, p) = que.top();
-    que.pop();
-    if(dist[to_idx(p)] < cost) continue;
-    for(int k = 0; k < 8; k++){
-      const Point nxt = p + dmove[k];
-      if(!is_valid(nxt)) continue;
-      const State st = field.get_state(nxt);
-      if(st & (State::Pond | State::Human)) continue;
-      int weight = 0;
-      if(k < 4){
-        if(st & enemy_wall) weight += 2;
-        else weight++;
-      }else{
-        if(st & enemy_wall) continue;
-        weight++;
-      }
-      if(chmin(dist[to_idx(nxt)], cost + weight)){
-        prev[to_idx(nxt)] = to_idx(p);
-        que.emplace(cost+weight, nxt);
-      }
-    }
-  }
-  assert(dist[to_idx(target)] < 1024);
+  calc_move_min_cost(agent, field, enemy_wall, dist, prev);
+
+  assert(dist[to_idx(target)] < inf);
 
   int nxt_pos = to_idx(target);
   while(prev[nxt_pos] != to_idx(agent)){
@@ -207,6 +230,8 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
   const State ally_wall = ally == State::Ally ? State::WallAlly : State::WallEnemy; // agentから見た味方のwall
   const State enemy_wall = ally_wall ^ State::Wall; // agentから見た敵のwall
 
+  CostTable cost_table(field, enemy_wall);
+
   // すでに置いた壁をなくす
   std::vector<Point> walls;
   for(const Point p : build_walls){
@@ -214,16 +239,23 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
   }
   const int walls_num = walls.size();
 
-  CostTable cost_table(field, enemy_wall);
   std::vector<std::vector<Point>> wall_part(agents_num);
+  const int max_parts_num = (walls_num + agents_num-1) / agents_num;
   for(const Point wall : walls){
-    int min_cost = 1024;
+    int min_cost = inf;
     int best_idx = -1;
     for(int i = 0; i < agents_num; i++){
-      if(chmin(min_cost, cost_table[to_idx(agents[i])][to_idx(wall)])){
-        best_idx = i;
+      if((int)wall_part[i].size() > max_parts_num) continue;
+      for(int j = 0; j < 4; j++){
+        const Point p = wall + dmove[j];
+        if(!is_valid(p)) continue;
+        // 池の場合infになるのでそのままでOK
+        if(chmin(min_cost, cost_table[to_idx(agents[i])][to_idx(p)])){
+          best_idx = i;
+        }
       }
     }
+    cerr << "wall: " << wall << "\n";
     assert(best_idx != -1);
     wall_part[best_idx].emplace_back(wall);
   }
