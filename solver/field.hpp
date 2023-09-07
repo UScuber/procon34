@@ -1,6 +1,7 @@
 #pragma once
 
 #include <queue>
+#include <map>
 #include "lib.hpp"
 
 
@@ -177,16 +178,21 @@ struct Field {
     }
   }
 
-  // bug: 移動に問題あり、職人がいた場所に職人が移動できてしまう
   // side: 味方:0, 敵:1
   void update_field(const Actions &acts){
     assert(acts.size() == ally_agents.size());
     Actions act_list[4];
+    std::map<Point, int> agent_poses;
+
     for(const auto &act : acts){
       act_list[act.command].emplace_back(act);
       assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
+      if(act.command == Action::Move) agent_poses[act.pos]++;
     }
+    
+    // ally turn
     if(!(current_turn & 1)){
+      for(const Point agent : ally_agents) agent_poses[agent]++;
       // break
       for(const auto &act : act_list[Action::Break]){
         const State st = get_state(act.pos);
@@ -206,12 +212,16 @@ struct Field {
       for(const auto &act : act_list[Action::Move]){
         const State st = get_state(act.pos);
         assert(!(st & (State::Human | State::Pond | State::WallEnemy)));
+        assert(agent_poses[act.pos] <= 1);
         const auto from = ally_agents[act.agent_idx];
         set_state(from, get_state(from) ^ State::Ally);
         set_state(act.pos, st | State::Ally);
         ally_agents[act.agent_idx] = act.pos;
       }
-    }else{
+    }
+    // enemy turn
+    else{
+      for(const Point agent : enemy_agents) agent_poses[agent]++;
       // break
       for(const auto &act : act_list[Action::Break]){
         const State st = get_state(act.pos);
@@ -231,6 +241,7 @@ struct Field {
       for(const auto &act : act_list[Action::Move]){
         const State st = get_state(act.pos);
         assert(!(st & (State::Human | State::Pond | State::WallAlly)));
+        assert(agent_poses[act.pos] <= 1);
         const auto from = enemy_agents[act.agent_idx];
         set_state(from, get_state(from) ^ State::Enemy);
         set_state(act.pos, st | State::Enemy);
