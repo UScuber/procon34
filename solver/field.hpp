@@ -251,6 +251,68 @@ struct Field {
     update_region();
   }
 
+  // s: 味方:0, 敵:1
+  bool is_legal_action(const Actions &acts, int s = -1) const{
+    if(s == -1) s = side;
+    assert(acts.size() == ally_agents.size());
+    Actions act_list[4];
+    std::map<Point, int> agent_poses;
+
+    for(const auto &act : acts){
+      act_list[act.command].emplace_back(act);
+      assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
+      if(act.command == Action::Move) agent_poses[act.pos]++;
+    }
+    
+    // ally turn
+    if(!side){
+      for(const Point agent : ally_agents) agent_poses[agent]++;
+      // break
+      for(const auto &act : act_list[Action::Break]){
+        const State st = get_state(act.pos);
+        if(!(st & State::Wall)) return false;
+      }
+      // build
+      for(const auto &act : act_list[Action::Build]){
+        const State st = get_state(act.pos);
+        if(st & (State::WallEnemy | State::Enemy | State::Castle)) return false;
+        if(st & State::WallAlly){ // someone already built
+          continue;
+        }
+      }
+      // move
+      for(const auto &act : act_list[Action::Move]){
+        const State st = get_state(act.pos);
+        if(st & (State::Human | State::Pond | State::WallEnemy)) return false;
+        if(agent_poses[act.pos] >= 2) return false;
+      }
+    }
+    // enemy turn
+    else{
+      for(const Point agent : enemy_agents) agent_poses[agent]++;
+      // break
+      for(const auto &act : act_list[Action::Break]){
+        const State st = get_state(act.pos);
+        if(!(st & State::Wall)) return false;
+      }
+      // build
+      for(const auto &act : act_list[Action::Build]){
+        const State st = get_state(act.pos);
+        if(st & (State::WallAlly | State::Ally | State::Castle)) return false;
+        if(st & State::WallEnemy){ // someone already built
+          continue;
+        }
+      }
+      // move
+      for(const auto &act : act_list[Action::Move]){
+        const State st = get_state(act.pos);
+        if(st & (State::Human | State::Pond | State::WallAlly)) return false;
+        if(agent_poses[act.pos] >= 2) return false;
+      }
+    }
+    return true;
+  }
+
   void update_turn(const Actions &acts){
     update_field(acts);
     current_turn++;
