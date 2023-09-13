@@ -2,11 +2,20 @@
 
 #include <tuple>
 #include <map>
+#include <cmath>
 #include "base.hpp"
 #include "timer.hpp"
 
 // 指定された場所に職人全員で壁を立てる
 namespace TSP {
+
+struct StopWatch {
+  const std::chrono::system_clock::time_point start_time;
+  StopWatch() : start_time(std::chrono::system_clock::now()){}
+  inline double get_time() const noexcept{
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_time).count() * 1e-6;
+  }
+};
 
 constexpr int inf = 1024;
 
@@ -189,8 +198,8 @@ std::vector<Point> calc_tsp_route(const Point agent, std::vector<Point> walls, C
     last_pos = walls[best_idx];
     result.emplace_back(last_pos);
   }
-  std::sort(walls.begin(), walls.end());
   */
+  std::sort(walls.begin(), walls.end());
   return walls;
 }
 
@@ -224,6 +233,17 @@ int calc_agent_move_cost(const Point agent, const std::vector<Point> &walls, con
   }
   return min_cost;
 }
+
+// 全体の移動回数のコスト計算
+int calc_all_agent_move_cost(const std::vector<Point> &agents, const std::vector<std::vector<Point>> &wall_part, const Field &field, CostTable &cost_table){
+  int max_cost = 0;
+  for(int i = 0; i < (int)agents.size(); i++){
+    const int cost = calc_agent_move_cost(agents[i], wall_part[i], field, cost_table);
+    chmax(max_cost, cost);
+  }
+  return max_cost;
+}
+
 
 // 初めに建てるべき壁の建てる方向
 int find_agent_build_wall_dir(const Point agent, const std::vector<Point> &walls, const Field &field, CostTable &cost_table){
@@ -347,6 +367,81 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
       wall_part[i] = calc_tsp_route(agents[i], wall_part[i], cost_table);
     }
   }
+
+  static constexpr double TL = 1.0;
+  static constexpr double T0 = 3;
+  static constexpr double T1 = 0.5;
+  double temp = T0;
+  double spend_time = 0;
+  auto best_wall_part = wall_part;
+  int best_score = calc_all_agent_move_cost(agents, best_wall_part, field, cost_table);
+  auto awesome_wall_part = best_wall_part;
+  int awesome_score = best_score;
+  StopWatch sw;
+  cerr << "Start SA(TSP)\n";
+  cerr << "First Score: " << awesome_score << "\n";
+  int steps = 0;
+  for(; ; steps++){
+    if(!(steps & 127)){
+      spend_time = sw.get_time();
+      const double p = spend_time / TL;
+      if(p >= 1.0) break;
+      temp = (T1 - T0) * p + T0;
+    }
+
+    auto wp = wall_part;
+    // swap
+    if(rnd(10) <= 8 && (int)walls.size() >= 2){
+      int a = rnd(agents_num), b = rnd(agents_num);
+      while(wp[a].empty() || wp[b].empty()){
+        a = rnd(agents_num);
+        b = rnd(agents_num);
+      }
+      if(a == b && (int)wp[a].size() <= 1){
+        steps--;
+        continue;
+      }
+      int ai = rnd(wp[a].size());
+      int bi = rnd(wp[b].size());
+      if(a == b){
+        while(ai == bi){
+          ai = rnd(wp[a].size());
+          bi = rnd(wp[b].size());
+        }
+      }
+      std::swap(wp[a][ai], wp[b][bi]);
+    }
+    // move a <- b
+    else{
+      int a = rnd(agents_num), b = rnd(agents_num);
+      while(a == b || wp[b].empty()){
+        a = rnd(agents_num);
+        b = rnd(agents_num);
+      }
+      const int ai = rnd(wp[a].size()+1);
+      const int bi = rnd(wp[b].size());
+      wp[a].insert(wp[a].begin() + ai, wp[b][bi]);
+      wp[b].erase(wp[b].begin() + bi);
+    }
+
+    const int score = calc_all_agent_move_cost(agents, wp, field, cost_table);
+
+    if(awesome_score > score){
+      awesome_score = score;
+      best_score = score;
+      awesome_wall_part = wp;
+      best_wall_part = wp;
+      wall_part = wp;
+    }else if(exp((double)(best_score - score) / temp) > rnd(2048)/2048.0){
+      best_score = score;
+      best_wall_part = wp;
+      wall_part = wp;
+    }
+  }
+  cerr << "Steps: " << steps << "\n";
+  cerr << "Final Score: " << awesome_score << "\n";
+
+  wall_part = awesome_wall_part;
 
   Actions result;
   for(int i = 0; i < agents_num; i++){
