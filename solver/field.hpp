@@ -197,7 +197,7 @@ struct Field {
       for(const auto &act : act_list[Action::Break]){
         const State st = get_state(act.pos);
         if(!(st & State::Wall)){
-          cerr << "there is not wall at(" << act.pos << ")\n";
+          cerr << "Error: there is not wall at(" << act.pos << ")\n";
           continue;
         }
         set_state(act.pos, st & ~State::Wall);
@@ -206,11 +206,11 @@ struct Field {
       for(const auto &act : act_list[Action::Build]){
         const State st = get_state(act.pos);
         if(st & (State::WallEnemy | State::Enemy | State::Castle)){
-          cerr << "there is wallenemy, enemy or castle at(" << act.pos << ")\n";
+          cerr << "Error: there is wallenemy, enemy or castle at(" << act.pos << ")\n";
           continue;
         }
         if(st & State::WallAlly){ // someone already built
-          cerr << "someone has already built on(" << act.pos << ")\n";
+          cerr << "Error: someone has already built on(" << act.pos << ")\n";
           continue;
         }
         set_state(act.pos, st | State::WallAlly);
@@ -219,11 +219,11 @@ struct Field {
       for(const auto &act : act_list[Action::Move]){
         const State st = get_state(act.pos);
         if(st & (State::Human | State::Pond | State::WallEnemy)){
-          cerr << "there is human, pond or wallenemy at(" << act.pos << ")\n";
+          cerr << "Error: there is human, pond or wallenemy at(" << act.pos << ")\n";
           continue;
         }
         if(agent_poses[act.pos] >= 2){
-          cerr << "many humans at(" << act.pos << ")\n";
+          cerr << "Error: many humans at(" << act.pos << ")\n";
           continue;
         }
         const auto from = ally_agents[act.agent_idx];
@@ -239,7 +239,7 @@ struct Field {
       for(const auto &act : act_list[Action::Break]){
         const State st = get_state(act.pos);
         if(!(st & State::Wall)){
-          cerr << "there is not wall at(" << act.pos << ")\n";
+          cerr << "Error: there is not wall at(" << act.pos << ")\n";
           continue;
         }
         set_state(act.pos, st & ~State::Wall);
@@ -248,11 +248,11 @@ struct Field {
       for(const auto &act : act_list[Action::Build]){
         const State st = get_state(act.pos);
         if(st & (State::WallAlly | State::Ally | State::Castle)){
-          cerr << "there is wallally, ally or castle at(" << act.pos << ")\n";
+          cerr << "Error: there is wallally, ally or castle at(" << act.pos << ")\n";
           continue;
         }
         if(st & State::WallEnemy){ // someone already built
-          cerr << "someone has already built on(" << act.pos << ")\n";
+          cerr << "Error: someone has already built on(" << act.pos << ")\n";
           continue;
         }
         set_state(act.pos, st | State::WallEnemy);
@@ -261,11 +261,11 @@ struct Field {
       for(const auto &act : act_list[Action::Move]){
         const State st = get_state(act.pos);
         if(st & (State::Human | State::Pond | State::WallAlly)){
-          cerr << "there is human, pond or wallally at(" << act.pos << ")\n";
+          cerr << "Error: there is human, pond or wallally at(" << act.pos << ")\n";
           continue;
         }
         if(agent_poses[act.pos] >= 2){
-          cerr << "many humans at(" << act.pos << ")\n";
+          cerr << "Error: many humans at(" << act.pos << ")\n";
           continue;
         }
         const auto from = enemy_agents[act.agent_idx];
