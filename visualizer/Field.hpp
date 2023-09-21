@@ -24,6 +24,42 @@ Optional<Point> get_clicked_pos(const Point p, const Array<Point>& dydx) {
 	return none;
 }
 
+Optional<Point> get_pressed_pos(const Point p, const Array<Point>& dydx) {
+	Point direction = {100, 100};
+	if (KeyUp.pressed() and KeyLeft.pressed() and dydx.size() == 8) {
+		direction = { -1, -1 };
+	}else if (KeyLeft.pressed() and KeyDown.pressed() and dydx.size() == 8) {
+		direction = { -1, 1 };
+	}else if (KeyDown.pressed() and KeyRight.pressed() and dydx.size() == 8) {
+		direction = { 1,1 };
+	}else if (KeyRight.pressed() and KeyUp.pressed() and dydx.size() == 8) {
+		direction = { 1, -1 };
+	}else if (KeyUp.pressed()) {
+		direction = { 0, -1 };
+	}else if (KeyLeft.pressed()) {
+		direction = { -1, 0 };
+	}else if (KeyDown.pressed()) {
+		direction = { 0, 1 };
+	}else if (KeyRight.pressed()) {
+		direction = { 1, 0 };
+	}
+	if (direction == Point(100,100)) {
+		return none;
+	}
+	return  direction;
+
+}
+Optional<int> get_pressed_mode(void) {
+	if (Key1.pressed()) {
+		return ACT::MOVE;
+	}else if (Key2.pressed()) {
+		return ACT::BUILD;
+	}else if (Key3.pressed()) {
+		return ACT::DESTROY;
+	}
+	return none;
+}
+
 class Field {
 public:
 	// 指定したcsvの盤面をセット

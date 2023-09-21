@@ -95,24 +95,39 @@ void Game::operate_craftsman(bool team, Field& field) {
 		}
 		// クリックされた移動方向
 		Optional<Point> direction;
-		switch (operation_mode) {
+		// 押された数字に対する操作
+		Optional<int> mode = get_pressed_mode();
+		switch ((mode == none) ? operation_mode : mode.value()) {
 			// 移動モード
 		case ACT::MOVE:
-			direction = get_clicked_pos(craftsman.pos, range_move);
+			if (mode == none){
+				direction = get_clicked_pos(craftsman.pos, range_move);
+			}else {
+				direction = get_pressed_pos(craftsman.pos, range_move);
+				Console << U"main " <<  direction;
+			}
 			if (direction and craftsman.move(field, *direction)) {
 				is_targeting = false;
 			}
 			break;
 			// 建築モード
 		case ACT::BUILD:
-			direction = get_clicked_pos(craftsman.pos, range_wall);
+			if (mode == none) {
+				direction = get_clicked_pos(craftsman.pos, range_wall);
+			}else {
+				direction = get_pressed_pos(craftsman.pos, range_wall);
+			}
 			if (direction and craftsman.build(field, *direction)) {
 				is_targeting = false;
 			}
 			break;
 			// 破壊モード
 		case ACT::DESTROY:
-			direction = get_clicked_pos(craftsman.pos, range_wall);
+			if (mode == none){
+				direction = get_clicked_pos(craftsman.pos, range_wall);
+			}else {
+				direction = get_pressed_pos(craftsman.pos, range_wall);
+			}
 			if (direction and craftsman.destroy(field, *direction)) {
 				is_targeting = false;
 			}
@@ -329,7 +344,7 @@ void PvC::operate_gui(Field& field) {
 		field.calc_point(TEAM::RED);
 		field.calc_point(TEAM::BLUE);
 		give_solver(team_solver, field);
-		// give_solver_build_plan();
+		//give_solver_build_plan();
 		System::Sleep(1.5s);
 		now_turn ^= true;
 		receive_solver(team_solver, field);
