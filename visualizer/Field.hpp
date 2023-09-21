@@ -12,7 +12,7 @@ Rect get_grid_rect(const Point p) {
 	return Rect{ p.x * CELL_SIZE + BLANK_LEFT, p.y * CELL_SIZE + BLANK_TOP, CELL_SIZE };
 }
 Circle get_grid_circle(const Point p) {
-	return Circle(Arg::center(p.x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, p.y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4);
+	return Circle(Arg::center(p.x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, p.y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3);
 }
 
 Optional<Point> get_clicked_pos(const Point p, const Array<Point>& dydx) {
@@ -182,14 +182,12 @@ void Field::display_actors(void) const {
 		int y = i / WIDTH;
 		int x = i % WIDTH;
 		char target_cell = grid[y][x];
+
 		if (target_cell & CELL::POND) {
 			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(Palette::Black);
 		}
-		if (target_cell & CELL::WALL_RED) {
-			Rect(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.6).draw(Palette::Red);
-		}
-		if (target_cell & CELL::WALL_BLUE) {
-			Rect(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.6).draw(Palette::Blue);
+		if (target_cell & CELL::CASTLE) {
+			Shape2D::Star(CELL_SIZE * 0.6, Vec2{ x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2 }).draw(Palette::Black);
 		}
 		if (target_cell & CELL::AREA_RED and target_cell & CELL::AREA_BLUE) {
 			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(1.0, 0.0, 1.0, 0.5));
@@ -200,14 +198,19 @@ void Field::display_actors(void) const {
 		else 	if (target_cell & CELL::AREA_BLUE) {
 			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(0.0, 0.0, 1.0, 0.25));
 		}
+		if (target_cell & CELL::WALL_RED) {
+			Rect(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.7).draw(Palette::Red);
+		}
+		if (target_cell & CELL::WALL_BLUE) {
+			Rect(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.7).draw(Palette::Blue);
+		}
 		if (target_cell & CELL::CRAFTSMAN_RED) {
-			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4).draw(Palette::Red);
+			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3).draw(Palette::Red);
+			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3).drawFrame(1,1,Palette::White);
 		}
 		if (target_cell & CELL::CRAFTSMAN_BLUE) {
-			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y* CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.4).draw(Palette::Blue);
-		}
-		if (target_cell & CELL::CASTLE) {
-			Shape2D::Star(CELL_SIZE * 0.6, Vec2{ x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2 }).draw(Palette::Black);
+			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y* CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3).draw(Palette::Blue);
+			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3).drawFrame(1, 1, Palette::White);
 		}
 	}
 }
