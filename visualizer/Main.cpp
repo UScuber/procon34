@@ -224,13 +224,18 @@ class PvC : public App::Scene, public Game{
 public:
 	PvC(const InitData& init);
 	void operate_gui(Field& field);
+	void display_field(void) const;
 	void update() override;
 	void draw() const override;
 private:
+	Array<Array<bool>> is_build_plan;
 	bool team_solver = TEAM::RED;
+	void receive_build_plan(void);
+	void give_solver_build_plan(void);
 };
 PvC::PvC(const InitData& init) : IScene{ init } {
 	craftsmen.resize(2);
+	is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
 	for (size_t h = 0; h < HEIGHT; h++) {
 		for (size_t w = 0; w < WIDTH; w++) {
 			if (getData().get_cell(h, w) & CELL::CRAFTSMAN_RED) {
@@ -257,6 +262,58 @@ PvC::PvC(const InitData& init) : IScene{ init } {
 		getData().calc_point(TEAM::BLUE);
 	}
 }
+void PvC::receive_build_plan(void) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if (get_grid_rect({ h, w }).rightClicked()) {
+				if (getData().get_cell(h, w) & CELL::CASTLE) {
+					continue;
+				}
+				bool is_around_wall = true;
+				for (auto& dydx : range_wall) {
+					if (not is_in_field(h + dydx.y, w + dydx.x)) {
+						continue;
+					}
+					if (not (getData().get_cell(h + dydx.y, w + dydx.x) & CELL::POND)) {
+						is_around_wall = false;
+						break;
+					}
+				}
+				if (is_around_wall) {
+					continue;
+				}
+				is_build_plan[h][w] ^= true;
+			}
+		}
+	}
+}
+void PvC::give_solver_build_plan(void) {
+	int n = 0;
+	for (auto& ary : is_build_plan) {
+		for (auto& cell : ary) {
+			if (cell) {
+				n++;
+			}
+		}
+	}
+	Console << n << '\n';
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if (is_build_plan[h][w]) {
+				Console << h << ' ' << w << '\n';
+			}
+		}
+	}
+	//child.ostream() << n << std::endl;
+	//for (int h = 0; h < HEIGHT; h++) {
+	//	for (int w = 0; w < WIDTH; w++) {
+	//		if (is_build_plan[h][w]) {
+	//			child.ostream() << h << std::endl;
+	//			child.ostream() << w << std::endl;
+	//		}
+	//	}
+	//}
+}
 void PvC::operate_gui(Field& field) {
 	// 操作モードの変更
 	if (SimpleGUI::Button(U"移動", { 700, 100 }) or Key1.down()) {
@@ -272,6 +329,7 @@ void PvC::operate_gui(Field& field) {
 		field.calc_point(TEAM::RED);
 		field.calc_point(TEAM::BLUE);
 		give_solver(team_solver, field);
+		// give_solver_build_plan();
 		System::Sleep(1.5s);
 		now_turn ^= true;
 		receive_solver(team_solver, field);
@@ -287,9 +345,29 @@ void PvC::operate_gui(Field& field) {
 		field.calc_point(TEAM::BLUE);
 	}
 }
+void PvC::display_field(void) const {
+	for (const Array<Craftsman>& ary : craftsmen) {
+		for (const Craftsman& craftsman : ary) {
+			if (craftsman.is_acted) {
+				get_grid_circle(craftsman.pos).draw(Palette::Gray);
+			}
+			else if (craftsman.is_target) {
+				get_grid_rect(craftsman.pos).drawFrame(2, 2, Palette::Yellow);
+			}
+		}
+	}
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if (is_build_plan[h][w]) {
+				get_grid_rect({ h,w }).drawFrame(1, 1, Palette::Darkviolet);
+			}
+		}
+	}
+}
 void PvC::update() {
 	operate_gui(getData());
 	operate_craftsman(now_turn, getData());
+	receive_build_plan();
 }
 void PvC::draw() const {
 	getData().display_grid();
@@ -297,6 +375,7 @@ void PvC::draw() const {
 	display_field();
 	display_details(getData());
 }
+
 
 void Main(){
 	// ウィンドウ設定
