@@ -90,7 +90,7 @@ void Game::operate_craftsman(bool team, Field& field) {
 		if (craftsman.is_acted) {
 			continue;
 		}
-		// 動かす対象の職人を決める
+		// 動かす対象の職人を決めるf
 		if ((not is_targeting or craftsman.is_target)) {
 			if (get_grid_rect(craftsman.pos).leftClicked() or keyboard_craftsman[craftsman_num].down()) {
 				craftsman.is_target ^= true;
@@ -101,44 +101,60 @@ void Game::operate_craftsman(bool team, Field& field) {
 		if (not craftsman.is_target) {
 			continue;
 		}
-		// クリックされた移動方向
-		Optional<Point> direction;
-		// 押された数字に対する操作
+
+		// 押された矢印キーに対する操作方向
+		Optional<Point> direction = get_pressed_pos(craftsman.pos);
+		// 押されたz,x,cに対する操作モード
 		Optional<int> mode = get_pressed_mode();
-		switch ((mode == none) ? operation_mode : mode.value()) {
-			// 移動モード
-		case ACT::MOVE:
-			if (mode == none){
+
+		// 移動 : キー入力				操作 : キー入力
+		//		-> 動かす
+		// 移動 : キー入力				操作 : クリック入力
+		//		-> 動かさない
+		// 移動 : クリック入力		操作 : キー入力
+		//		-> 動かす
+		// 移動 : クリック入力		操作 : クリック入力
+		//		-> 動かす
+
+		if (direction != none and mode == none) {
+			continue;
+		}
+
+		if (mode == none) {
+			mode = operation_mode;
+		}
+		if (direction == none) {
+			if (mode == ACT::MOVE) {
 				direction = get_clicked_pos(craftsman.pos, range_move);
 			}else {
-				direction = get_pressed_pos(craftsman.pos, range_move);
-			}
-			if (direction and craftsman.move(field, *direction)) {
-				is_targeting = false;
-			}
-			break;
-			// 建築モード
-		case ACT::BUILD:
-			if (mode == none) {
 				direction = get_clicked_pos(craftsman.pos, range_wall);
-			}else {
-				direction = get_pressed_pos(craftsman.pos, range_wall);
 			}
-			if (direction and craftsman.build(field, *direction)) {
-				is_targeting = false;
+		}
+
+		if (direction != none) {
+			Line{ get_cell_center(craftsman.pos), get_cell_center(craftsman.pos + direction.value()) }.draw(LineStyle::RoundCap, 5, Palette::Orange);
+		}
+		if(direction != none and mode != none){
+			switch (mode.value()) {
+				// 移動モード
+			case ACT::MOVE:
+				if (direction and craftsman.move(field, *direction)) {
+					is_targeting = false;
+				}
+				break;
+				// 建築モード
+			case ACT::BUILD:
+				if (direction and craftsman.build(field, *direction)) {
+					is_targeting = false;
+				}
+				break;
+				// 破壊モード
+			case ACT::DESTROY:
+				if (direction and craftsman.destroy(field, *direction)) {
+					is_targeting = false;
+				}
+				break;
 			}
-			break;
-			// 破壊モード
-		case ACT::DESTROY:
-			if (mode == none){
-				direction = get_clicked_pos(craftsman.pos, range_wall);
-			}else {
-				direction = get_pressed_pos(craftsman.pos, range_wall);
-			}
-			if (direction and craftsman.destroy(field, *direction)) {
-				is_targeting = false;
-			}
-			break;
 		}
 	}
 }

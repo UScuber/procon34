@@ -28,15 +28,15 @@ Optional<Point> get_clicked_pos(const Point p, const Array<Point>& dydx) {
 	return none;
 }
 
-Optional<Point> get_pressed_pos(const Point p, const Array<Point>& dydx) {
+Optional<Point> get_pressed_pos(const Point p) {
 	Point direction = {100, 100};
-	if (KeyUp.pressed() and KeyLeft.pressed() and dydx.size() == 8) {
+	if (KeyUp.pressed() and KeyLeft.pressed()) {
 		direction = { -1, -1 };
-	}else if (KeyLeft.pressed() and KeyDown.pressed() and dydx.size() == 8) {
+	}else if (KeyLeft.pressed() and KeyDown.pressed()) {
 		direction = { -1, 1 };
-	}else if (KeyDown.pressed() and KeyRight.pressed() and dydx.size() == 8) {
+	}else if (KeyDown.pressed() and KeyRight.pressed()) {
 		direction = { 1,1 };
-	}else if (KeyRight.pressed() and KeyUp.pressed() and dydx.size() == 8) {
+	}else if (KeyRight.pressed() and KeyUp.pressed()) {
 		direction = { 1, -1 };
 	}else if (KeyUp.pressed()) {
 		direction = { 0, -1 };
