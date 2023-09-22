@@ -98,7 +98,7 @@ bool Craftsman::destroy(Field& field, const Point direction) {
 	}
 	const char target_cell = field.get_cell(target_cell_pos);
 	// 破壊可能な場所か
-	if (not target_cell & CELL_TYPE::WALL) {
+	if (not (target_cell & CELL_TYPE::WALL)) {
 		return false;
 	}
 	// フィールド変化

@@ -8,11 +8,15 @@ extern size_t CELL_SIZE;
 extern size_t BLANK_LEFT;
 extern size_t BLANK_TOP;
 
+// フィールドの座標を引数に、セルの中心の画面上の座標を返す
+Point get_cell_center(const Point p) {
+	return Point(p.x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, p.y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2);
+}
 Rect get_grid_rect(const Point p) {
 	return Rect{ p.x * CELL_SIZE + BLANK_LEFT, p.y * CELL_SIZE + BLANK_TOP, CELL_SIZE };
 }
 Circle get_grid_circle(const Point p) {
-	return Circle(Arg::center(p.x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, p.y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3);
+	return Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3);
 }
 
 Optional<Point> get_clicked_pos(const Point p, const Array<Point>& dydx) {
@@ -50,11 +54,11 @@ Optional<Point> get_pressed_pos(const Point p, const Array<Point>& dydx) {
 
 }
 Optional<int> get_pressed_mode(void) {
-	if (Key1.pressed()) {
+	if (KeyZ.pressed()) {
 		return ACT::MOVE;
-	}else if (Key2.pressed()) {
+	}else if (KeyX.pressed()) {
 		return ACT::BUILD;
-	}else if (Key3.pressed()) {
+	}else if (KeyC.pressed()) {
 		return ACT::DESTROY;
 	}
 	return none;
@@ -217,36 +221,35 @@ void Field::display_actors(void) const {
 	for (size_t i = 0; i < (HEIGHT * WIDTH); i++) {
 		int y = i / WIDTH;
 		int x = i % WIDTH;
+		Point p = { x,y };
 		char target_cell = grid[y][x];
 
 		if (target_cell & CELL::POND) {
-			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(Palette::Black);
+			get_grid_rect(p).draw(Palette::Black);
 		}
 		if (target_cell & CELL::CASTLE) {
-			Shape2D::Star(CELL_SIZE * 0.6, Vec2{ x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2 }).draw(Palette::Black);
+			Shape2D::Star(CELL_SIZE * 0.6, get_cell_center(p)).draw(Palette::Black);
 		}
 		if (target_cell & CELL::AREA_RED and target_cell & CELL::AREA_BLUE) {
-			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(1.0, 0.0, 1.0, 0.5));
-		}
-		else 	if (target_cell & CELL::AREA_RED) {
-			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(1.0, 0.0, 0.0, 0.25));
-		}
-		else 	if (target_cell & CELL::AREA_BLUE) {
-			Rect(x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE).draw(ColorF(0.0, 0.0, 1.0, 0.25));
+			get_grid_rect(p).draw(ColorF(1.0, 0.0, 1.0, 0.5));
+		}else 	if (target_cell & CELL::AREA_RED) {
+			get_grid_rect(p).draw(ColorF(1.0, 0.0, 0.0, 0.25));
+		}else 	if (target_cell & CELL::AREA_BLUE) {
+			get_grid_rect(p).draw(ColorF(0.0, 0.0, 1.0, 0.25));
 		}
 		if (target_cell & CELL::WALL_RED) {
-			Rect(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.7).draw(Palette::Red);
+			Rect(Arg::center(get_cell_center(p)), CELL_SIZE*0.7).draw(Palette::Red);
 		}
 		if (target_cell & CELL::WALL_BLUE) {
-			Rect(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.7).draw(Palette::Blue);
+			Rect(Arg::center(get_cell_center(p)), CELL_SIZE * 0.7).draw(Palette::Blue);
 		}
 		if (target_cell & CELL::CRAFTSMAN_RED) {
-			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3).draw(Palette::Red);
-			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3).drawFrame(1,1,Palette::White);
+			Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3).draw(ColorF(1.0, 0.5, 0.5));
+			Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3).drawFrame(1,1,Palette::White);
 		}
 		if (target_cell & CELL::CRAFTSMAN_BLUE) {
-			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y* CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3).draw(Palette::Blue);
-			Circle(Arg::center(x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2), CELL_SIZE * 0.3).drawFrame(1, 1, Palette::White);
+			Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3).draw(ColorF(0.5, 0.5, 1.0));
+			Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3).drawFrame(1, 1, Palette::White);
 		}
 	}
 }

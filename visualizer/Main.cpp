@@ -13,13 +13,15 @@
 size_t HEIGHT;
 size_t WIDTH;
 // 一つのセルの大きさ(正方形)
-size_t CELL_SIZE = 20;
+size_t CELL_SIZE = 25;
 // フィールドの左上に開ける余白
-size_t BLANK_LEFT = 100;
-size_t BLANK_TOP = 100;
+size_t BLANK_LEFT = 50;
+size_t BLANK_TOP = 50;
 
 
 using App = SceneManager<String, Field>;
+
+Array<Input> keyboard_craftsman = {Key0, Key1, Key2, Key3, Key4, Key5, Key6, Key7, Key8 };
 
 class Game {
 protected:
@@ -45,6 +47,8 @@ protected:
 	Font normal_font{ 50, U"SourceHanSansJP-Medium.otf" };
 	// 建築物の数のフォント
 	Font small_font{ 25, U"SourceHanSansJP-Medium.otf" };
+	// 職人の番号のフォント
+	Font craftsman_font{ CELL_SIZE,  U"SourceHanSansJP-Medium.otf"};
 	// ターン数
 	size_t turn_num = 200;
 	// 現在のターン
@@ -79,15 +83,19 @@ void Game::operate_gui(Field& field) {
 	}
 }
 void Game::operate_craftsman(bool team, Field& field) {
+	int craftsman_num = 0;
 	for (Craftsman& craftsman : craftsmen[team]) {
+		craftsman_num++;
 		// 行動済みならcontinue
 		if (craftsman.is_acted) {
 			continue;
 		}
 		// 動かす対象の職人を決める
-		if ((not is_targeting or craftsman.is_target) and get_grid_rect(craftsman.pos).leftClicked()) {
-			craftsman.is_target ^= true;
-			is_targeting ^= true;
+		if ((not is_targeting or craftsman.is_target)) {
+			if (get_grid_rect(craftsman.pos).leftClicked() or keyboard_craftsman[craftsman_num].down()) {
+				craftsman.is_target ^= true;
+				is_targeting ^= true;
+			}
 		}
 		// 動かす対象でなければcontinue
 		if (not craftsman.is_target) {
@@ -104,7 +112,6 @@ void Game::operate_craftsman(bool team, Field& field) {
 				direction = get_clicked_pos(craftsman.pos, range_move);
 			}else {
 				direction = get_pressed_pos(craftsman.pos, range_move);
-				Console << U"main " <<  direction;
 			}
 			if (direction and craftsman.move(field, *direction)) {
 				is_targeting = false;
@@ -137,12 +144,14 @@ void Game::operate_craftsman(bool team, Field& field) {
 }
 void Game::display_field(void) const {
 	for (const Array<Craftsman>& ary : craftsmen) {
+		int craftsman_num = 0;
 		for(const Craftsman &craftsman : ary){
 			if (craftsman.is_acted) {
-				get_grid_circle(craftsman.pos).draw(Palette::Gray);
+				get_grid_circle(craftsman.pos).draw(Palette::Darkgray);
 			}else if (craftsman.is_target) {
 				get_grid_rect(craftsman.pos).drawFrame(2, 2, Palette::Yellow);
 			}
+			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos));
 		}
 	}
 }
@@ -340,6 +349,7 @@ void PvC::operate_gui(Field& field) {
 	}
 	// ターン終了
 	if (SimpleGUI::Button(U"ターン終了", { 700, 500 }) or KeyE.down()) {
+		Console << U"TEST0";
 		field.calc_area();
 		field.calc_point(TEAM::RED);
 		field.calc_point(TEAM::BLUE);
@@ -362,13 +372,14 @@ void PvC::operate_gui(Field& field) {
 }
 void PvC::display_field(void) const {
 	for (const Array<Craftsman>& ary : craftsmen) {
+		int craftsman_num = 1;
 		for (const Craftsman& craftsman : ary) {
 			if (craftsman.is_acted) {
-				get_grid_circle(craftsman.pos).draw(Palette::Gray);
-			}
-			else if (craftsman.is_target) {
+				get_grid_circle(craftsman.pos).draw(Palette::Darkgray);
+			}else if (craftsman.is_target) {
 				get_grid_rect(craftsman.pos).drawFrame(2, 2, Palette::Yellow);
 			}
+			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos), Palette::Black);
 		}
 	}
 	for (int h = 0; h < HEIGHT; h++) {
