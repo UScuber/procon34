@@ -48,26 +48,14 @@ protected:
 	// 建築物の数のフォント
 	Font small_font{ 25, U"SourceHanSansJP-Medium.otf" };
 	// 職人の番号のフォント
-	Font craftsman_font{ CELL_SIZE,  U"SourceHanSansJP-Medium.otf"};
+	Font craftsman_font = Font( (int32)CELL_SIZE,  U"SourceHanSansJP-Medium.otf");
 	// ターン数
 	size_t turn_num = 200;
 	// 現在のターン
 	bool now_turn = TEAM::RED;
-	// 操作モード
-	char operation_mode = ACT::MOVE;
-	// 職人を選択しているか
-	bool is_targeting = false;
 };
 
 void Game::operate_gui(Field& field) {
-	// 操作モードの変更
-	if (SimpleGUI::Button(U"移動", { 700, 100 }) or Key1.down()) {
-		operation_mode = ACT::MOVE;
-	}if (SimpleGUI::Button(U"建設", { 700, 200 }) or Key2.down()) {
-		operation_mode = ACT::BUILD;
-	}if (SimpleGUI::Button(U"破壊", { 700, 300 }) or Key3.down()) {
-		operation_mode = ACT::DESTROY;
-	}
 	// ターン終了
 	if (SimpleGUI::Button(U"ターン終了", { 700, 500 }) or KeyE.down()) {
 		field.calc_area();
@@ -79,7 +67,6 @@ void Game::operate_gui(Field& field) {
 			}
 		}
 		now_turn ^= true;
-		is_targeting = false;
 	}
 }
 void Game::operate_craftsman(bool team, Field& field) {
@@ -90,13 +77,16 @@ void Game::operate_craftsman(bool team, Field& field) {
 		if (craftsman.is_acted) {
 			continue;
 		}
-		// 動かす対象の職人を決めるf
-		if ((not is_targeting or craftsman.is_target)) {
-			if (get_grid_rect(craftsman.pos).leftClicked() or keyboard_craftsman[craftsman_num].down()) {
-				craftsman.is_target ^= true;
-				is_targeting ^= true;
+		// 動かす対象の職人を決める
+		if (keyboard_craftsman[craftsman_num].down()) {
+			if (not craftsman.is_target) {
+				for (Craftsman& craftsman_tmp : craftsmen[team]) {
+					craftsman_tmp.is_target = false;
+				}
 			}
+			craftsman.is_target ^= true;
 		}
+
 		// 動かす対象でなければcontinue
 		if (not craftsman.is_target) {
 			continue;
@@ -107,52 +97,23 @@ void Game::operate_craftsman(bool team, Field& field) {
 		// 押されたz,x,cに対する操作モード
 		Optional<int> mode = get_pressed_mode();
 
-		// 移動 : キー入力				操作 : キー入力
-		//		-> 動かす
-		// 移動 : キー入力				操作 : クリック入力
-		//		-> 動かさない
-		// 移動 : クリック入力		操作 : キー入力
-		//		-> 動かす
-		// 移動 : クリック入力		操作 : クリック入力
-		//		-> 動かす
-
-		if (direction != none and mode == none) {
-			continue;
-		}
-
-		if (mode == none) {
-			mode = operation_mode;
-		}
-		if (direction == none) {
-			if (mode == ACT::MOVE) {
-				direction = get_clicked_pos(craftsman.pos, range_move);
-			}else {
-				direction = get_clicked_pos(craftsman.pos, range_wall);
-			}
-		}
-
 		if (direction != none) {
 			Line{ get_cell_center(craftsman.pos), get_cell_center(craftsman.pos + direction.value()) }.draw(LineStyle::RoundCap, 5, Palette::Orange);
 		}
+
 		if(direction != none and mode != none){
 			switch (mode.value()) {
 				// 移動モード
 			case ACT::MOVE:
-				if (direction and craftsman.move(field, *direction)) {
-					is_targeting = false;
-				}
+				craftsman.move(field, *direction);
 				break;
 				// 建築モード
 			case ACT::BUILD:
-				if (direction and craftsman.build(field, *direction)) {
-					is_targeting = false;
-				}
+				craftsman.build(field, *direction);
 				break;
 				// 破壊モード
 			case ACT::DESTROY:
-				if (direction and craftsman.destroy(field, *direction)) {
-					is_targeting = false;
-				}
+				craftsman.destroy(field, *direction);
 				break;
 			}
 		}
@@ -355,17 +316,8 @@ void PvC::give_solver_build_plan(void) {
 	//}
 }
 void PvC::operate_gui(Field& field) {
-	// 操作モードの変更
-	if (SimpleGUI::Button(U"移動", { 700, 100 }) or Key1.down()) {
-		operation_mode = ACT::MOVE;
-	}if (SimpleGUI::Button(U"建設", { 700, 200 }) or Key2.down()) {
-		operation_mode = ACT::BUILD;
-	}if (SimpleGUI::Button(U"破壊", { 700, 300 }) or Key3.down()) {
-		operation_mode = ACT::DESTROY;
-	}
 	// ターン終了
 	if (SimpleGUI::Button(U"ターン終了", { 700, 500 }) or KeyE.down()) {
-		Console << U"TEST0";
 		field.calc_area();
 		field.calc_point(TEAM::RED);
 		field.calc_point(TEAM::BLUE);
@@ -380,7 +332,6 @@ void PvC::operate_gui(Field& field) {
 			}
 		}
 		now_turn ^= true;
-		is_targeting = false;
 		field.calc_area();
 		field.calc_point(TEAM::RED);
 		field.calc_point(TEAM::BLUE);
