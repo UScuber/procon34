@@ -16,3 +16,4 @@ App/visualizer.exe
 App/solver.exe
 Intermediate
 .vs
+.token
