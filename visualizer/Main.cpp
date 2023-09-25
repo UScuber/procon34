@@ -1,8 +1,9 @@
 ﻿# pragma once
 # include <Siv3D.hpp> // OpenSiv3D v0.6.10
 # include "Base.hpp"
-# include "Field.hpp";
+# include "Field.hpp"
 # include "Actor.hpp"
+# include "Connect.hpp"
 
 // +-------------+
 //  |  先攻 : 赤  |
@@ -53,6 +54,8 @@ protected:
 	size_t turn_num = 200;
 	// 現在のターン
 	bool now_turn = TEAM::RED;
+	// 通信を行う
+	Connect connect;
 };
 
 void Game::operate_gui(Field& field) {
@@ -235,6 +238,7 @@ private:
 	void give_solver_build_plan(void);
 };
 PvC::PvC(const InitData& init) : IScene{ init } {
+	connect.get_matches_list();
 	craftsmen.resize(2);
 	is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
 	for (size_t h = 0; h < HEIGHT; h++) {
@@ -381,6 +385,7 @@ void Main(){
 
 
 	manager.init(U"PvC");
+	
 	while (System::Update()){
 		if (not manager.update()) {
 			break;

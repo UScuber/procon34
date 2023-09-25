@@ -36,8 +36,6 @@ enum CELL_TYPE {
 	CRAFTSMAN = (1 << 5) + (1 << 6)
 };
 
-
-
 bool is_in_field(int y, int x) {
 	return (0 <= y and y < HEIGHT and 0 <= x and x < WIDTH);
 }
