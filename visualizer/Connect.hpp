@@ -15,11 +15,23 @@ int to_direction_client(int direction_num_server) {
 	return direction_client[direction_num_server];
 }
 
+Array<Array<int>> get_2d_array(const JSON& json) {
+	Array<Array<int>> res;
+	for (const auto& object : json.arrayView()){
+		Array<int> ary;
+		for (const auto& num : object.arrayView()) {
+			ary << num.get<int>();
+		}
+		res << ary;
+	}
+	return res;
+}
+
 struct MatchDataBonus {
 	int wall = 0;
 	int territory = 0;
 	int castle = 0;
-	MatchDataBonus(){}
+	MatchDataBonus() {}
 	MatchDataBonus(const JSON& bonus) {
 		this->wall = bonus[U"wall"].get<int>();
 		this->territory = bonus[U"territory"].get<int>();
@@ -37,8 +49,8 @@ struct MatchDataBoard {
 		this->width = board[U"width"].get<int>();
 		this->height = board[U"height"].get<int>();
 		this->mason = board[U"mason"].get<int>();
-		this->structures = board[U"structures"].get<Array<Array<int>>>();
-		this->masons = board[U"masons"].get<Array<Array<int>>>();
+		this->structures = get_2d_array(board[U"structures"]);
+		this->masons = get_2d_array(board[U"masons"]);
 	}
 };
 struct MatchDataMatch {
@@ -64,14 +76,13 @@ struct MatchData {
 	Array<MatchDataMatch> matches;
 	MatchData() {}
 	MatchData(const JSON& json) {
-		for (const MatchDataMatch matchdatamatch : json[U"matches"].get<Array<MatchDataMatch>>()) {
+		for (const MatchDataMatch matchdatamatch : json[U"matches"].arrayView()) {
 			matches << matchdatamatch;
 		}
-		Console << matches;
 	}
 };
 
-class MatchStatusBoard {
+struct MatchStatusBoard {
 	int width;
 	int height;
 	int mason;
@@ -79,30 +90,72 @@ class MatchStatusBoard {
 	Array<Array<int>> territories;
 	Array<Array<int>> structures;
 	Array<Array<int>> masons;
+	MatchStatusBoard() {}
+	MatchStatusBoard(const JSON& board) {
+		this->width = board[U"width"].get<int>();
+		this->height = board[U"height"].get<int>();
+		this->mason = board[U"mason"].get<int>();
+		this->walls = get_2d_array(board[U"walls"]);
+		this->territories = get_2d_array(board[U"territories"]);
+		this->structures = get_2d_array(board[U"structures"]);
+		this->masons = get_2d_array(board[U"masons"]);
+	}
 };
-class MatchStatusLogAction {
+struct MatchStatusLogAction {
 	bool succeeded;
 	int type;
 	int dir;
+	MatchStatusLogAction() {}
+	MatchStatusLogAction(const JSON& log_action) {
+		this->succeeded = log_action[U"succeeded"].get<bool>();
+		this->type = log_action[U"type"].get<int>();
+		this->dir = log_action[U"dir"].get<int>();
+	}
 };
-class MatchStatusLog {
+struct MatchStatusLog {
 	int turn;
 	MatchStatusLogAction actions;
+	MatchStatusLog() {}
+	MatchStatusLog(const JSON& log) {
+		this->turn = log.get<int>();
+		this->actions = MatchStatusLogAction(log[U"actions"]);
+	}
 };
 class MatchStatus {
 	int id;
 	int turn;
 	MatchStatusBoard board;
-	MatchStatusLog logs;
+	Array<MatchStatusLog> logs;
+	MatchStatus() {}
+	MatchStatus(const JSON& json) {
+		this->id = json[U"id"].get<int>();
+		this->turn = json[U"turn"].get<int>();
+		this->board = MatchStatusBoard(json[U"board"]);
+		for (const MatchStatusLog matchstatuslog : json[U"logs"].arrayView()) {
+			logs << matchstatuslog;
+		}
+	}
 };
 
-class ActionPlanAction {
+struct ActionPlanAction {
 	int type;
 	int dir;
+	ActionPlanAction() {}
+	ActionPlanAction(const JSON& action) {
+		this->type = action[U"type"].get<int>();
+		this->dir = action[ U"dir"].get<int>();
+	}
 };
-class ActionPlan {
+struct  ActionPlan {
 	int turn;
 	Array<ActionPlanAction> actions;
+	ActionPlan() {}
+	ActionPlan(const JSON& json) {
+		this->turn = json[U"turn"].get<int>();
+		for (const ActionPlanAction actionplanaction : json[U"actions"].arrayView()) {
+			actions << actionplanaction;
+		}
+	}
 };
 
 
