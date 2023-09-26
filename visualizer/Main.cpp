@@ -105,20 +105,32 @@ void Game::operate_craftsman(TEAM team, Field& field) {
 		}
 
 		if(direction != none and mode != none){
+			bool acted = mode.has_value();
+
 			switch (mode.value()) {
 				// 移動モード
 			case ACT::MOVE:
-				craftsman.move(field, *direction);
+				acted &= craftsman.move(field, *direction);
 				break;
 				// 建築モード
 			case ACT::BUILD:
-				craftsman.build(field, *direction);
+				acted &= craftsman.build(field, *direction);
 				break;
 				// 破壊モード
 			case ACT::DESTROY:
-				craftsman.destroy(field, *direction);
+				acted &= craftsman.destroy(field, *direction);
 				break;
 			}
+			if(acted){
+				craftsman.is_target = false;
+				for (int i = 1; i < (int)craftsmen[(int)team].size(); i++) {
+					if (!craftsmen[(int)team][(craftsman_num + i - 1) % (int)craftsmen[(int)team].size()].is_acted) {
+						craftsmen[(int)team][(craftsman_num + i - 1) % (int)craftsmen[(int)team].size()].is_target = true;
+						break;
+					}
+				}
+			}
+			break;
 		}
 	}
 }

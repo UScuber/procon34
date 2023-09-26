@@ -54,11 +54,11 @@ Optional<Point> get_pressed_pos(void) {
 
 }
 Optional<ACT> get_pressed_mode(void) {
-	if (KeyZ.pressed()) {
+	if (KeyZ.down()) {
 		return ACT::MOVE;
-	}else if (KeyX.pressed()) {
+	}else if (KeyX.down()) {
 		return ACT::BUILD;
-	}else if (KeyC.pressed()) {
+	}else if (KeyC.down()) {
 		return ACT::DESTROY;
 	}
 	return none;
