@@ -11,13 +11,13 @@
 // +-------------+
 
 // フィールドの縦横
-size_t HEIGHT;
-size_t WIDTH;
+int HEIGHT;
+int WIDTH;
 // 一つのセルの大きさ(正方形)
-size_t CELL_SIZE = 25;
+int CELL_SIZE = 25;
 // フィールドの左上に開ける余白
-size_t BLANK_LEFT = 50;
-size_t BLANK_TOP = 50;
+int BLANK_LEFT = 50;
+int BLANK_TOP = 50;
 
 
 using App = SceneManager<String, Field>;
@@ -29,17 +29,17 @@ protected:
 	// GUIによる操作
 	void operate_gui(Field& field);
 	// マウスクリックによる操作
-	void operate_craftsman(bool team, Field& field);
+	void operate_craftsman(TEAM team, Field& field);
 	// フィールドの表示
 	void display_field(void) const ;
 	// 詳細表示
 	void display_details(Field& field) const;
 	// solverの初期化(引数にはsolverのチーム)
-	void give_solver_initialize(bool team, Field& field);
+	void give_solver_initialize(TEAM team, Field& field);
 	// solverに職人の行動を渡す(引数にはsolverのチーム)
-	void give_solver(bool team, Field& field);
+	void give_solver(TEAM team);
 	// solverから行動を受け取る(引数にはsolverのチーム)
-	void receive_solver(bool team, Field& field);
+	void receive_solver(TEAM team, Field& field);
 	// 職人の配列
 	Array<Array<Craftsman>> craftsmen;
 	// solverプログラム
@@ -51,9 +51,9 @@ protected:
 	// 職人の番号のフォント
 	Font craftsman_font = Font( (int32)CELL_SIZE,  U"SourceHanSansJP-Medium.otf");
 	// ターン数
-	size_t turn_num = 200;
+	int turn_num = 200;
 	// 現在のターン
-	bool now_turn = TEAM::RED;
+	TEAM now_turn = TEAM::RED;
 	// 通信を行う
 	Connect connect;
 };
@@ -69,12 +69,12 @@ void Game::operate_gui(Field& field) {
 				craftsman.initialize();
 			}
 		}
-		now_turn ^= true;
+		now_turn = (not now_turn);
 	}
 }
-void Game::operate_craftsman(bool team, Field& field) {
+void Game::operate_craftsman(TEAM team, Field& field) {
 	int craftsman_num = 0;
-	for (Craftsman& craftsman : craftsmen[team]) {
+	for (Craftsman& craftsman : craftsmen[(int)team]) {
 		craftsman_num++;
 		// 行動済みならcontinue
 		if (craftsman.is_acted) {
@@ -83,7 +83,7 @@ void Game::operate_craftsman(bool team, Field& field) {
 		// 動かす対象の職人を決める
 		if (keyboard_craftsman[craftsman_num].down()) {
 			if (not craftsman.is_target) {
-				for (Craftsman& craftsman_tmp : craftsmen[team]) {
+				for (Craftsman& craftsman_tmp : craftsmen[(int)team]) {
 					craftsman_tmp.is_target = false;
 				}
 			}
@@ -96,9 +96,9 @@ void Game::operate_craftsman(bool team, Field& field) {
 		}
 
 		// 押された矢印キーに対する操作方向
-		Optional<Point> direction = get_pressed_pos(craftsman.pos);
+		Optional<Point> direction = get_pressed_pos();
 		// 押されたz,x,cに対する操作モード
-		Optional<int> mode = get_pressed_mode();
+		Optional<ACT> mode = get_pressed_mode();
 
 		if (direction != none) {
 			Line{ get_cell_center(craftsman.pos), get_cell_center(craftsman.pos + direction.value()) }.draw(LineStyle::RoundCap, 5, Palette::Orange);
@@ -141,14 +141,14 @@ void Game::display_details(Field &field) const {
 	}else {
 		normal_font(U"青チームの手番").draw(100, 600, Palette::Blue);
 	}
-	Array<size_t> building_red = field.get_building(TEAM::RED);
-	Array<size_t> building_blue = field.get_building(TEAM::BLUE);
+	Array<int> building_red = field.get_building(TEAM::RED);
+	Array<int> building_blue = field.get_building(TEAM::BLUE);
 	normal_font(U"赤ポイント:{}"_fmt(field.get_point(TEAM::RED))).draw(800, 100, Palette::Black);
 	small_font(U"城壁:{}  陣地:{}  城:{}"_fmt(building_red[0], building_red[1], building_red[2])).draw(850, 175, Palette::Black);
 	normal_font(U"青ポイント:{}"_fmt(field.get_point(TEAM::BLUE))).draw(800, 250, Palette::Black);
 	small_font(U"城壁:{}  陣地:{}  城:{}"_fmt(building_blue[0], building_blue[1], building_blue[2])).draw(850, 325, Palette::Black);
 }
-void Game::give_solver_initialize(bool team, Field& field) {
+void Game::give_solver_initialize(TEAM team, Field& field) {
 	// フィールドの縦横
 	child.ostream() << HEIGHT << std::endl << WIDTH << std::endl;
 	// プログラム側を赤色とする
@@ -176,13 +176,13 @@ void Game::give_solver_initialize(bool team, Field& field) {
 		child.ostream() << p.y << std::endl << p.x << std::endl;
 	}
 }
-void Game::give_solver(bool team, Field& field) {
-	for (Craftsman& craftsman : craftsmen[not team]) {
+void Game::give_solver(TEAM team) {
+	for (Craftsman& craftsman : craftsmen[(int)(not team)]) {
 		craftsman.output_act(child);
 	}
 }
-void Game::receive_solver(bool team, Field& field) {
-	for (Craftsman& craftsman : craftsmen[team]) {
+void Game::receive_solver(TEAM team, Field& field) {
+	for (Craftsman& craftsman : craftsmen[(int)team]) {
 		craftsman.input_act(child, field);
 	}
 }
@@ -199,12 +199,12 @@ public:
 // コンストラクタで職人配列をセット
 PvP::PvP(const InitData& init) : IScene{ init } {
 	craftsmen.resize(2);
-	for (size_t h = 0; h < HEIGHT; h++) {
-		for (size_t w = 0; w < WIDTH; w++) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
 			if (getData().get_cell(h, w) & CELL::CRAFTSMAN_RED) {
-				craftsmen[TEAM::RED].push_back(Craftsman(h, w, TEAM::RED));
+				craftsmen[(int)TEAM::RED].push_back(Craftsman(h, w, TEAM::RED));
 			}else if (getData().get_cell(h, w) & CELL::CRAFTSMAN_BLUE) {
-				craftsmen[TEAM::BLUE].push_back(Craftsman(h, w, TEAM::BLUE));
+				craftsmen[(int)TEAM::BLUE].push_back(Craftsman(h, w, TEAM::BLUE));
 			}
 		}
 	}
@@ -233,7 +233,7 @@ public:
 	void draw() const override;
 private:
 	Array<Array<bool>> is_build_plan;
-	bool team_solver = TEAM::RED;
+	TEAM team_solver = TEAM::RED;
 	void receive_build_plan(void);
 	void give_solver_build_plan(void);
 };
@@ -241,12 +241,12 @@ PvC::PvC(const InitData& init) : IScene{ init } {
 	connect.get_matches_list();
 	craftsmen.resize(2);
 	is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
-	for (size_t h = 0; h < HEIGHT; h++) {
-		for (size_t w = 0; w < WIDTH; w++) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
 			if (getData().get_cell(h, w) & CELL::CRAFTSMAN_RED) {
-				craftsmen[TEAM::RED].push_back(Craftsman(h, w, TEAM::RED));
+				craftsmen[(int)TEAM::RED].push_back(Craftsman(h, w, TEAM::RED));
 			}else if (getData().get_cell(h, w) & CELL::CRAFTSMAN_BLUE) {
-				craftsmen[TEAM::BLUE].push_back(Craftsman(h, w, TEAM::BLUE));
+				craftsmen[(int)TEAM::BLUE].push_back(Craftsman(h, w, TEAM::BLUE));
 			}
 		}
 	}
@@ -255,7 +255,7 @@ PvC::PvC(const InitData& init) : IScene{ init } {
 	// Computerが先手の場合
 	if (team_solver == TEAM::RED) {
 		System::Sleep(1.5s);
-		now_turn ^= true;
+		now_turn = (not now_turn);
 		receive_solver(team_solver, getData());
 		for (Array<Craftsman>& ary : craftsmen) {
 			for (Craftsman& craftsman : ary) {
@@ -325,17 +325,17 @@ void PvC::operate_gui(Field& field) {
 		field.calc_area();
 		field.calc_point(TEAM::RED);
 		field.calc_point(TEAM::BLUE);
-		give_solver(team_solver, field);
+		give_solver(team_solver);
 		//give_solver_build_plan();
 		System::Sleep(1.5s);
-		now_turn ^= true;
+		now_turn = not now_turn;
 		receive_solver(team_solver, field);
 		for (Array<Craftsman>& ary : craftsmen) {
 			for (Craftsman& craftsman : ary) {
 				craftsman.initialize();
 			}
 		}
-		now_turn ^= true;
+		now_turn = not now_turn;
 		field.calc_area();
 		field.calc_point(TEAM::RED);
 		field.calc_point(TEAM::BLUE);

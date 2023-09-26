@@ -2,11 +2,11 @@
 # include <Siv3D.hpp>
 # include "Base.hpp"
 
-extern size_t HEIGHT;
-extern size_t WIDTH;
-extern size_t CELL_SIZE;
-extern size_t BLANK_LEFT;
-extern size_t BLANK_TOP;
+extern int HEIGHT;
+extern int WIDTH;
+extern int CELL_SIZE;
+extern int BLANK_LEFT;
+extern int BLANK_TOP;
 
 // フィールドの座標を引数に、セルの中心の画面上の座標を返す
 Point get_cell_center(const Point p) {
@@ -28,7 +28,7 @@ Optional<Point> get_clicked_pos(const Point p, const Array<Point>& dydx) {
 	return none;
 }
 
-Optional<Point> get_pressed_pos(const Point p) {
+Optional<Point> get_pressed_pos(void) {
 	Point direction = {100, 100};
 	if (KeyUp.pressed() and KeyLeft.pressed()) {
 		direction = { -1, -1 };
@@ -53,7 +53,7 @@ Optional<Point> get_pressed_pos(const Point p) {
 	return  direction;
 
 }
-Optional<int> get_pressed_mode(void) {
+Optional<ACT> get_pressed_mode(void) {
 	if (KeyZ.pressed()) {
 		return ACT::MOVE;
 	}else if (KeyX.pressed()) {
@@ -73,16 +73,16 @@ public:
 	// 池、城、職人の座標配列を返す
 	Array<Point> get_ponds(void) const;
 	Array<Point> get_castles(void) const;
-	Array<Point> get_craftsmen(bool team) const;
+	Array<Point> get_craftsmen(TEAM team) const;
 	// セルの情報を取得する
-	char get_cell(const int y, const int x) const;
-	char get_cell(const Point p) const;
+	CELL get_cell(const int y, const int x) const;
+	CELL get_cell(const Point p) const;
 	// セルの情報を追加する
-	void set_bit(const int y, const int x, const char new_bit);
-	void set_bit(const Point p, const char new_bit);
+	void set_bit(const int y, const int x, const CELL new_bit);
+	void set_bit(const Point p, const CELL new_bit);
 	// セルの情報を削除する
-	void delete_bit(const int y, const int x, const char delete_bit);
-	void delete_bit(const Point p, const char delete_bit);
+	void delete_bit(const int y, const int x, const CELL delete_bit);
+	void delete_bit(const Point p, const CELL delete_bit);
 	// 盤面のグリッドを表示させる
 	void display_grid(void) const;
 	// 盤面を表示させる
@@ -90,33 +90,33 @@ public:
 	// 陣地計算
 	void calc_area(void);
 	// ポイント計算
-	void calc_point(bool team);
+	void calc_point(TEAM team);
 	// ポイント取得
-	size_t get_point(bool team);
+	int get_point(TEAM team);
 	// 建設物の数取得
-	Array<size_t> get_building(bool team);
+	Array<int> get_building(TEAM team);
 	// フィールド表示
 	void output_field(void);
 
 private:
 	// 陣地計算のためのBFS
-	void wall_bfs(Point start, Array<Array<bool>>& visited, bool team);
+	void wall_bfs(Point start, Array<Array<bool>>& visited, TEAM team);
 	// 盤面情報
-	Array<Array<char>> grid;
+	Array<Array<CELL>> grid;
 	// 池、城、職人の座標配列
 	Array<Point> ponds;
 	Array<Point> castles;
 	Array<Array<Point>> craftsmen;
 	// それぞれの係数
-	size_t point_castle = 100;
-	size_t point_area = 30;
-	size_t point_wall = 10;
+	int point_castle = 100;
+	int point_area = 30;
+	int point_wall = 10;
 	// チームポイント
-	size_t point_red = 0;
-	size_t point_blue = 0;
-	// 城壁、陣地、城の数
-	Array<size_t> building_red = { 0,0,0 };
-	Array<size_t> building_blue = { 0,0,0 };
+	int point_red = 0;
+	int point_blue = 0;
+	// 城壁、陣地、城の数(
+	Array<int> building_red = { 0,0,0 };
+	Array<int> building_blue = { 0,0,0 };
 };
 
 
@@ -124,12 +124,12 @@ private:
 Field::Field(String path) {
 	craftsmen.resize(2);
 	const CSV csv{ path };
-	HEIGHT = csv.rows();
-	WIDTH = csv.columns(0);
-	this->grid.resize(HEIGHT, Array<char>(WIDTH, 0));
-	for (int8 row = 0; row < csv.rows(); row++) {
+	HEIGHT = (int)csv.rows();
+	WIDTH = (int)csv.columns(0);
+	this->grid.resize(HEIGHT, Array<CELL>(WIDTH, CELL::NONE));
+	for (int row = 0; row < csv.rows(); row++) {
 		this->grid[row].resize(WIDTH);
-		for (int8 col = 0; col < csv.columns(row); col++) {
+		for (int col = 0; col < csv.columns(row); col++) {
 			if (csv[row][col] == U"1") {
 				set_bit(row, col, CELL::POND);
 				ponds.push_back({ col, row });
@@ -138,10 +138,10 @@ Field::Field(String path) {
 				castles.push_back({ col, row });
 			}else if (csv[row][col] == U"a") {
 				set_bit(row, col, CELL::CRAFTSMAN_RED);
-				craftsmen[TEAM::RED].push_back({ col, row });
+				craftsmen[(int)TEAM::RED].push_back({ col, row });
 			}else if (csv[row][col] == U"b") {
 				set_bit(row, col, CELL::CRAFTSMAN_BLUE);
-				craftsmen[TEAM::BLUE].push_back({ col, row });
+				craftsmen[(int)TEAM::BLUE].push_back({ col, row });
 			}
 		}
 	}
@@ -153,12 +153,12 @@ Field::Field(void) {
 	craftsmen.resize(2);
 	FilePath path = FileSystem::DirectoryContents(U"field", Recursive::No).choice();
 	const CSV csv{ path };
-	HEIGHT = csv.rows();
-	WIDTH = csv.columns(0);
+	HEIGHT = (int)csv.rows();
+	WIDTH = (int)csv.columns(0);
 	this->grid.resize(HEIGHT);
-	for (int8 row = 0; row < csv.rows(); row++) {
+	for (int row = 0; row < csv.rows(); row++) {
 		this->grid[row].resize(WIDTH);
-		for (int8 col = 0; col < csv.columns(row); col++) {
+		for (int col = 0; col < csv.columns(row); col++) {
 			if (csv[row][col] == U"1") {
 				set_bit(row, col, CELL::POND);
 				ponds.push_back({ col, row });
@@ -167,10 +167,10 @@ Field::Field(void) {
 				castles.push_back({ col, row });
 			}else if (csv[row][col] == U"a") {
 				set_bit(row, col, CELL::CRAFTSMAN_RED);
-				craftsmen[TEAM::RED].push_back({ col, row });
+				craftsmen[(int)TEAM::RED].push_back({ col, row });
 			}else if (csv[row][col] == U"b") {
 				set_bit(row, col, CELL::CRAFTSMAN_BLUE);
-				craftsmen[TEAM::BLUE].push_back({ col, row });
+				craftsmen[(int)TEAM::BLUE].push_back({ col, row });
 			}
 		}
 	}
@@ -183,46 +183,46 @@ Array<Point> Field::get_ponds(void) const{
 Array<Point> Field::get_castles(void) const {
 	return castles;
 }
-Array<Point> Field::get_craftsmen(bool team) const {
-	return craftsmen[team];
+Array<Point> Field::get_craftsmen(TEAM team) const {
+	return craftsmen[(int)team];
 }
 
 // セルの情報を取得
-char Field::get_cell(const int y, const int x) const {
+CELL Field::get_cell(const int y, const int x) const {
 	return this->grid[y][x];
 }
-char Field::get_cell(const Point p) const {
+CELL Field::get_cell(const Point p) const {
 	return this->get_cell(p.y, p.x);
 }
 
 // セルの情報を変更
-void Field::set_bit(const int y, const int x, const char new_bit) {
+void Field::set_bit(const int y, const int x, const CELL new_bit) {
 	this->grid[y][x] |= new_bit;
 }
-void Field::set_bit(const Point p, const char new_bit) {
+void Field::set_bit(const Point p, const CELL new_bit) {
 	this->set_bit(p.y, p.x, new_bit);
 }
 
 // セルの情報を削除
-void Field::delete_bit(const int y, const int x, const char delete_bit) {
+void Field::delete_bit(const int y, const int x, const CELL delete_bit) {
 	this->grid[y][x] &= ~delete_bit;
 }
-void Field::delete_bit(const Point p, const char delete_bit) {
+void Field::delete_bit(const Point p, const CELL delete_bit) {
 	this->delete_bit(p.y, p.x, delete_bit);
 }
 
 void Field::display_grid(void) const {
-	for (size_t i = 0; i < HEIGHT * WIDTH; i++) {
+	for (int i = 0; i < HEIGHT * WIDTH; i++) {
 		get_grid_rect(Point(i % WIDTH, i / WIDTH)).drawFrame(1, 1, Palette::Black);
 	}
 }
 
 void Field::display_actors(void) const {
-	for (size_t i = 0; i < (HEIGHT * WIDTH); i++) {
+	for (int i = 0; i < (HEIGHT * WIDTH); i++) {
 		int y = i / WIDTH;
 		int x = i % WIDTH;
 		Point p = { x,y };
-		char target_cell = grid[y][x];
+		CELL target_cell = grid[y][x];
 
 		if (target_cell & CELL::POND) {
 			get_grid_rect(p).draw(Palette::Black);
@@ -238,10 +238,10 @@ void Field::display_actors(void) const {
 			get_grid_rect(p).draw(ColorF(0.0, 0.0, 1.0, 0.25));
 		}
 		if (target_cell & CELL::WALL_RED) {
-			Rect(Arg::center(get_cell_center(p)), CELL_SIZE*0.7).draw(Palette::Red);
+			Rect(Arg::center(get_cell_center(p)), (int)(CELL_SIZE*0.7)).draw(Palette::Red);
 		}
 		if (target_cell & CELL::WALL_BLUE) {
-			Rect(Arg::center(get_cell_center(p)), CELL_SIZE * 0.7).draw(Palette::Blue);
+			Rect(Arg::center(get_cell_center(p)), (int)(CELL_SIZE * 0.7)).draw(Palette::Blue);
 		}
 		if (target_cell & CELL::CRAFTSMAN_RED) {
 			Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3).draw(ColorF(1.0, 0.5, 0.5));
@@ -256,11 +256,11 @@ void Field::display_actors(void) const {
 
 // startからBFSを開始
 const Array<Point> range_area = { {0,-1},{-1,0},{0,1},{1,0} };
-void Field::wall_bfs(Point start, Array<Array<bool>>& visited, bool team) {
+void Field::wall_bfs(Point start, Array<Array<bool>>& visited, TEAM team) {
 	std::queue<Point> que;
 	que.push(start);
 	visited[start.y][start.x] = true;
-	if (get_cell(start) & switch_cell(CELL_TYPE::WALL, team)) {
+	if (get_cell(start) & switch_cell(CELL::WALL, team)) {
 		return;
 	}
 
@@ -272,7 +272,7 @@ void Field::wall_bfs(Point start, Array<Array<bool>>& visited, bool team) {
 			if (not is_in_field(next)) {
 				continue;
 			}
-			if (get_cell(next) & switch_cell(CELL_TYPE::WALL, team) or
+			if (get_cell(next) & switch_cell(CELL::WALL, team) or
 				visited[next.y][next.x]) {
 				continue;
 			}
@@ -287,8 +287,8 @@ void Field::calc_area(void) {
 	Array<Array<bool>> red_visited(HEIGHT, Array<bool>(WIDTH, false));
 	Array<Array<bool>> blue_visited(HEIGHT, Array<bool>(WIDTH, false));
 	// フィールドの上下左右の辺からBFSを開始
-	for (size_t h = 0; h < HEIGHT; h++) {
-		for (size_t w = 0; w < WIDTH; w++) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
 			if (not (h == 0 or h == HEIGHT - 1 or w == 0 or w == WIDTH - 1)) {
 				continue;
 			}
@@ -298,11 +298,11 @@ void Field::calc_area(void) {
 	}
 
 	// BFSに到達できたかで陣地塗り
-	for (size_t h = 0; h < HEIGHT; h++) {
-		for (size_t w = 0; w < WIDTH; w++) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
 			// 両方の陣地になる場合
 			if ((not red_visited[h][w]) and (not blue_visited[h][w])) {
-				set_bit(h, w, CELL_TYPE::AREA);
+				set_bit(h, w, CELL::AREA);
 			}
 			// 赤の陣地となる場合
 			else if (not red_visited[h][w]) {
@@ -318,8 +318,8 @@ void Field::calc_area(void) {
 	}
 
 	// 壁は陣地外
-	for (size_t h = 0; h < HEIGHT; h++) {
-		for (size_t w = 0; w < WIDTH; w++) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
 			if (get_cell(h, w) & CELL::WALL_RED) {
 				delete_bit(h, w, CELL::AREA_RED);
 			}
@@ -332,19 +332,19 @@ void Field::calc_area(void) {
 }
 
 
-void Field::calc_point(bool team) {
-	size_t point = 0;
-	Array<size_t> building = { 0,0,0 };
-	for (size_t h = 0; h < HEIGHT; h++) {
-		for (size_t w = 0; w < WIDTH; w++) {
-			if (get_cell(h, w) & switch_cell(CELL_TYPE::AREA, team)) {
+void Field::calc_point(TEAM team) {
+	int point = 0;
+	Array<int> building = { 0,0,0 };
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if (get_cell(h, w) & switch_cell(CELL::AREA, team)) {
 				if (get_cell(h, w) & CELL::CASTLE) { 
 					point += this->point_castle;
 					building[2]++;
 				}
 				point += this->point_area;
 				building[1]++;
-			}else if (get_cell(h, w) & switch_cell(CELL_TYPE::WALL, team)) {
+			}else if (get_cell(h, w) & switch_cell(CELL::WALL, team)) {
 				point += this->point_wall;
 				building[0]++;
 			}
@@ -361,18 +361,18 @@ void Field::calc_point(bool team) {
 
 }
 
-size_t Field::get_point(bool team) {
+int Field::get_point(TEAM team) {
 	if (team == TEAM::RED) {
 		return point_red;
-	}else if (team == TEAM::BLUE) {
+	}else{
 		return point_blue;
 	}
 }
 
-Array<size_t> Field::get_building(bool team) {
+Array<int> Field::get_building(TEAM team) {
 	if (team == TEAM::RED) {
 		return building_red;
-	}else if (team == TEAM::BLUE) {
+	}else{
 		return building_blue;
 	}
 }

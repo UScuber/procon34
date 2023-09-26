@@ -3,16 +3,16 @@
 # include "Field.hpp"
 # include "Base.hpp"
 
-extern size_t HEIGHT;
-extern size_t WIDTH;
-extern size_t CELL_SIZE;
-extern size_t BLANK_LEFT;
-extern size_t BLANK_TOP;
+extern int HEIGHT;
+extern int WIDTH;
+extern int CELL_SIZE;
+extern int BLANK_LEFT;
+extern int BLANK_TOP;
 
 class Craftsman {
 public:
 	// 盤面情報に合わせて職人を配置
-	Craftsman(int y, int x, bool team);
+	Craftsman(int y, int x, TEAM team);
 	// 職人の行動情報を初期化
 	void initialize(void);
 	// 城壁の建築
@@ -34,11 +34,11 @@ public:
 	// 選択済みかどうか
 	bool is_target = false;
 	// 職人のチーム
-	bool team = TEAM::RED;
+	TEAM team = TEAM::RED;
 	// 行動をした方向
 	int direction = 0;
 	// 行動の種類
-	int act = ACT::NOTHING;
+	ACT act = ACT::NOTHING;
 };
 
 // 職人の移動範囲
@@ -47,7 +47,7 @@ const Array<Point> range_move = { {0,-1},{-1,0},{0,1},{1,0},{-1,-1},{-1,1},{1,1}
 const Array<Point> range_wall = { {0,-1},{-1,0},{0,1},{1,0} };
 
 // 職人の座標とチームを初期化
-Craftsman::Craftsman(int y, int x, bool team) {
+Craftsman::Craftsman(int y, int x, TEAM team) {
 	this->pos = { x, y };
 	this->team = team;
 }
@@ -61,27 +61,27 @@ void Craftsman::initialize(void) {
 }
 
 // 建築
-bool Craftsman::build(Field& field, const Point direction) {
-	const Point target_cell_pos = this->pos + direction;
+bool Craftsman::build(Field& field, const Point direction_point) {
+	const Point target_cell_pos = this->pos + direction_point;
 	// 建設可能範囲内か
-	if (not is_in_field(target_cell_pos) or direction.manhattanLength() != 1) {
+	if (not is_in_field(target_cell_pos) or direction_point.manhattanLength() != 1) {
 		return false;
 	}
-	const char target_cell = field.get_cell(target_cell_pos);
+	const CELL target_cell = field.get_cell(target_cell_pos);
 	// 建設可能な場所か
-	if (target_cell & CELL_TYPE::WALL or
-		target_cell & switch_cell(CELL_TYPE::CRAFTSMAN, not team) or
+	if (target_cell & CELL::WALL or
+		target_cell & switch_cell(CELL::CRAFTSMAN, not team) or
 		target_cell & CELL::CASTLE) {
 		return false;
 	}
 	// フィールド変化
-	field.set_bit(target_cell_pos, switch_cell(CELL_TYPE::WALL, team));
+	field.set_bit(target_cell_pos, switch_cell(CELL::WALL, team));
 	// 行動情報
 	this->is_acted = true;
 	this->is_target = false;
 	this->act = ACT::BUILD;
 	for (int8 i = 0; i < range_wall.size(); i++) {
-		if (range_wall[i] == direction) {
+		if (range_wall[i] == direction_point) {
 			this->direction = i;
 			break;
 		}
@@ -90,25 +90,25 @@ bool Craftsman::build(Field& field, const Point direction) {
 }
 
 // 破壊
-bool Craftsman::destroy(Field& field, const Point direction) {
-	const Point target_cell_pos = this->pos + direction;
+bool Craftsman::destroy(Field& field, const Point direction_point) {
+	const Point target_cell_pos = this->pos + direction_point;
 	// 破壊可能範囲内か
-	if (not is_in_field(target_cell_pos) or direction.manhattanLength() != 1) {
+	if (not is_in_field(target_cell_pos) or direction_point.manhattanLength() != 1) {
 		return false;
 	}
 	const char target_cell = field.get_cell(target_cell_pos);
 	// 破壊可能な場所か
-	if (not (target_cell & CELL_TYPE::WALL)) {
+	if (not (target_cell & CELL::WALL)) {
 		return false;
 	}
 	// フィールド変化
-	field.delete_bit(target_cell_pos, CELL_TYPE::WALL);
+	field.delete_bit(target_cell_pos, CELL::WALL);
 	// 行動情報
 	this->is_acted = true;
 	this->is_target = false;
 	this->act = ACT::DESTROY;
 	for (int8 i = 0; i < range_wall.size(); i++) {
-		if (range_wall[i] == direction) {
+		if (range_wall[i] == direction_point) {
 			this->direction = i;
 			break;
 		}
@@ -117,29 +117,29 @@ bool Craftsman::destroy(Field& field, const Point direction) {
 }
 
 // 移動
-bool Craftsman::move(Field& field, const Point direction) {
-	const Point target_cell_pos = this->pos + direction;
+bool Craftsman::move(Field& field, const Point direction_point) {
+	const Point target_cell_pos = this->pos + direction_point;
 	// 移動可能範囲か
-	if ((not is_in_field(target_cell_pos)) or Abs(direction.y) > 1 or Abs(direction.x) > 1) {
+	if ((not is_in_field(target_cell_pos)) or Abs(direction_point.y) > 1 or Abs(direction_point.x) > 1) {
 		return false;
 	}
 	// 移動可能な場所か
-	const char target_cell = field.get_cell(target_cell_pos);
-	if (target_cell & CELL::POND or
-		target_cell & switch_cell(CELL_TYPE::WALL, not team) or
-		target_cell & CELL_TYPE::CRAFTSMAN) {
+	const CELL target_cell = field.get_cell(target_cell_pos);
+	if ((target_cell & CELL::POND) or
+		(target_cell & switch_cell(CELL::WALL, not team)) or
+		(target_cell & CELL::CRAFTSMAN)) {
 		return false;
 	}
 	// フィールド変化
-	field.delete_bit(this->pos, switch_cell(CELL_TYPE::CRAFTSMAN, team));
+	field.delete_bit(this->pos, switch_cell(CELL::CRAFTSMAN, team));
 	this->pos = target_cell_pos;
-	field.set_bit(this->pos, switch_cell(CELL_TYPE::CRAFTSMAN, team));
+	field.set_bit(this->pos, switch_cell(CELL::CRAFTSMAN, team));
 	// 行動情報
 	this->is_acted = true;
 	this->is_target = false;
 	this->act = ACT::MOVE;
 	for (int8 i = 0; i < range_move.size(); i++) {
-		if (range_move[i] == direction) {
+		if (range_move[i] == direction_point) {
 			this->direction = i;
 			break;
 		}
@@ -149,7 +149,6 @@ bool Craftsman::move(Field& field, const Point direction) {
 
 void Craftsman::output_act(ChildProcess& child) {
 	child.ostream() << direction << std::endl;
-	Console << direction << U" " << act;
 	if (act == ACT::BUILD) {
 		child.ostream() << "build" << std::endl;
 	}else if (act == ACT::DESTROY) {

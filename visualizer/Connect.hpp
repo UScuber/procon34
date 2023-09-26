@@ -27,17 +27,7 @@ Array<Array<int>> get_2d_array(const JSON& json) {
 	return res;
 }
 
-struct MatchDataBonus {
-	int wall = 0;
-	int territory = 0;
-	int castle = 0;
-	MatchDataBonus() {}
-	MatchDataBonus(const JSON& bonus) {
-		this->wall = bonus[U"wall"].get<int>();
-		this->territory = bonus[U"territory"].get<int>();
-		this->castle = bonus[U"castle"].get<int>();
-	}
-};
+
 struct MatchDataBoard {
 	int width;
 	int height;
@@ -57,7 +47,6 @@ struct MatchDataMatch {
 	int id;
 	int turns;
 	int turnSeconds;
-	MatchDataBonus bonus;
 	MatchDataBoard board;
 	String opponent;
 	bool first;
@@ -66,7 +55,6 @@ struct MatchDataMatch {
 		this->id = matches[U"id"].get<int>();
 		this->turns = matches[U"turns"].get<int>();
 		this->turnSeconds = matches[U"turnSeconds"].get<int>();
-		this->bonus = MatchDataBonus(matches[U"bonus"]);
 		this->board = MatchDataBoard(matches[U"board"]);
 		this->opponent = matches[U"opponent"].get<String>();
 		this->first = matches[U"first"].get<bool>();
@@ -178,7 +166,7 @@ void output_console_response(const HTTPResponse& response) {
 	Console << response.getHeader().rtrimmed();
 	Console << U"------";
 }
-void output_console_fail(String str) {
+void output_console_fail(const String& str) {
 	Console << U"------";
 	Console << str << U" failed!!";
 	Console << U"------";
