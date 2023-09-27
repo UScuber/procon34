@@ -19,7 +19,7 @@
 - 職人(A): { ally:positive integer, enemy:negative integer }
 
 ```
-H W N turn
+H W N turn side
 
 S(0,0) S(0,1) ... S(0,W-1)
 ...

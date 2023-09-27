@@ -22,7 +22,7 @@ let clean_func = undefined;
 const execute_randomagent = async(match_data, current_turn) => {
   let str = "";
   const board = match_data.board;
-  str += `${board.height} ${board.width} ${board.mason} ${current_turn}\n`;
+  str += `${board.height} ${board.width} ${board.mason} ${current_turn} ${isnot_first ? 1 : 0}\n`;
   // structures
   for(let i = 0; i < board.height; i++){
     for(let j = 0; j < board.width; j++){
@@ -30,6 +30,7 @@ const execute_randomagent = async(match_data, current_turn) => {
     }
     str += "\n";
   }
+  str += "\n";
   // walls
   for(let i = 0; i < board.height; i++){
     for(let j = 0; j < board.width; j++){
@@ -37,6 +38,7 @@ const execute_randomagent = async(match_data, current_turn) => {
     }
     str += "\n";
   }
+  str += "\n";
   // territories
   for(let i = 0; i < board.height; i++){
     for(let j = 0; j < board.width; j++){
@@ -44,6 +46,7 @@ const execute_randomagent = async(match_data, current_turn) => {
     }
     str += "\n";
   }
+  str += "\n";
   // masons
   for(let i = 0; i < board.height; i++){
     for(let j = 0; j < board.width; j++){
@@ -51,6 +54,7 @@ const execute_randomagent = async(match_data, current_turn) => {
     }
     str += "\n";
   }
+  
   fs.writeFileSync("input.txt", str);
   execSync("./programs/randomagent.exe < input.txt > output.txt");
   const output = read_file("output.txt");
@@ -83,7 +87,7 @@ const launch_random_agent = () => {
         }
       }
     }catch(err){
-      console.error(err.response);
+      console.error("Too Early");
     }
   }, 100);
 };
