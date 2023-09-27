@@ -36,6 +36,12 @@ Field read_field(const int h, const int w, const int agents_num){
       }
     }
   }
+  for(const Point agent : ally_agents){
+    field.set_state(agent, field.get_state(agent) | State::Ally);
+  }
+  for(const Point agent : enemy_agents){
+    field.set_state(agent, field.get_state(agent) | State::Enemy);
+  }
   field.ally_agents = ally_agents;
   field.enemy_agents = enemy_agents;
   return field;
@@ -68,7 +74,7 @@ int main(){
       }
     }
     assert(dir != -1);
-    std::cout << "{\"turn\": " << (int)actions[i].command << ",\"dir\": " << dir_perm[dir] + 1 << "}";
+    std::cout << "{\"type\": " << (int)actions[i].command << ",\"dir\": " << dir_perm[dir] + 1 << "}";
     if(i != agents_num - 1) std::cout << ",";
   }
   std::cout << "]}\n";
