@@ -6,9 +6,6 @@ const axios = require("axios");
 const PORT = process.env.PORT || 5000;
 const app = express();
 
-const run_command = (cmd) => {
-  return execSync(cmd).toString();
-};
 const read_file = (path) => {
   if(fs.existsSync(path)) return fs.readFileSync(path).toString();
   return "";
@@ -48,16 +45,16 @@ const execute_randomagent = async(match_data, current_turn) => {
     str += "\n";
   }
   fs.writeFileSync("input.txt", str);
-  execSync("./programs/randomagent.exe < input.txt > output.txt", (err, stdout, stderr) => {
-    console.log("executed:", err, stdout, stderr);
-  });
+  execSync("./programs/randomagent.exe < input.txt > output.txt");
   const output = read_file("output.txt");
   console.log("output:", output);
-  const json = JSON.parse(output);
-  console.log("json:", json);
-  await axios.post(URL, json)
-    .then((res) => console.log("post res:", res))
-    .catch(console.error);
+  const response = await fetch(URL, {
+    method: "post",
+    body: output,
+    headers: { "Content-Type": "application/json" }
+  });
+  const res_json = await response.json();
+  console.log("res:", res_json);
 };
 
 const launch_random_agent = () => {
@@ -70,11 +67,12 @@ const launch_random_agent = () => {
       const data = response.data;
       if(data.logs.length !== last_log_length){
         last_log_length = data.logs.length;
-        console.log("Response data:", response.data);
+        //console.log("Response data:", response.data);
         // random agent's turn
         if((last_log_length & 1) == isnot_first){
           console.log("last log length:", last_log_length);
-          await execute_randomagent(data, last_log_length);
+          console.log("start turn:", last_log_length + 1);
+          await execute_randomagent(data, last_log_length + 1);
         }
       }
     }catch(err){
@@ -101,7 +99,7 @@ app.get("/start", async(req, res) => {
   is_running = true;
   console.log("Start Launch Server");
   res.end("Start Launch Server");
-  const cp = exec("./procon-server_linux -c match.json", (err, stdout, stderr) => {
+  const cp = exec("./procon-server_linux -c match.json -start 1s", (err, stdout, stderr) => {
     if(err){
       console.error("Error:", stderr);
       return;
