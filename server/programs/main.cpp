@@ -45,14 +45,15 @@ Field read_field(const int h, const int w, const int agents_num){
 int main(){
   srand(time(NULL));
   // start reading field
-  int agents_num;
-  std::cin >> height >> width >> agents_num;
+  int agents_num, current_turn;
+  std::cin >> height >> width >> agents_num >> current_turn;
   Field field = read_field(height, width, agents_num);
   const auto &current_agents = field.get_now_turn_agents();
   const Actions actions = select_random_next_agents_acts(current_agents, field);
   assert(field.is_legal_action(actions));
 
   const std::vector<int> dir_perm = { 1,7,5,3,0,6,4,2 };
+  std::cout << "{ \"turn\": " << current_turn << ", \"actions\": [";
   for(int i = 0; i < agents_num; i++){
     assert(i == actions[i].agent_idx);
     if(actions[i].command == Action::None){
@@ -67,6 +68,8 @@ int main(){
       }
     }
     assert(dir != -1);
-    std::cout << (int)actions[i].command << " " << dir_perm[dir] + 1 << "\n";
+    std::cout << "{\"turn\": " << (int)actions[i].command << ",\"dir\": " << dir_perm[dir] + 1 << "}";
+    if(i != agents_num - 1) std::cout << ",";
   }
+  std::cout << "]}\n";
 }

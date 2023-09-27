@@ -17,7 +17,7 @@
 - 職人(A): { ally:positive integer, enemy:negative integer }
 
 ```
-H W N
+H W N turn
 
 W(0,0) W(0,1) ... W(0,W-1)
 ...
