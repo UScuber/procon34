@@ -4,6 +4,15 @@
 
 Field read_field(const int h, const int w, const int agents_num){
   Field field(h, w);
+  // structures
+  for(int i = 0; i < h; i++){
+    for(int j = 0; j < w; j++){
+      int val;
+      std::cin >> val;
+      if(val == 1) field.set_state(i, j, field.get_state(i, j) | State::Pond);
+      if(val == 2) field.set_state(i, j, field.get_state(i, j) | State::Castle);
+    }
+  }
   // walls
   for(int i = 0; i < h; i++){
     for(int j = 0; j < w; j++){
@@ -58,8 +67,11 @@ int main(){
   const Actions actions = select_random_next_agents_acts(current_agents, field);
   assert(field.is_legal_action(actions));
 
+  const std::vector<int> cmd_perm = { 0,3,2,1 };
   const std::vector<int> dir_perm = { 1,7,5,3,0,6,4,2 };
+
   std::cout << "{ \"turn\": " << current_turn << ", \"actions\": [";
+
   for(int i = 0; i < agents_num; i++){
     assert(i == actions[i].agent_idx);
     if(actions[i].command == Action::None){
@@ -74,7 +86,8 @@ int main(){
       }
     }
     assert(dir != -1);
-    std::cout << "{\"type\": " << (int)actions[i].command << ",\"dir\": " << dir_perm[dir] + 1 << "}";
+    
+    std::cout << "{\"type\": " << cmd_perm[actions[i].command] << ",\"dir\": " << dir_perm[dir] + 1 << "}";
     if(i != agents_num - 1) std::cout << ",";
   }
   std::cout << "]}\n";

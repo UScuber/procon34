@@ -23,6 +23,13 @@ const execute_randomagent = async(match_data, current_turn) => {
   let str = "";
   const board = match_data.board;
   str += `${board.height} ${board.width} ${board.mason} ${current_turn}\n`;
+  // structures
+  for(let i = 0; i < board.height; i++){
+    for(let j = 0; j < board.width; j++){
+      str += board.structures[i][j] + " ";
+    }
+    str += "\n";
+  }
   // walls
   for(let i = 0; i < board.height; i++){
     for(let j = 0; j < board.width; j++){
