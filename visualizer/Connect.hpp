@@ -109,7 +109,7 @@ struct MatchStatusLog {
 		this->actions = MatchStatusLogAction(log[U"actions"]);
 	}
 };
-class MatchStatus {
+struct MatchStatus {
 	int id = 0;
 	int turn = 0;
 	MatchStatusBoard board = MatchStatusBoard();
@@ -129,20 +129,34 @@ struct ActionPlanAction {
 	int type = 0;
 	int dir = 0;
 	ActionPlanAction() {}
-	ActionPlanAction(const JSON& action) {
-		this->type = action[U"type"].get<int>();
-		this->dir = action[ U"dir"].get<int>();
+	ActionPlanAction(const int& type, const int& dir) {
+		this->type = type;
+		this->dir = dir;
+	}
+	JSON output_json(void) const {
+		JSON json;
+		json[U"type"] = this->type;
+		json[U"dir"] = this->dir;
+		return json;
 	}
 };
 struct  ActionPlan {
 	int turn = 0;
 	Array<ActionPlanAction> actions = Array<ActionPlanAction>(0);
 	ActionPlan() {}
-	ActionPlan(const JSON& json) {
-		this->turn = json[U"turn"].get<int>();
-		for (const ActionPlanAction actionplanaction : json[U"actions"].arrayView()) {
-			actions << actionplanaction;
+	ActionPlan(const int& turn) {
+		this->turn = turn;
+	}
+	void push_back_action(const int& type, const int& dir) {
+		actions << ActionPlanAction(type, dir);
+	}
+	JSON output_json(void) const {
+		JSON json;
+		json[U"turn"] = this->turn;
+		for (const ActionPlanAction& actionplanaction : actions) {
+			json[U"actions"].push_back(actionplanaction.output_json());
 		}
+		return json;
 	}
 };
 
@@ -150,11 +164,17 @@ struct  ActionPlan {
 class Connect {
 private:
 	const URL url_base = U"http://localhost:3000/";
-	String token;
+	const HashTable<String, String> headers{ {U"Content-Type", U"application/json"} };
+	int match_id = 0;
+	String token = U"";
 public:
 	Connect(void);
 	// 試合一覧取得
 	Optional<MatchData> get_matches_list(void);
+	// 試合状況取得
+	Optional<MatchStatus> get_match_status(void);
+	// 行動計画更新
+	Optional<int> post_action_plan(const ActionPlan& action);
 };
 
 
@@ -181,21 +201,45 @@ Connect::Connect(void) {
 }
 
 Optional<MatchData> Connect::get_matches_list(void) {
-	const URL url = url_base + U"matches?token=" + U"aaa";
-	//const URL url = url_base + U"matches" + U"?token=" + token;
-	const HashTable<String, String> headers{ {U"Content-Type", U"application/json"} };
+	const URL url = url_base + U"matches" + U"?token=" + token;
 	const FilePath saveFilePath = U"./mathes_list.json";
 	if (const auto response = SimpleHTTP::Get(url, headers, saveFilePath)) {
 		output_console_response(response);
 		if (response.isOK()){
-			MatchData(JSON::Load(saveFilePath));
+			return MatchData(JSON::Load(saveFilePath));
 		}
 	}else {
 		output_console_fail(U"get_matches_list");
 	}
 	return none;
 }
-
+Optional<MatchStatus> Connect::get_match_status(void) {
+	const URL url = url_base + U"matches/" + Format(match_id) + U"?token=" + token;
+	const FilePath saveFilePath = U"./match_status.json";
+	if (const auto response = SimpleHTTP::Get(url, headers, saveFilePath)) {
+		output_console_response(response);
+		if (response.isOK()) {
+			return MatchStatus(JSON::Load(saveFilePath));
+		}
+	}else {
+		output_console_fail(U"get_match_status");
+	}
+	return none;
+}
+Optional<int> Connect::post_action_plan(const ActionPlan& actionplan){
+	const URL url = url_base + U"matches/" + Format(match_id) + U"?token=" + token;
+	const FilePath saveFilePath = U"./action_plan.json";
+	const std::string data = actionplan.output_json().formatUTF8();
+	if (const auto response = SimpleHTTP::Post(url, headers, data.data(), data.size(), saveFilePath)) {
+		output_console_response(response);
+		if (response.isOK()) {
+			return (JSON::Load(saveFilePath))[U"accepted_at"].get<int>();
+		}else {
+			output_console_fail(U"post_action_plan");
+		}
+	}
+	return none;
+}
 
 
 
