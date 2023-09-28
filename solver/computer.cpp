@@ -17,37 +17,82 @@ struct Game {
     cerr << "run\n";
     // ** board 17 only
     const std::vector<Point> build_walls = {
-      {11, 19},
-      {12, 18},
-      {13, 17},
-      {14, 16},
-      {15, 15},
-      {16, 14},
-      {17, 13},
-      {18, 12},
-      {19, 11},
-      {20, 12},
+      {14, 5},
+      {15, 4},
+      {16, 3},
+      {17, 2},
+      {18, 2},
+      {19, 3},
+      {20, 3},
+      {21, 3},
+      {22, 3},
+      {23, 4},
+      {24, 5},
+      {23, 6},
+      {22, 7},
+      {21, 8},
+      {22, 9},
+      {22, 10},
+      {22, 11},
+      {21, 12},
       {21, 13},
       {22, 14},
-      {21, 15},
-      {20, 16},
-      {19, 17},
-      {18, 18},
-      {17, 19},
-      {16, 20},
-      {15, 21},
-      {14, 22},
-      {13, 21},
-      {12, 20},
+      {22, 15},
+      {21, 16},
+      {20, 17},
+      {19, 18},
+      {18, 19},
+      {17, 20},
+      {16, 21},
+      {15, 22},
+      {14, 23},
+      {13, 24},
+      {12, 23},
+      {11, 22},
+      {10, 23},
+      {9, 24},
+      {8, 23},
+      {7, 22},
+      {6, 21},
+      {5, 21},
+      {4, 21},
+      {3, 21},
+      {3, 20},
+      {2, 19},
+      {1, 18},
+      {0, 17},
+      {1, 16},
+      {2, 15},
+      {1, 14},
+      {2, 13},
+      {1, 12},
+      {2, 11},
+      {3, 10},
+      {2, 9},
+      {3, 8},
+      {4, 7},
+      {5, 6},
+      {6, 5},
+      {7, 4},
+      {8, 3},
+      {9, 2},
+      {10, 1},
+      {11, 2},
+      {12, 3},
+      {13, 4},
+      {14, 5},
+      {7, 4},
+      {6, 5},
+      {5, 6},
+      {4, 7},
+      {3, 8},
+      {2, 9},
     };
-    const auto res = calculate_build_route(build_walls, field);
+    Actions res = calculate_build_route(build_walls, field);
     const int m = res.size();
     std::vector<int> dirs(m);
     std::vector<std::string> cmd(m, "none");
     for(int i = 0; i < m; i++){
-      if(res[i].command == Action::Move) cmd[i] = "move";
-      if(res[i].command == Action::Build) cmd[i] = "build";
-      if(res[i].command == Action::Break) cmd[i] = "break";
       assert(i == res[i].agent_idx);
       for(int d = 0; d < 8; d++){
         if(current_agents[i] + dmove[d] == res[i].pos){
@@ -56,7 +101,12 @@ struct Game {
         }
       }
     }
-    field.update_turn(res);
+    field.update_turn_and_fix_actions(res);
+    for(int i = 0; i < m; i++){
+      if(res[i].command == Action::Move) cmd[i] = "move";
+      if(res[i].command == Action::Build) cmd[i] = "build";
+      if(res[i].command == Action::Break) cmd[i] = "break";
+    }
     field.debug();
     cerr << "my turn\n";
     for(int i = 0; i < m; i++){
@@ -96,7 +146,9 @@ int main(){
   Game game(field);
   while(!game.field.is_finished()){
     if(game.field.is_my_turn()){
+      Timer timer;
       game.run();
+      cerr << "Elapsed Time: " << timer.result() << "[ms]\n";
     }else{
       game.load();
     }

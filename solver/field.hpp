@@ -277,6 +277,115 @@ struct Field {
     update_region();
   }
 
+  // side: 味方:0, 敵:1
+  void update_field_and_fix_actions(Actions &acts){
+    assert(acts.size() == ally_agents.size());
+    std::vector<Action*> act_list[4];
+    std::map<Point, int> agent_poses;
+
+    for(auto &act : acts){
+      act_list[act.command].emplace_back(&act);
+      assert(0 <= act.agent_idx && act.agent_idx < (int)acts.size());
+      if(act.command == Action::Move) agent_poses[act.pos]++;
+    }
+    
+    // ally turn
+    if(!(current_turn & 1)){
+      for(const Point agent : ally_agents) agent_poses[agent]++;
+      // break
+      for(auto *act : act_list[Action::Break]){
+        const State st = get_state(act->pos);
+        if(!(st & State::Wall)){
+          cerr << "Error: there is not wall at(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        set_state(act->pos, st & ~State::Wall);
+      }
+      // build
+      for(auto *act : act_list[Action::Build]){
+        const State st = get_state(act->pos);
+        if(st & (State::WallEnemy | State::Enemy | State::Castle)){
+          cerr << "Error: there is wallenemy, enemy or castle at(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        if(st & State::WallAlly){ // someone already built
+          cerr << "Error: someone has already built on(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        set_state(act->pos, st | State::WallAlly);
+      }
+      // move
+      for(auto *act : act_list[Action::Move]){
+        const State st = get_state(act->pos);
+        if(st & (State::Human | State::Pond | State::WallEnemy)){
+          cerr << "Error: there is human, pond or wallenemy at(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        if(agent_poses[act->pos] >= 2){
+          cerr << "Error: many humans at(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        const auto from = ally_agents[act->agent_idx];
+        set_state(from, get_state(from) ^ State::Ally);
+        set_state(act->pos, st | State::Ally);
+        ally_agents[act->agent_idx] = act->pos;
+      }
+    }
+    // enemy turn
+    else{
+      for(const Point agent : enemy_agents) agent_poses[agent]++;
+      // break
+      for(auto *act : act_list[Action::Break]){
+        const State st = get_state(act->pos);
+        if(!(st & State::Wall)){
+          cerr << "Error: there is not wall at(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        set_state(act->pos, st & ~State::Wall);
+      }
+      // build
+      for(auto *act : act_list[Action::Build]){
+        const State st = get_state(act->pos);
+        if(st & (State::WallAlly | State::Ally | State::Castle)){
+          cerr << "Error: there is wallally, ally or castle at(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        if(st & State::WallEnemy){ // someone already built
+          cerr << "Error: someone has already built on(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        set_state(act->pos, st | State::WallEnemy);
+      }
+      // move
+      for(auto *act : act_list[Action::Move]){
+        const State st = get_state(act->pos);
+        if(st & (State::Human | State::Pond | State::WallAlly)){
+          cerr << "Error: there is human, pond or wallally at(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        if(agent_poses[act->pos] >= 2){
+          cerr << "Error: many humans at(" << act->pos << ")\n";
+          act->command = Action::None;
+          continue;
+        }
+        const auto from = enemy_agents[act->agent_idx];
+        set_state(from, get_state(from) ^ State::Enemy);
+        set_state(act->pos, st | State::Enemy);
+        enemy_agents[act->agent_idx] = act->pos;
+      }
+    }
+    update_region();
+  }
+
   // s: 味方:0, 敵:1
   bool is_legal_action(const Actions &acts, int s = -1) const{
     if(s == -1) s = side;
@@ -341,6 +450,10 @@ struct Field {
 
   void update_turn(const Actions &acts){
     update_field(acts);
+    current_turn++;
+  }
+  void update_turn_and_fix_actions(Actions &acts){
+    update_field_and_fix_actions(acts);
     current_turn++;
   }
   Agents &get_now_turn_agents(){
