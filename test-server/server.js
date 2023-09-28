@@ -15,6 +15,8 @@ const match_id = 10;
 const match_data = require("./match.json");
 console.log("match data:", match_data);
 const URL = `http://localhost:3000/matches/${match_id}?token=randomagent`;
+const is_windows = process.platform === "win32";
+const is_mac = process.platform === "darwin";
 let is_running = false;
 let isnot_first = true;
 let clean_func = undefined;
@@ -56,7 +58,8 @@ const execute_randomagent = async(match_data, current_turn) => {
   }
   
   fs.writeFileSync("input.txt", str);
-  execSync("./programs/randomagent.exe < input.txt > output.txt");
+  if(is_windows) execSync('"programs/randomagent.exe" < input.txt > output.txt');
+  else execSync("./programs/randomagent.exe < input.txt > output.txt");
   const output = read_file("output.txt");
   console.log("output:", output);
   const response = await fetch(URL, {
@@ -107,20 +110,28 @@ app.get("/start", async(req, res) => {
     res.end("Server is already running");
     return;
   }
-  is_running = true;
   console.log("Start Launch Server");
-  res.end("Start Launch Server");
-  const cp = exec("./procon-server_linux -c match.json -start 1s", (err, stdout, stderr) => {
+  let filename = "./procon-server_linux";
+  if(is_windows) filename = "procon-server_win.exe";
+  if(is_mac) filename = "./procon-server_darwin_arm";
+  if(!fs.existsSync(filename)){
+    console.error("Error: " + filename + " was not found");
+    res.end("Error: " + filename + " was not found");
+    return;
+  }
+  const cp = exec(filename + " -c match.json -start 1s", (err, stdout, stderr) => {
     if(err){
-      console.error("Error:", stderr);
+      has_error = true;
       return;
     }
     console.log("Out:", stdout);
   });
+  res.end("Start Launch Server");
   console.log("first:", match_data.first);
   // isnot_first = !match_data.first;
   launch_random_agent();
   console.log("pid:", cp.pid);
+  is_running = true;
   clean_func = () => { process.kill(cp.pid); };
 });
 
