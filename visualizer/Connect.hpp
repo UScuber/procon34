@@ -193,7 +193,7 @@ void output_console_fail(const String& str) {
 }
 
 Connect::Connect(void) {
-	TextReader reader{ U"./.token" };
+	TextReader reader{ U"./token.env" };
 	if (not reader) {
 		throw Error{ U"Failed to open '.token'" };
 	}

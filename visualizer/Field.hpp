@@ -1,6 +1,7 @@
 ﻿# pragma once
 # include <Siv3D.hpp>
 # include "Base.hpp"
+# include "Connect.hpp"
 
 extern int HEIGHT;
 extern int WIDTH;
@@ -70,6 +71,8 @@ public:
 	Field(String path);
 	// 18種の内のランダムな盤面をセット
 	Field(void);
+	// 通信で受け取った盤面をセット
+	Field(MatchData matchdata, int id);
 	// 池、城、職人の座標配列を返す
 	Array<Point> get_ponds(void) const;
 	Array<Point> get_castles(void) const;
@@ -147,7 +150,6 @@ Field::Field(String path) {
 	}
 	return;
 }
-
 // ランダムで選んだcsvファイルから盤面を読み込む
 Field::Field(void) {
 	craftsmen.resize(2);
@@ -176,6 +178,19 @@ Field::Field(void) {
 	}
 	return;
 }
+// jsonから読み取ったフィールド情報に置き換える
+Field::Field(MatchData matchdata, int id) {
+	for (const MatchDataMatch& matchdatamatch : matchdata.matches) {
+		if (matchdatamatch.id != id) {
+			continue;
+		}
+		// ここからフィールドセット
+		HEIGHT = matchdatamatch.board.height;
+		WIDTH = matchdatamatch.board.width;
+		
+	}
+}
+
 
 Array<Point> Field::get_ponds(void) const{
 	return ponds;
@@ -387,3 +402,4 @@ void Field::output_field(void) {
 	}
 	Console << '\n';
 }
+

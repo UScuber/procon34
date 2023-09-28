@@ -53,9 +53,7 @@ protected:
 	// ターン数
 	int turn_num = 200;
 	// 現在のターン
-	TEAM now_turn = TEAM::RED;
-	// 通信を行う
-	Connect connect;
+	TEAM now_turn = TEAM::RED; 
 };
 
 void Game::operate_gui(Field& field) {
@@ -250,7 +248,6 @@ private:
 	void give_solver_build_plan(void);
 };
 PvC::PvC(const InitData& init) : IScene{ init } {
-	connect.get_matches_list();
 	craftsmen.resize(2);
 	is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
 	for (int h = 0; h < HEIGHT; h++) {
@@ -383,6 +380,34 @@ void PvC::draw() const {
 	getData().display_actors();
 	display_field();
 	display_details(getData());
+}
+
+
+// solver.exe対サーバー
+class CvC : public App::Scene, public Game {
+public:
+	CvC(const InitData& init);
+	void update() override;
+	void draw() const override;
+private:
+	// 通信を行うクラス
+	Connect connect;
+	// 通信を行う際に使用する構造体
+	MatchData matchdata;
+	MatchStatus matchstatus;
+	ActionPlan actionplan;
+};
+CvC::CvC(const InitData& init) : IScene{ init } {
+	Optional<MatchData> tmp_matchdata = connect.get_matches_list();
+	if (tmp_matchdata == none) {
+		throw Error{ U"Cannot get matches list!" };
+	}else {
+		this->matchdata = tmp_matchdata.value();
+	}
+	for (const MatchDataMatch& matchdatamatch : matchdata.matches) {
+		if()
+	}
+	
 }
 
 
