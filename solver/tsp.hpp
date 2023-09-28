@@ -166,7 +166,6 @@ private:
 
 // agentが建てるべき壁(walls)の建てる順番を決める
 std::vector<Point> calc_tsp_route(const Point agent, std::vector<Point> walls, CostTable &cost_table){
-  /*
   const int walls_num = walls.size();
   std::vector<int> used(walls_num);
   Point last_pos;
@@ -198,9 +197,10 @@ std::vector<Point> calc_tsp_route(const Point agent, std::vector<Point> walls, C
     last_pos = walls[best_idx];
     result.emplace_back(last_pos);
   }
-  */
-  std::sort(walls.begin(), walls.end());
-  return walls;
+  // std::sort(walls.begin(), walls.end(), [&](const Point a, const Point b){
+  //   return cost_table.get_cost(agent, a) + manche_dist(agent, a) < cost_table.get_cost(agent, b) + manche_dist(agent, b);
+  // });
+  return result;
 }
 
 // 壁を順に建てる時の最小コストを計算
@@ -213,6 +213,7 @@ int calc_agent_move_cost(const Point agent, const std::vector<Point> &walls, con
     if(!is_valid(p)) continue;
     if(field.get_state(p) & State::Pond) continue;
     dp[i] = cost_table.get_cost(agent, p) + 1;
+    dp[i] += std::min(cost_table.get_cost(agent, p), 5);
   }
   for(int i = 1; i < walls_num; i++){
     std::vector<int> nxt(4, inf);
@@ -257,6 +258,7 @@ int find_agent_build_wall_dir(const Point agent, const std::vector<Point> &walls
     if(!is_valid(p)) continue;
     if(field.get_state(p) & State::Pond) continue;
     dp[0][i] = cost_table.get_cost(agent, p) + 1;
+    dp[0][i] += std::min(cost_table.get_cost(agent, p), 5);
   }
   for(int i = 1; i < walls_num; i++){
     for(int j = 0; j < 4; j++){
@@ -374,13 +376,18 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
   double temp = T0;
   double spend_time = 0;
   auto best_wall_part = wall_part;
-  int best_score = calc_all_agent_move_cost(agents, best_wall_part, field, cost_table);
+  std::vector<int> costs(agents_num);
+  int best_score = 0;
+  for(int i = 0; i < agents_num; i++){
+    costs[i] = calc_agent_move_cost(agents[i], best_wall_part[i], field, cost_table);
+    chmax(best_score, costs[i]);
+  }
   auto awesome_wall_part = best_wall_part;
   int awesome_score = best_score;
   StopWatch sw;
   cerr << "Start SA(TSP)\n";
   cerr << "First Score: " << awesome_score << "\n";
-  int steps = 0;
+  int steps = 0, updated_num = 0;
   for(; ; steps++){
     if(!(steps & 127)){
       spend_time = sw.get_time();
@@ -390,9 +397,10 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
     }
 
     auto wp = wall_part;
+    int a = -1, b = -1;
     // swap
-    if(rnd(10) <= 8 && (int)walls.size() >= 2){
-      int a = rnd(agents_num), b = rnd(agents_num);
+    if(rnd(10) < 8 && (int)walls.size() >= 2){
+      a = rnd(agents_num), b = rnd(agents_num);
       while(wp[a].empty() || wp[b].empty()){
         a = rnd(agents_num);
         b = rnd(agents_num);
@@ -413,7 +421,7 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
     }
     // move a <- b
     else{
-      int a = rnd(agents_num), b = rnd(agents_num);
+      a = rnd(agents_num), b = rnd(agents_num);
       while(a == b || wp[b].empty()){
         a = rnd(agents_num);
         b = rnd(agents_num);
@@ -424,7 +432,16 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
       wp[b].erase(wp[b].begin() + bi);
     }
 
-    const int score = calc_all_agent_move_cost(agents, wp, field, cost_table);
+    int score = 0;
+    for(int i = 0; i < agents_num; i++){
+      if(i == a || i == b){
+        const int cost = calc_agent_move_cost(agents[i], wp[i], field, cost_table);
+        chmax(score, cost);
+      }else{
+        chmax(score, costs[i]);
+      }
+    }
+    // const int score = calc_all_agent_move_cost(agents, wp, field, cost_table);
 
     if(awesome_score > score){
       awesome_score = score;
@@ -432,13 +449,20 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
       awesome_wall_part = wp;
       best_wall_part = wp;
       wall_part = wp;
+      costs[a] = calc_agent_move_cost(agents[a], wp[a], field, cost_table);
+      costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
+      updated_num++;
     }else if(exp((double)(best_score - score) / temp) > rnd(2048)/2048.0){
       best_score = score;
       best_wall_part = wp;
       wall_part = wp;
+      costs[a] = calc_agent_move_cost(agents[a], wp[a], field, cost_table);
+      costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
+      updated_num++;
     }
   }
   cerr << "Steps: " << steps << "\n";
+  cerr << "Updated: " << updated_num << "\n";
   cerr << "Final Score: " << awesome_score << "\n";
 
   wall_part = awesome_wall_part;
