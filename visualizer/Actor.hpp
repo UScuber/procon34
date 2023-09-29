@@ -11,6 +11,7 @@ extern int BLANK_TOP;
 
 class Craftsman {
 public:
+	Craftsman() {}
 	// 盤面情報に合わせて職人を配置
 	Craftsman(int y, int x, TEAM team);
 	// 職人の行動情報を初期化

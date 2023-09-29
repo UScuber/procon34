@@ -393,22 +393,72 @@ private:
 	// 通信を行うクラス
 	Connect connect;
 	// 通信を行う際に使用する構造体
-	MatchData matchdata;
+	MatchDataMatch matchdatamatch;
 	MatchStatus matchstatus;
 	ActionPlan actionplan;
+	// 試合のid
+	int match_id = 0;
+	// solver.exeが先手か
+	bool is_first = false;
+	// 試合を開始する
+	void execute_match(void):
 };
 CvC::CvC(const InitData& init) : IScene{ init } {
-	Optional<MatchData> tmp_matchdata = connect.get_matches_list();
-	if (tmp_matchdata == none) {
-		throw Error{ U"Cannot get matches list!" };
-	}else {
-		this->matchdata = tmp_matchdata.value();
+	// サーバーから試合情報一覧を取得
+	Optional<MatchData> matchdata = connect.get_matches_list();
+	if (matchdata == none) {
+		throw Error{ U"Failed to get matches list" };
 	}
-	for (const MatchDataMatch& matchdatamatch : matchdata.matches) {
-		if()
+	// id.envに書かれたidに一致するものを取得
+	TextReader reader{ U"./id.env" };
+	if (not reader) {
+		throw Error{ U"Failed to open 'id.env'" };
 	}
-	
+	String tmp_match_id;
+	reader.readLine(tmp_match_id);
+	match_id = Parse<int>(tmp_match_id);
+	bool OK = false;
+	for (MatchDataMatch& tmp_matchdatamatch :matchdata.value().matches) {
+		if (tmp_matchdatamatch.id == match_id) {
+			matchdatamatch = tmp_matchdatamatch;
+			OK = true;
+			break;
+		}
+	}
+	if (not OK) {
+		throw Error{ U"Not found same id match" };
+	}
+	// フィールド情報をセット
+	getData() = Field(matchdatamatch);
+	// 基本情報をセット
+	is_first = matchdatamatch.first;
+	for (Array<Craftsman>& craftsmen_ary : craftsmen) {
+		craftsmen_ary.resize(matchdatamatch.board.mason, Craftsman());
+	}
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			const int mason_num = matchdatamatch.board.masons[h][w];
+			if (mason_num == 0) {
+				continue;
+			}
+			TEAM team = (mason_num > 0) ? TEAM::RED : TEAM::BLUE;
+			craftsmen[(int)team][Abs(mason_num) - 1] = Craftsman(h, w, team);
+		}
+	}
+	// solver.exeの初期化
+	give_solver_initialize((is_first == true) ? TEAM::RED : TEAM::BLUE, getData());
 }
+void CvC::execute_match(void) {
+
+}
+void CvC::update(){
+
+}
+void CvC::draw() const {
+
+}
+
+
 
 
 void Main(){
@@ -419,9 +469,10 @@ void Main(){
 	App manager;
 	manager.add<PvP>(U"PvP");
 	manager.add<PvC>(U"PvC");
+	manager.add<CvC>(U"CvC");
 
 
-	manager.init(U"PvC");
+	manager.init(U"CvC");
 	
 	while (System::Update()){
 		if (not manager.update()) {

@@ -72,7 +72,7 @@ public:
 	// 18種の内のランダムな盤面をセット
 	Field(void);
 	// 通信で受け取った盤面をセット
-	Field(MatchData matchdata, int id);
+	Field(const MatchDataMatch& matchdatamatch);
 	// 池、城、職人の座標配列を返す
 	Array<Point> get_ponds(void) const;
 	Array<Point> get_castles(void) const;
@@ -100,7 +100,8 @@ public:
 	Array<int> get_building(TEAM team);
 	// フィールド表示
 	void output_field(void);
-
+	// フィールド更新
+	void update(const MatchStatus& matchstatus);
 private:
 	// 陣地計算のためのBFS
 	void wall_bfs(Point start, Array<Array<bool>>& visited, TEAM team);
@@ -179,15 +180,22 @@ Field::Field(void) {
 	return;
 }
 // jsonから読み取ったフィールド情報に置き換える
-Field::Field(MatchData matchdata, int id) {
-	for (const MatchDataMatch& matchdatamatch : matchdata.matches) {
-		if (matchdatamatch.id != id) {
-			continue;
+Field::Field(const MatchDataMatch &matchdatamatch){
+	HEIGHT = matchdatamatch.board.height;
+	WIDTH = matchdatamatch.board.width;
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if(matchdatamatch.board.structures[h][w] == 1) {
+				set_bit(h, w, CELL::POND);
+			}else if (matchdatamatch.board.structures[h][w] == 2) {
+				set_bit(h, w, CELL::CASTLE);
+			}
+			if (matchdatamatch.board.masons[h][w] > 0) {
+				set_bit(h, w, CELL::CRAFTSMAN_RED);
+			}else if (matchdatamatch.board.masons[h][w] < 0) {
+				set_bit(h, w, CELL::CRAFTSMAN_BLUE);
+			}
 		}
-		// ここからフィールドセット
-		HEIGHT = matchdatamatch.board.height;
-		WIDTH = matchdatamatch.board.width;
-		
 	}
 }
 
@@ -403,3 +411,6 @@ void Field::output_field(void) {
 	Console << '\n';
 }
 
+void Field::update(const MatchStatus& matchstatus) {
+
+}
