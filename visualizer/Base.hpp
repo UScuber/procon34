@@ -72,9 +72,9 @@ inline constexpr TEAM operator!(const TEAM team){return (TEAM) not (bool)(team);
 
 enum class ACT {
 	NOTHING = 0,
-	BUILD = 1,
-	DESTROY = 2,
-	MOVE = 3
+	MOVE = 1,
+	BUILD = 2,
+	DESTROY = 3
 };
 
 

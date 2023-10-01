@@ -72,7 +72,7 @@ public:
 	// 18種の内のランダムな盤面をセット
 	Field(void);
 	// 通信で受け取った盤面をセット
-	Field(const MatchDataMatch& matchdatamatch);
+	void initialize(const MatchDataMatch& matchdatamatch);
 	// 池、城、職人の座標配列を返す
 	Array<Point> get_ponds(void) const;
 	Array<Point> get_castles(void) const;
@@ -105,6 +105,11 @@ public:
 private:
 	// 陣地計算のためのBFS
 	void wall_bfs(Point start, Array<Array<bool>>& visited, TEAM team);
+	// 各項目のフィールド更新
+	void update_walls(const Array<Array<int>>& walls);
+	void update_territories(const Array<Array<int>>& territores);
+	void update_structures(const Array<Array<int>>& structures);
+	void update_masons(const Array<Array<int>>& masons);
 	// 盤面情報
 	Array<Array<CELL>> grid;
 	// 池、城、職人の座標配列
@@ -112,9 +117,9 @@ private:
 	Array<Point> castles;
 	Array<Array<Point>> craftsmen;
 	// それぞれの係数
-	int point_castle = 100;
-	int point_area = 30;
-	int point_wall = 10;
+	const int point_castle = 100;
+	const int point_area = 30;
+	const int point_wall = 10;
 	// チームポイント
 	int point_red = 0;
 	int point_blue = 0;
@@ -179,20 +184,74 @@ Field::Field(void) {
 	}
 	return;
 }
+
 // jsonから読み取ったフィールド情報に置き換える
-Field::Field(const MatchDataMatch &matchdatamatch){
+void Field::initialize(const MatchDataMatch &matchdatamatch){
 	HEIGHT = matchdatamatch.board.height;
 	WIDTH = matchdatamatch.board.width;
+	update_structures(matchdatamatch.board.structures);
+	update_structures(matchdatamatch.board.masons);
+}
+
+
+void Field::update(const MatchStatus& matchstatus) {
+	update_walls(matchstatus.board.walls);
+	update_territories(matchstatus.board.territories);
+	update_structures(matchstatus.board.structures);
+	update_masons(matchstatus.board.masons);
+}
+void Field::update_walls(const Array<Array<int>>& walls) {
 	for (int h = 0; h < HEIGHT; h++) {
 		for (int w = 0; w < WIDTH; w++) {
-			if(matchdatamatch.board.structures[h][w] == 1) {
+			const int num = walls[h][w];
+			delete_bit(h, w, CELL::WALL);
+			if (num == 0) {}
+			else if (num == 1) {
+				set_bit(h, w, CELL::WALL_RED);
+			}else if (num == 2) {
+				set_bit(h, w, CELL::WALL_BLUE);
+			}
+		}
+	}
+}
+void Field::update_territories(const Array<Array<int>>& territories) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			const int num = territories[h][w];
+			delete_bit(h, w, CELL::AREA);
+			if (num == 0) {}
+			else if (num == 1) {
+				set_bit(h, w, CELL::AREA_RED);
+			}else if (num == 2) {
+				set_bit(h, w, CELL::AREA_BLUE);
+			}else if (num == 3) {
+				set_bit(h, w, CELL::AREA);
+			}
+		}
+	}
+}
+void Field::update_structures(const Array<Array<int>>& structures) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			const int num = structures[h][w];
+			delete_bit(h, w, CELL::POND);
+			delete_bit(h, w, CELL::CASTLE);
+			if (num == 1) {
 				set_bit(h, w, CELL::POND);
-			}else if (matchdatamatch.board.structures[h][w] == 2) {
+			}else if (num == 2) {
 				set_bit(h, w, CELL::CASTLE);
 			}
-			if (matchdatamatch.board.masons[h][w] > 0) {
+		}
+	}
+}
+void Field::update_masons(const Array<Array<int>>& masons) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			const int num = masons[h][w];
+			delete_bit(h, w, CELL::CRAFTSMAN);
+			if (num > 0) {
 				set_bit(h, w, CELL::CRAFTSMAN_RED);
-			}else if (matchdatamatch.board.masons[h][w] < 0) {
+			}else if (num < 0) {
 				set_bit(h, w, CELL::CRAFTSMAN_BLUE);
 			}
 		}
@@ -200,7 +259,7 @@ Field::Field(const MatchDataMatch &matchdatamatch){
 }
 
 
-Array<Point> Field::get_ponds(void) const{
+Array<Point> Field::get_ponds(void) const {
 	return ponds;
 }
 Array<Point> Field::get_castles(void) const {
@@ -209,6 +268,7 @@ Array<Point> Field::get_castles(void) const {
 Array<Point> Field::get_craftsmen(TEAM team) const {
 	return craftsmen[(int)team];
 }
+
 
 // セルの情報を取得
 CELL Field::get_cell(const int y, const int x) const {
@@ -411,6 +471,3 @@ void Field::output_field(void) {
 	Console << '\n';
 }
 
-void Field::update(const MatchStatus& matchstatus) {
-
-}

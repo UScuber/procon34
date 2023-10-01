@@ -1,5 +1,6 @@
 ﻿# pragma once
 # include <Siv3D.hpp>
+# include "Base.hpp"
 
 //　↖　↑　↗　→　↘　↓　↙　←　に変更
 const Array<int> direction_server = { 4, 0, 7, 3, 6, 2, 5, 1 };
@@ -170,7 +171,7 @@ private:
 public:
 	Connect(void);
 	// 試合一覧取得
-	Optional<MatchData> get_matches_list(void);
+	Optional<MatchDataMatch> get_matches_list(void);
 	// 試合状況取得
 	Optional<MatchStatus> get_match_status(void);
 	// 行動計画更新
@@ -193,20 +194,35 @@ void output_console_fail(const String& str) {
 }
 
 Connect::Connect(void) {
-	TextReader reader{ U"./token.env" };
-	if (not reader) {
+	// solver.exeのチームトークンをローカルファイルから取得
+	TextReader reader_token{ U"./token.env" };
+	if (not reader_token) {
 		throw Error{ U"Failed to open 'token.env'" };
 	}
-	reader.readLine(token);
+	reader_token.readLine(token);
+	// 行う試合のidをローカルファイルから取得
+	TextReader reader_id{ U"./id.env" };
+	if (not reader_id) {
+		throw Error{ U"Failed to open 'id.env'" };
+	}
+	String tmp_id = U"";
+	reader_id.readLine(tmp_id);
+	match_id = Parse<int>(tmp_id);
 }
 
-Optional<MatchData> Connect::get_matches_list(void) {
+Optional<MatchDataMatch> Connect::get_matches_list(void) {
 	const URL url = url_base + U"matches" + U"?token=" + token;
 	const FilePath saveFilePath = U"./mathes_list.json";
 	if (const auto response = SimpleHTTP::Get(url, headers, saveFilePath)) {
 		output_console_response(response);
 		if (response.isOK()){
-			return MatchData(JSON::Load(saveFilePath));
+			const MatchData matchdata = MatchData(JSON::Load(saveFilePath));
+			for (const MatchDataMatch& matchdatamatch : matchdata.matches) {
+				if (matchdatamatch.id == this->match_id) {
+					return matchdatamatch;
+				}
+			}
+			output_console_fail(U"get same match id");
 		}
 	}else {
 		output_console_fail(U"get_matches_list");
