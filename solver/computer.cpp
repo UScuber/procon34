@@ -6,6 +6,7 @@
 
 struct Game {
   Field field;
+  std::vector<Point> build_walls;
   Game(const Field &f) : field(f){}
   void run(){
     assert(field.is_my_turn());
@@ -15,79 +16,7 @@ struct Game {
     //SimulatedAnnealing::is_searching_ally = !(field.current_turn & 1);
     //const auto res = SA(field);
     cerr << "run\n";
-    // ** board 17 only
-    const std::vector<Point> build_walls = {
-      {14, 5},
-      {15, 4},
-      {16, 3},
-      {17, 2},
-      {18, 2},
-      {19, 3},
-      {20, 3},
-      {21, 3},
-      {22, 3},
-      {23, 4},
-      {24, 5},
-      {23, 6},
-      {22, 7},
-      {21, 8},
-      {22, 9},
-      {22, 10},
-      {22, 11},
-      {21, 12},
-      {21, 13},
-      {22, 14},
-      {22, 15},
-      {21, 16},
-      {20, 17},
-      {19, 18},
-      {18, 19},
-      {17, 20},
-      {16, 21},
-      {15, 22},
-      {14, 23},
-      {13, 24},
-      {12, 23},
-      {11, 22},
-      {10, 23},
-      {9, 24},
-      {8, 23},
-      {7, 22},
-      {6, 21},
-      {5, 21},
-      {4, 21},
-      {3, 21},
-      {3, 20},
-      {2, 19},
-      {1, 18},
-      {0, 17},
-      {1, 16},
-      {2, 15},
-      {1, 14},
-      {2, 13},
-      {1, 12},
-      {2, 11},
-      {3, 10},
-      {2, 9},
-      {3, 8},
-      {4, 7},
-      {5, 6},
-      {6, 5},
-      {7, 4},
-      {8, 3},
-      {9, 2},
-      {10, 1},
-      {11, 2},
-      {12, 3},
-      {13, 4},
-      {14, 5},
-      {7, 4},
-      {6, 5},
-      {5, 6},
-      {4, 7},
-      {3, 8},
-      {2, 9},
-    };
+
     Actions res = calculate_build_route(build_walls, field);
     const int m = res.size();
     std::vector<int> dirs(m);
@@ -129,6 +58,14 @@ struct Game {
       if(str == "build") cmd = Action::Build;
       if(str == "break") cmd = Action::Break;
       res.emplace_back(Action(current_agents[i] + dmove[dir], cmd, i));
+    }
+    build_walls.clear();
+    int walls_num;
+    std::cin >> walls_num;
+    for(int i = 0; i < walls_num; i++){
+      Point p;
+      std::cin >> p;
+      build_walls.push_back(p);
     }
     field.update_turn(res);
     field.debug();

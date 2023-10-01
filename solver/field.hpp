@@ -35,7 +35,7 @@ struct Field {
   std::vector<std::vector<State>> field;
   Agents ally_agents, enemy_agents;
   std::vector<Point> castles;
-  int side, current_turn, final_turn;
+  int side, current_turn, final_turn, TL;
 
   Field(const int h, const int w,
         const std::vector<Point> &ponds,
@@ -43,14 +43,16 @@ struct Field {
         const Agents &_ally_agents,
         const Agents &_enemy_agents,
         const int _side, // 0 or 1
-        const int _final_turn)
+        const int _final_turn,
+        const int _TL)
     : field(h, std::vector<State>(w, State::None)),
       ally_agents(_ally_agents),
       enemy_agents(_enemy_agents),
       castles(_castles),
       side(_side),
       current_turn(0),
-      final_turn(_final_turn){
+      final_turn(_final_turn),
+      TL(_TL){
     assert(ally_agents.size() == enemy_agents.size()); // check
 
     for(const auto &p : ponds) field[p.y][p.x] |= State::Pond;
@@ -541,7 +543,8 @@ Field create_random_field(const int h, const int w, int agents_num=-1, int castl
     gen_rnd_poses(agents_num),
     gen_rnd_poses(agents_num),
     side,
-    final_turn
+    final_turn,
+    3
   );
 }
 
@@ -556,8 +559,8 @@ Field read_field(const int h, const int w){
   };
 
   int side; // 先行:0,後攻:1
-  int final_turn;
-  std::cin >> side >> final_turn;
+  int final_turn, TL;
+  std::cin >> side >> final_turn >> TL;
   assert(side == 0 || side == 1);
   const auto ponds = get_points();
   const auto castles = get_points();
@@ -570,6 +573,7 @@ Field read_field(const int h, const int w){
     ally_agents,
     enemy_agents,
     side,
-    final_turn
+    final_turn,
+    TL
   );
 }

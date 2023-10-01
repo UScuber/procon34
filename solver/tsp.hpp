@@ -21,7 +21,7 @@ constexpr int inf = 1024;
 
 // 距離: 初手にたどり着くことができる職人を除いたグリッド上での移動距離
 // 敵の壁がある場合は+1される
-// 壁が目的地の場合、その時だけ入れるとする <- なくした
+// 池がには入れない
 void calc_move_min_cost(const Point start, const Field &field, const State enemy_wall, std::vector<int> &dist, std::vector<int> &prev){
   static std::priority_queue<std::pair<int,Point>> que;
 
@@ -74,29 +74,13 @@ void calc_move_min_cost(const Point start, const Field &field, const State enemy
         prev[to_idx(nxt)] = to_idx(p);
         que.emplace(cost+weight, nxt);
       }
-      /*
-      int weight = 0;
-      if(k < 4){
-        if(st & enemy_wall) weight += 2;
-        else weight++;
-      }else{
-        if(st & (State::Pond | State::Human | enemy_wall)) continue;
-        weight++;
-      }
-      if(chmin(dist[to_idx(nxt)], cost + weight)){
-        prev[to_idx(nxt)] = to_idx(p);
-        if(!(st & (State::Pond | State::Human))){
-          que.emplace(cost+weight, nxt);
-        }
-      }
-      */
     }
   }
 }
 
 // 距離: 職人を除いたグリッド上での移動距離
 // 敵の壁がある場合は+1される
-// 壁が目的地の場合、その時だけ上下左右から入れるとする
+// 池が目的地の場合、その時だけ上下左右から入れるとする
 void calc_move_min_cost_except_human(const Point start, const Field &field, const State enemy_wall, std::vector<int> &dist, std::vector<int> &prev){
   static std::priority_queue<std::pair<int,Point>> que;
 
@@ -324,6 +308,7 @@ Action get_first_action(const Point agent, const Point first_wall, const int dir
 
 
 Actions calculate_build_route(const std::vector<Point> &build_walls, const Field &field){
+  const int TL = field.TL * 0.67;
   const auto &agents = field.get_now_turn_agents();
   const int agents_num = agents.size();
   const State ally = field.get_state(agents[0]) & State::Human; // agentから見た味方
@@ -333,6 +318,8 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
 
   const State ally_wall = ally == State::Ally ? State::WallAlly : State::WallEnemy; // agentから見た味方のwall
   const State enemy_wall = ally_wall ^ State::Wall; // agentから見た敵のwall
+
+  StopWatch sw;
 
   CostTable cost_table(field, enemy_wall);
 
@@ -370,9 +357,8 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
     }
   }
 
-  static constexpr double TL = 1.0;
-  static constexpr double T0 = 3;
-  static constexpr double T1 = 0.5;
+  const double T0 = walls_num / 10.0;
+  const double T1 = 1;
   double temp = T0;
   double spend_time = 0;
   auto best_wall_part = wall_part;
@@ -384,14 +370,14 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
   }
   auto awesome_wall_part = best_wall_part;
   int awesome_score = best_score;
-  StopWatch sw;
+
   cerr << "Start SA(TSP)\n";
   cerr << "First Score: " << awesome_score << "\n";
   int steps = 0, updated_num = 0;
   for(; ; steps++){
     if(!(steps & 127)){
       spend_time = sw.get_time();
-      const double p = spend_time / TL;
+      const double p = spend_time / (TL * 0.001);
       if(p >= 1.0) break;
       temp = (T1 - T0) * p + T0;
     }
@@ -441,7 +427,6 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
         chmax(score, costs[i]);
       }
     }
-    // const int score = calc_all_agent_move_cost(agents, wp, field, cost_table);
 
     if(awesome_score > score){
       awesome_score = score;
