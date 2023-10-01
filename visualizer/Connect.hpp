@@ -106,7 +106,7 @@ struct MatchStatusLog {
 	MatchStatusLogAction actions = MatchStatusLogAction();
 	MatchStatusLog() {}
 	MatchStatusLog(const JSON& log) {
-		this->turn = log.get<int>();
+		this->turn = log[U"turn"].get<int>();
 		this->actions = MatchStatusLogAction(log[U"actions"]);
 	}
 };
@@ -181,11 +181,11 @@ public:
 
 void output_console_response(const HTTPResponse& response) {
 	Console << U"------";
-	Console << response.getStatusLine().rtrimmed();
 	Console << U"status code: " << FromEnum(response.getStatusCode());
+}
+void output_console_json(const JSON& json) {
 	Console << U"------";
-	Console << response.getHeader().rtrimmed();
-	Console << U"------";
+	Console << json.format();
 }
 void output_console_fail(const String& str) {
 	Console << U"------";
@@ -216,6 +216,7 @@ Optional<MatchDataMatch> Connect::get_matches_list(void) {
 	if (const auto response = SimpleHTTP::Get(url, headers, saveFilePath)) {
 		output_console_response(response);
 		if (response.isOK()){
+			output_console_json(JSON::Load(saveFilePath));
 			const MatchData matchdata = MatchData(JSON::Load(saveFilePath));
 			for (const MatchDataMatch& matchdatamatch : matchdata.matches) {
 				if (matchdatamatch.id == this->match_id) {
@@ -235,6 +236,7 @@ Optional<MatchStatus> Connect::get_match_status(void) {
 	if (const auto response = SimpleHTTP::Get(url, headers, saveFilePath)) {
 		output_console_response(response);
 		if (response.isOK()) {
+			output_console_json(JSON::Load(saveFilePath));
 			return MatchStatus(JSON::Load(saveFilePath));
 		}
 	}else {
@@ -249,6 +251,7 @@ Optional<int> Connect::post_action_plan(const ActionPlan& actionplan){
 	if (const auto response = SimpleHTTP::Post(url, headers, data.data(), data.size(), saveFilePath)) {
 		output_console_response(response);
 		if (response.isOK()) {
+			output_console_json(JSON::Load(saveFilePath));
 			return (JSON::Load(saveFilePath))[U"accepted_at"].get<int>();
 		}else {
 			output_console_fail(U"post_action_plan");

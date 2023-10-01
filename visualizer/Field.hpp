@@ -189,8 +189,10 @@ Field::Field(void) {
 void Field::initialize(const MatchDataMatch &matchdatamatch){
 	HEIGHT = matchdatamatch.board.height;
 	WIDTH = matchdatamatch.board.width;
+	this->grid.clear();
+	this->grid.resize(HEIGHT, Array<CELL>(WIDTH));
 	update_structures(matchdatamatch.board.structures);
-	update_structures(matchdatamatch.board.masons);
+	update_masons(matchdatamatch.board.masons);
 }
 
 
@@ -231,6 +233,8 @@ void Field::update_territories(const Array<Array<int>>& territories) {
 	}
 }
 void Field::update_structures(const Array<Array<int>>& structures) {
+	ponds.clear();
+	castles.clear();
 	for (int h = 0; h < HEIGHT; h++) {
 		for (int w = 0; w < WIDTH; w++) {
 			const int num = structures[h][w];
@@ -238,21 +242,27 @@ void Field::update_structures(const Array<Array<int>>& structures) {
 			delete_bit(h, w, CELL::CASTLE);
 			if (num == 1) {
 				set_bit(h, w, CELL::POND);
+				ponds << Point{w, h};
 			}else if (num == 2) {
 				set_bit(h, w, CELL::CASTLE);
+				castles << Point{w, h};
 			}
 		}
 	}
 }
 void Field::update_masons(const Array<Array<int>>& masons) {
+	craftsmen.clear();
+	craftsmen.resize(2);
 	for (int h = 0; h < HEIGHT; h++) {
 		for (int w = 0; w < WIDTH; w++) {
 			const int num = masons[h][w];
 			delete_bit(h, w, CELL::CRAFTSMAN);
 			if (num > 0) {
 				set_bit(h, w, CELL::CRAFTSMAN_RED);
+				craftsmen[(int)TEAM::RED] << Point{w, h};
 			}else if (num < 0) {
 				set_bit(h, w, CELL::CRAFTSMAN_BLUE);
+				craftsmen[(int)TEAM::BLUE] << Point{ w, h };
 			}
 		}
 	}

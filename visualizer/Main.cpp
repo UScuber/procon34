@@ -25,7 +25,7 @@ using App = SceneManager<String, Field>;
 Array<Input> keyboard_craftsman = {Key0, Key1, Key2, Key3, Key4, Key5, Key6, Key7, Key8 };
 
 class Game {
-public:
+protected:
 	// GUIによる操作
 	void operate_gui(Field& field);
 	// マウスクリックによる操作
@@ -35,7 +35,7 @@ public:
 	// 詳細表示
 	void display_details(Field& field) const;
 	// solverの初期化(引数にはsolverのチーム)
-	void give_solver_initialize(TEAM team, Field& field);
+	void give_solver_initialize(bool is_first, Field& field);
 	// solverに職人の行動を渡す(引数にはsolverのチーム)
 	void give_solver(TEAM team);
 	// solverから行動を受け取る(引数にはsolverのチーム)
@@ -56,7 +56,7 @@ public:
 	// 試合のターン数
 	int turn_num = 200;
 	// 現在のターン数
-	int turn_num_now = 0;
+	int turn_num_now = 1;
 	// 現在のターン
 	TEAM now_turn = TEAM::RED;
 	// 持ち時間(ms)
@@ -168,15 +168,15 @@ void Game::display_details(Field &field) const {
 	small_font(U"城壁:{}  陣地:{}  城:{}"_fmt(building_blue[0], building_blue[1], building_blue[2])).draw(850, 325, ((now_turn == TEAM::BLUE) ? Palette::Blue: Palette::Black));
 	normal_font(U"ターン数:{}/{}"_fmt(turn_num_now, turn_num)).draw(850, 400, Palette::Black);
 }
-void Game::give_solver_initialize(TEAM team, Field& field) {
+void Game::give_solver_initialize(bool is_first, Field& field) {
 	// フィールドの縦横
 	child.ostream() << HEIGHT << std::endl << WIDTH << std::endl;
 	// プログラム側を赤色とする
-	child.ostream() << ((team == TEAM::RED) ? 0 : 1) << std::endl;
+	child.ostream() << ((is_first) ? 0 : 1) << std::endl;
 	// ターン数
 	child.ostream() << turn_num << std::endl;
 	// 持ち時間
-	child.ostream() << time << std::endl;
+	//child.ostream() << time << std::endl;
 	// 池の数と座標
 	child.ostream() << field.get_ponds().size() << std::endl;
 	for (Point& p : field.get_ponds()) {
@@ -319,7 +319,7 @@ PvC::PvC(const InitData& init) : IScene{ init } {
 			}
 		}
 	}
-	give_solver_initialize(team_solver, getData());
+	give_solver_initialize(team_solver == TEAM::RED, getData());
 
 	// Computerが先手の場合
 	if (team_solver == TEAM::RED) {
@@ -392,13 +392,13 @@ void PvC::draw() const {
 }
 
 
-std::thread task;
 // solver.exe対サーバー
 class CvC : public App::Scene, public Game {
 public:
 	CvC(const InitData& init);
 	void update() override;
 	void draw() const override;
+private:
 	// 通信を行うクラス
 	Connect connect;
 	// 通信を行う際に使用する構造体
@@ -409,19 +409,18 @@ public:
 	int match_id = 0;
 	// solver.exeが先手か
 	bool is_first = false;
+	// ストップウォッチ
+	Stopwatch stopwatch;
 	// 試合を開始する
-	// void execute_match(void);
-	// 非同期処理
-	 // std::thread task{ execute_match, this };
-	// AsyncTask<void> task;
+	 void execute_match(void);
 	// 職人の行動をActionPlanに変換
 	ActionPlan team2actionplan(TEAM team);
 	//  MatchStatusから職人情報を上塗り
-	void set_craftsman(Array<Craftsman>& craftsmen, int turn);
-	// フィールド情報を取得
-	Field& get_field(void) {return getData();}
+	void set_craftsman(Array<Craftsman>& tmp_craftsmen, int turn);
+	// server.exe, serverのターンの処理
+	bool turn_solver(void);
+	bool turn_server(void);
 };
-void execute_match(CvC& cvc);
 CvC::CvC(const InitData& init) : IScene{ init } {
 	// サーバーから試合情報一覧を取得
 	Optional<MatchDataMatch> tmp_matchdatamatch = connect.get_matches_list();
@@ -430,10 +429,16 @@ CvC::CvC(const InitData& init) : IScene{ init } {
 	}else {
 		this->matchdatamatch = tmp_matchdatamatch.value();
 	}
+	craftsmen.resize(2, Array<Craftsman>(matchdatamatch.board.mason));
 	// フィールド情報をセット
 	getData().initialize(matchdatamatch);
 	// 基本情報をセット
 	is_first = matchdatamatch.first;
+	if (is_first) {
+		now_turn = TEAM::RED;
+	}else {
+		now_turn = TEAM::BLUE;
+	}
 	time = matchdatamatch.turnSeconds * 1000;
 	for (Array<Craftsman>& craftsmen_ary : craftsmen) {
 		craftsmen_ary.resize(matchdatamatch.board.mason, Craftsman());
@@ -449,8 +454,7 @@ CvC::CvC(const InitData& init) : IScene{ init } {
 		}
 	}
 	// solver.exeの初期化
-	give_solver_initialize((is_first == true) ? TEAM::RED : TEAM::BLUE, getData());
-	task = std::thread(execute_match, this);
+	give_solver_initialize(is_first, getData());
 }
 ActionPlan CvC::team2actionplan(TEAM team) {
 	ActionPlan tmp_actionplan(turn_num_now);
@@ -469,117 +473,63 @@ void CvC::set_craftsman(Array<Craftsman>& tmp_craftsmen, int turn) {
 		}
 	}
 }
-void execute_match(CvC& cvc) {
-	while (cvc.turn_num_now++ <= cvc.turn_num) {
-		if (cvc.is_first) {
-			// solver.exeから行動情報を受け取る
-			cvc.receive_solver(TEAM::RED, cvc.get_field());
-			// solver.exeの行動予定をサーバーにポスト
-			cvc.connect.post_action_plan(cvc.team2actionplan(TEAM::RED));
-			// ターン数を1増やす
-			cvc.turn_num_now++;
-			// 次のターンが来るまで待機
-			Optional<MatchStatus> tmp_matchstatus;
-			do {
-				tmp_matchstatus = cvc.connect.get_match_status();
-				if (tmp_matchstatus == none) {
-					Console << U"Cannot get match status! \t get again now ...";
-					System::Sleep(100);
-					continue;
-				}
-			} while (tmp_matchstatus.value().turn != cvc.turn_num_now + 1);
-			cvc.matchstatus = tmp_matchstatus.value();
-			// フィールド更新
-			cvc.get_field().update(cvc.matchstatus);
-			// 職人情報更新
-			cvc.set_craftsman(cvc.craftsmen[(int)TEAM::BLUE], cvc.turn_num_now);
-			// solver.exeに行動情報を渡す
-			cvc.give_solver(TEAM::RED);
-		}
-		else {
-			// 次のターンが来るまで待機
-			Optional<MatchStatus> tmp_matchstatus;
-			do {
-				tmp_matchstatus = cvc.connect.get_match_status();
-				if (tmp_matchstatus == none) {
-					Console << U"Cannot get match status! \t get again now ...";
-					System::Sleep(100);
-					continue;
-				}
-			} while (tmp_matchstatus.value().turn != cvc.turn_num_now + 1);
-			cvc.matchstatus = tmp_matchstatus.value();
-			// ターン数を1増やす
-			cvc.turn_num_now++;
-			// フィールド更新
-			cvc.get_field().update(cvc.matchstatus);
-			// 職人情報更新
-			cvc.set_craftsman(cvc.craftsmen[(int)TEAM::BLUE], cvc.turn_num_now);
-			// solver.exeに行動情報を渡す
-			cvc.give_solver(TEAM::RED);
-			// solver.exeから行動情報を受け取る
-			cvc.receive_solver(TEAM::RED, cvc.get_field());
-			// solver.exeの行動予定をサーバーにポスト
-			cvc.connect.post_action_plan(cvc.team2actionplan(TEAM::RED));
+void CvC::execute_match(void) {
+	Console << turn_num_now << U" " << (int)now_turn;
+	if (turn_num_now <= turn_num) {
+		if (now_turn == TEAM::RED) {
+			turn_solver();
+		}else {
+			turn_server();
 		}
 	}
 }
-//void CvC::execute_match(void) {
-//	while (turn_num_now++ <= turn_num) {
-//		if (is_first) {
-//			// solver.exeから行動情報を受け取る
-//			receive_solver(TEAM::RED, getData());
-//			// solver.exeの行動予定をサーバーにポスト
-//			connect.post_action_plan(team2actionplan(TEAM::RED));
-//			// ターン数を1増やす
-//			turn_num_now++;
-//			// 次のターンが来るまで待機
-//			Optional<MatchStatus> tmp_matchstatus;
-//			do {
-//				tmp_matchstatus = connect.get_match_status();
-//				if (tmp_matchstatus == none) {
-//					Console << U"Cannot get match status! \t get again now ...";
-//					System::Sleep(100);
-//					continue;
-//				}
-//			} while (tmp_matchstatus.value().turn != turn_num_now+1);
-//			matchstatus = tmp_matchstatus.value();
-//			// フィールド更新
-//			getData().update(matchstatus);
-//			// 職人情報更新
-//			set_craftsman(craftsmen[(int)TEAM::BLUE], turn_num_now);
-//			// solver.exeに行動情報を渡す
-//			give_solver(TEAM::RED);
-//		}else {
-//			// 次のターンが来るまで待機
-//			Optional<MatchStatus> tmp_matchstatus;
-//			do {
-//				tmp_matchstatus = connect.get_match_status();
-//				if (tmp_matchstatus == none) {
-//					Console << U"Cannot get match status! \t get again now ...";
-//					System::Sleep(100);
-//					continue;
-//				}
-//			} while (tmp_matchstatus.value().turn != turn_num_now + 1);
-//			matchstatus = tmp_matchstatus.value();
-//			// ターン数を1増やす
-//			turn_num_now++;
-//			// フィールド更新
-//			getData().update(matchstatus);
-//			// 職人情報更新
-//			set_craftsman(craftsmen[(int)TEAM::BLUE], turn_num_now);
-//			// solver.exeに行動情報を渡す
-//			give_solver(TEAM::RED);
-//			// solver.exeから行動情報を受け取る
-//			receive_solver(TEAM::RED, getData());
-//			// solver.exeの行動予定をサーバーにポスト
-//			connect.post_action_plan(team2actionplan(TEAM::RED));
-//		}
-//	}
-//}
-
+bool CvC::turn_solver(void){
+	if (not stopwatch.isStarted()) {
+		stopwatch.start();
+		return false;
+	}else {
+		if (stopwatch.ms() < time * 0.9) {
+			return false;
+		}else {
+			stopwatch.reset();
+		}
+	}
+	Console << U"TSET10";
+	// solver.exeから行動情報を受け取る
+	receive_solver(TEAM::RED, getData());
+	Console << U"TSET20";
+	connect.post_action_plan(team2actionplan(TEAM::RED));
+	Console << U"TSET30";
+	turn_num_now++;
+	now_turn = TEAM::BLUE;
+	return true;
+}
+bool CvC::turn_server(void) {
+	// 次のターンが来るまで待機
+	Optional<MatchStatus> tmp_matchstatus;
+	tmp_matchstatus = connect.get_match_status();
+	if (tmp_matchstatus == none) {
+		Console << U"Cannot get match status! \t get again now ...";
+		return false;
+	}else if (tmp_matchstatus.value().turn != turn_num_now + 1) {
+		Console << U"this turn is server's";
+		return false;
+	}
+	matchstatus = tmp_matchstatus.value();
+	turn_num_now++;
+	now_turn = TEAM::RED;
+	// フィールド更新
+	getData().update(matchstatus);
+	// 職人情報更新
+	set_craftsman(craftsmen[(int)TEAM::BLUE], turn_num_now);
+	// solver.exeに行動情報を渡す
+	give_solver(TEAM::RED);
+	return true;
+}
 
 
 void CvC::update(){
+	execute_match();
 	receive_build_plan(getData());
 }
 void CvC::draw() const {
@@ -594,6 +544,9 @@ public:
 	Start(const InitData& init) : IScene{ init } {};
 	void update() override {
 		if (SimpleGUI::Button(U"Start", { 100, 100 })) {
+			const URL url = U"localhost:5000/start";
+			const HashTable<String, String> headers{ {U"Content-Type", U"application/json"} };
+			SimpleHTTP::Get(url, headers, U"./tmp");
 			changeScene(U"CvC");
 		}
 	}
