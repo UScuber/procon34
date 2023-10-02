@@ -329,6 +329,14 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
     if(!(field.get_state(p) & ally_wall)) walls.emplace_back(p);
   }
   const int walls_num = walls.size();
+  if(!walls_num){
+    cerr << "Wall is none\n";
+    Actions result;
+    for(int i = 0; i < agents_num; i++){
+      result.emplace_back(Action(Point(), Action::None));
+    }
+    return result;
+  }
 
   std::vector<std::vector<Point>> wall_part(agents_num);
   const int max_parts_num = (walls_num + agents_num-1) / agents_num;
