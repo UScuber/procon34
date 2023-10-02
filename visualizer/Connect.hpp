@@ -140,6 +140,9 @@ struct ActionPlanAction {
 		JSON json;
 		json[U"type"] = this->type;
 		json[U"dir"] = this->dir;
+		if (this->type == (int)ACT::NOTHING) {
+			json[U"dir"] = 0;
+		}
 		return json;
 	}
 };
@@ -236,9 +239,9 @@ Optional<MatchStatus> Connect::get_match_status(void) {
 	const URL url = url_base + U"matches/" + Format(match_id) + U"?token=" + token;
 	const FilePath saveFilePath = U"./match_status.json";
 	if (const auto response = SimpleHTTP::Get(url, headers, saveFilePath)) {
-		output_console_response(response);
+		//output_console_response(response);
 		if (response.isOK()) {
-			output_console_json(JSON::Load(saveFilePath));
+			//output_console_json(JSON::Load(saveFilePath));
 			return MatchStatus(JSON::Load(saveFilePath));
 		}
 	}else {
