@@ -333,7 +333,7 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
     cerr << "Wall is none\n";
     Actions result;
     for(int i = 0; i < agents_num; i++){
-      result.emplace_back(Action(Point(), Action::None));
+      result.emplace_back(Action(Point(), Action::None, i));
     }
     return result;
   }
