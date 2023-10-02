@@ -3,9 +3,9 @@
 # include "Base.hpp"
 
 //　↖　↑　↗　→　↘　↓　↙　←　に変更
-const Array<int> direction_server = { 4, 0, 7, 3, 6, 2, 5, 1 };
+const Array<int> direction_client = { 4, 0, 7, 3, 6, 2, 5, 1 };
 // 　↑　←　↓　→　↖　↙　↘　↗　に変更
-const Array<int> direction_client = { 1, 7, 5, 3, 0, 6, 4, 2 };
+const Array<int> direction_server = { 1, 7, 5, 3, 0, 6, 4, 2 };
 
 // クライアントのdirectionの番号からサーバーの番号に変更
 int to_direction_server(int direction_num_client) {
@@ -103,11 +103,13 @@ struct MatchStatusLogAction {
 };
 struct MatchStatusLog {
 	int turn = 0;
-	MatchStatusLogAction actions = MatchStatusLogAction();
+	Array<MatchStatusLogAction> actions;
 	MatchStatusLog() {}
 	MatchStatusLog(const JSON& log) {
 		this->turn = log[U"turn"].get<int>();
-		this->actions = MatchStatusLogAction(log[U"actions"]);
+		for (const JSON& matchstatuslogaction : log[U"actions"].arrayView()) {
+			this->actions << MatchStatusLogAction(matchstatuslogaction);
+		}
 	}
 };
 struct MatchStatus {
@@ -246,9 +248,12 @@ Optional<MatchStatus> Connect::get_match_status(void) {
 }
 Optional<int> Connect::post_action_plan(const ActionPlan& actionplan){
 	const URL url = url_base + U"matches/" + Format(match_id) + U"?token=" + token;
-	const FilePath saveFilePath = U"./action_plan.json";
-	const std::string data = actionplan.output_json().formatUTF8();
+	const FilePath saveFilePath = U"./tmp.json";
+	 const std::string data = actionplan.output_json().formatUTF8();
+	 Print << Unicode::Widen(actionplan.output_json().formatUTF8Minimum().c_str());
+	//std::string data = "{\"actions\": [{\"dir\": 2,\"type\":2	},	{  \"dir\": 6,	  \"type\" : 2}	] ,	\"turn\": 1}";
 	if (const auto response = SimpleHTTP::Post(url, headers, data.data(), data.size(), saveFilePath)) {
+		Print << response.getStatusLine();
 		output_console_response(response);
 		if (response.isOK()) {
 			output_console_json(JSON::Load(saveFilePath));
@@ -256,6 +261,9 @@ Optional<int> Connect::post_action_plan(const ActionPlan& actionplan){
 		}else {
 			output_console_fail(U"post_action_plan");
 		}
+	}
+	else {
+		Print << U"Failed";
 	}
 	return none;
 }

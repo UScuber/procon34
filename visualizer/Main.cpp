@@ -176,7 +176,7 @@ void Game::give_solver_initialize(bool is_first, Field& field) {
 	// ターン数
 	child.ostream() << turn_num << std::endl;
 	// 持ち時間
-	//child.ostream() << time << std::endl;
+	child.ostream() << time << std::endl;
 	// 池の数と座標
 	child.ostream() << field.get_ponds().size() << std::endl;
 	for (Point& p : field.get_ponds()) {
@@ -211,7 +211,7 @@ void Game::receive_solver(TEAM team, Field& field) {
 void Game::receive_build_plan(Field& field) {
 	for (int h = 0; h < HEIGHT; h++) {
 		for (int w = 0; w < WIDTH; w++) {
-			if (get_grid_rect({ h, w }).rightClicked()) {
+			if (get_grid_rect({ w, h }).rightClicked()) {
 				if (field.get_cell(h, w) & CELL::CASTLE) {
 					continue;
 				}
@@ -242,23 +242,23 @@ void Game::give_solver_build_plan(void) {
 			}
 		}
 	}
-	Console << n << '\n';
-	for (int h = 0; h < HEIGHT; h++) {
-		for (int w = 0; w < WIDTH; w++) {
-			if (is_build_plan[h][w]) {
-				Console << h << ' ' << w << '\n';
-			}
-		}
-	}
-	//child.ostream() << n << std::endl;
+	//Console << n << '\n';
 	//for (int h = 0; h < HEIGHT; h++) {
 	//	for (int w = 0; w < WIDTH; w++) {
 	//		if (is_build_plan[h][w]) {
-	//			child.ostream() << h << std::endl;
-	//			child.ostream() << w << std::endl;
+	//			Console << h << ' ' << w << '\n';
 	//		}
 	//	}
 	//}
+	child.ostream() << n << std::endl;
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if (is_build_plan[h][w]) {
+				child.ostream() << h << std::endl;
+				child.ostream() << w << std::endl;
+			}
+		}
+	}
 }
 
 // 人対人
@@ -289,7 +289,6 @@ void PvP::update() {
 void PvP::draw() const {
 	getData().display_grid();
 	getData().display_actors();
-	display_field();
 	display_details(getData());
 
 }
@@ -420,6 +419,8 @@ private:
 	// server.exe, serverのターンの処理
 	bool turn_solver(void);
 	bool turn_server(void);
+	// 盤面描画
+	void display_field(void) const;
 };
 CvC::CvC(const InitData& init) : IScene{ init } {
 	// サーバーから試合情報一覧を取得
@@ -433,6 +434,8 @@ CvC::CvC(const InitData& init) : IScene{ init } {
 	// フィールド情報をセット
 	getData().initialize(matchdatamatch);
 	// 基本情報をセット
+	is_build_plan.clear();
+	is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
 	is_first = matchdatamatch.first;
 	if (is_first) {
 		now_turn = TEAM::RED;
@@ -440,6 +443,7 @@ CvC::CvC(const InitData& init) : IScene{ init } {
 		now_turn = TEAM::BLUE;
 	}
 	time = matchdatamatch.turnSeconds * 1000;
+	time = 2000;
 	for (Array<Craftsman>& craftsmen_ary : craftsmen) {
 		craftsmen_ary.resize(matchdatamatch.board.mason, Craftsman());
 	}
@@ -459,16 +463,24 @@ CvC::CvC(const InitData& init) : IScene{ init } {
 ActionPlan CvC::team2actionplan(TEAM team) {
 	ActionPlan tmp_actionplan(turn_num_now);
 	for (const Craftsman& craftsman : craftsmen[(int)team]) {
-		tmp_actionplan.push_back_action((int)craftsman.act, to_direction_server(craftsman.direction));
+		tmp_actionplan.push_back_action((int)craftsman.act, to_direction_server(craftsman.direction) + 1);
 	}
 	return tmp_actionplan;
 }
 void CvC::set_craftsman(Array<Craftsman>& tmp_craftsmen, int turn) {
 	for (const MatchStatusLog& log : matchstatus.logs) {
 		if (log.turn == turn) {
+			int i = 0;
 			for (Craftsman& craftsman : tmp_craftsmen) {
-				craftsman.act = (ACT)log.actions.type;
-				craftsman.direction = to_direction_client(log.actions.dir);
+				craftsman.act = (ACT)log.actions[i].type;
+				if (craftsman.act == ACT::NOTHING) {
+					continue;
+				}
+				craftsman.direction = to_direction_client(log.actions[i].dir - 1);
+				if (log.actions[i].succeeded and craftsman.act == ACT::MOVE) {
+					craftsman.pos += range_move[craftsman.direction];
+				}
+				i++;
 			}
 		}
 	}
@@ -494,12 +506,9 @@ bool CvC::turn_solver(void){
 			stopwatch.reset();
 		}
 	}
-	Console << U"TSET10";
 	// solver.exeから行動情報を受け取る
 	receive_solver(TEAM::RED, getData());
-	Console << U"TSET20";
 	connect.post_action_plan(team2actionplan(TEAM::RED));
-	Console << U"TSET30";
 	turn_num_now++;
 	now_turn = TEAM::BLUE;
 	return true;
@@ -524,9 +533,25 @@ bool CvC::turn_server(void) {
 	set_craftsman(craftsmen[(int)TEAM::BLUE], turn_num_now);
 	// solver.exeに行動情報を渡す
 	give_solver(TEAM::RED);
+	// solver.exeに建築予定の壁を渡す
+	give_solver_build_plan();
 	return true;
 }
-
+void CvC::display_field(void) const {
+	for (const Array<Craftsman>& ary : craftsmen) {
+		int craftsman_num = 1;
+		for (const Craftsman& craftsman : ary) {
+			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos), Palette::Black);
+		}
+	}
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if (is_build_plan[h][w]) {
+				get_grid_rect({ w,h }).drawFrame(1, 1, Palette::Darkviolet);
+			}
+		}
+	}
+}
 
 void CvC::update(){
 	execute_match();
@@ -547,7 +572,7 @@ public:
 			const URL url = U"localhost:5000/start";
 			const HashTable<String, String> headers{ {U"Content-Type", U"application/json"} };
 			SimpleHTTP::Get(url, headers, U"./tmp");
-			changeScene(U"CvC");
+			changeScene(U"CvC", 0s);
 		}
 	}
 };
