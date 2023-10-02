@@ -56,7 +56,7 @@ protected:
 	// 試合のターン数
 	int turn_num = 200;
 	// 現在のターン数
-	int turn_num_now = 1;
+	int turn_num_now = 0;
 	// 現在のターン
 	TEAM now_turn = TEAM::RED;
 	// 持ち時間(ms)
@@ -461,7 +461,7 @@ CvC::CvC(const InitData& init) : IScene{ init } {
 	give_solver_initialize(is_first, getData());
 }
 ActionPlan CvC::team2actionplan(TEAM team) {
-	ActionPlan tmp_actionplan(turn_num_now);
+	ActionPlan tmp_actionplan(turn_num_now + 1);
 	for (const Craftsman& craftsman : craftsmen[(int)team]) {
 		tmp_actionplan.push_back_action((int)craftsman.act, to_direction_server(craftsman.direction) + 1);
 	}
