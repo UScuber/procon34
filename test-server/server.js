@@ -85,6 +85,7 @@ const launch_random_agent = () => {
         // random agent's turn
         if((last_log_length & 1) == isnot_first){
           console.log("last log length:", last_log_length);
+          console.log("last log:", data.logs[last_log_length-1]);
           console.log("start turn:", last_log_length + 1);
           await execute_randomagent(data, last_log_length + 1);
         }
