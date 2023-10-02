@@ -2,6 +2,8 @@ node_modules/
 token
 programs/randomagent.exe
 procon-server_linux
+procon-server_win.exe
+procon-server_darwin_arm
 match.json
 *.txt
 procon.db
