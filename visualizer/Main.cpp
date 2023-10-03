@@ -166,7 +166,7 @@ void Game::display_details(Field &field) const {
 	small_font(U"城壁:{}  陣地:{}  城:{}"_fmt(building_red[0], building_red[1], building_red[2])).draw(850, 175, ((now_turn == TEAM::RED) ? Palette::Red : Palette::Black));
 	normal_font(U"青ポイント:{}"_fmt(field.get_point(TEAM::BLUE))).draw(800, 250, ((now_turn == TEAM::BLUE) ? Palette::Blue: Palette::Black));
 	small_font(U"城壁:{}  陣地:{}  城:{}"_fmt(building_blue[0], building_blue[1], building_blue[2])).draw(850, 325, ((now_turn == TEAM::BLUE) ? Palette::Blue: Palette::Black));
-	normal_font(U"ターン数:{}/{}"_fmt(turn_num_now, turn_num)).draw(850, 400, Palette::Black);
+	normal_font(U"ターン数:{}/{}"_fmt(turn_num_now + 1, turn_num)).draw(850, 400, Palette::Black);
 }
 void Game::give_solver_initialize(bool is_first, Field& field) {
 	// フィールドの縦横
@@ -443,7 +443,8 @@ CvC::CvC(const InitData& init) : IScene{ init } {
 		now_turn = TEAM::BLUE;
 	}
 	time = matchdatamatch.turnSeconds * 1000;
-	time = 2000;
+	turn_num = matchdatamatch.turns;
+
 	for (Array<Craftsman>& craftsmen_ary : craftsmen) {
 		craftsmen_ary.resize(matchdatamatch.board.mason, Craftsman());
 	}
@@ -470,8 +471,9 @@ ActionPlan CvC::team2actionplan(TEAM team) {
 void CvC::set_craftsman(Array<Craftsman>& tmp_craftsmen, int turn) {
 	for (const MatchStatusLog& log : matchstatus.logs) {
 		if (log.turn == turn) {
-			int i = 0;
+			int i = -1;
 			for (Craftsman& craftsman : tmp_craftsmen) {
+				i++;
 				craftsman.act = (ACT)log.actions[i].type;
 				if (craftsman.act == ACT::NOTHING) {
 					continue;
@@ -480,7 +482,6 @@ void CvC::set_craftsman(Array<Craftsman>& tmp_craftsmen, int turn) {
 				if (log.actions[i].succeeded and craftsman.act == ACT::MOVE) {
 					craftsman.pos += range_move[craftsman.direction];
 				}
-				i++;
 			}
 		}
 	}

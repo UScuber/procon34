@@ -169,9 +169,7 @@ void Craftsman::input_act(ChildProcess& child, Field& field) {
 	const Point direction_point = range_move[direction_num];
 	if (act_str == "move") {
 		this->act = ACT::MOVE;
-		if (move(field, direction_point)) {
-			this->pos += direction_point;
-		}
+		move(field, direction_point);
 	}else if (act_str == "build") {
 		this->act = ACT::BUILD;
 		build(field, direction_point);

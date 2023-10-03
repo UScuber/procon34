@@ -251,18 +251,24 @@ void Field::update_structures(const Array<Array<int>>& structures) {
 	}
 }
 void Field::update_masons(const Array<Array<int>>& masons) {
-	craftsmen.clear();
-	craftsmen.resize(2);
+	int craftsmen_num = 0;
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			const int num = masons[h][w];
+			if(num > 0) craftsmen_num++;
+		}
+	}
+	craftsmen.assign(2, Array<Point>(craftsmen_num));
 	for (int h = 0; h < HEIGHT; h++) {
 		for (int w = 0; w < WIDTH; w++) {
 			const int num = masons[h][w];
 			delete_bit(h, w, CELL::CRAFTSMAN);
 			if (num > 0) {
 				set_bit(h, w, CELL::CRAFTSMAN_RED);
-				craftsmen[(int)TEAM::RED] << Point{w, h};
+				craftsmen[(int)TEAM::RED][num-1] = Point{ w, h };
 			}else if (num < 0) {
 				set_bit(h, w, CELL::CRAFTSMAN_BLUE);
-				craftsmen[(int)TEAM::BLUE] << Point{ w, h };
+				craftsmen[(int)TEAM::BLUE][-num-1] = Point{ w, h };
 			}
 		}
 	}

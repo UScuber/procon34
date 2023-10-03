@@ -253,10 +253,7 @@ Optional<int> Connect::post_action_plan(const ActionPlan& actionplan){
 	const URL url = url_base + U"matches/" + Format(match_id) + U"?token=" + token;
 	const FilePath saveFilePath = U"./tmp.json";
 	 const std::string data = actionplan.output_json().formatUTF8();
-	 Print << Unicode::Widen(actionplan.output_json().formatUTF8Minimum().c_str());
-	//std::string data = "{\"actions\": [{\"dir\": 2,\"type\":2	},	{  \"dir\": 6,	  \"type\" : 2}	] ,	\"turn\": 1}";
 	if (const auto response = SimpleHTTP::Post(url, headers, data.data(), data.size(), saveFilePath)) {
-		Print << response.getStatusLine();
 		output_console_response(response);
 		if (response.isOK()) {
 			output_console_json(JSON::Load(saveFilePath));
