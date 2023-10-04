@@ -14,11 +14,12 @@ const read_file = (path) => {
 const match_id = 10;
 const match_data = require("./match.json");
 console.log("match data:", match_data);
-const URL = `http://localhost:3000/matches/${match_id}?token=randomagent`;
+const token = "randomagent";
+const URL = `http://localhost:3000/matches/${match_id}?token=${token}`;
 const is_windows = process.platform === "win32";
 const is_mac = process.platform === "darwin";
 let is_running = false;
-let isnot_first = false;
+const isnot_first = match_data.teams[1].token === token;
 let clean_func = undefined;
 
 const execute_randomagent = async(match_data, current_turn) => {
