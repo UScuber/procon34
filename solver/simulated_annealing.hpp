@@ -182,7 +182,7 @@ Actions SA(const Field &field){
   Score good_score = current_score;
   Score best_score = current_score;
 
-  Timer timer;
+  StopWatch sw;
   int trials = 0, updated_num = 0;
   static constexpr double t0 = 5;
   static constexpr double t1 = 0.0005;
@@ -193,7 +193,7 @@ Actions SA(const Field &field){
   for(; ; trials++){
     static constexpr int mask = (1 << 4) - 1;
     if(!(trials & mask)){
-      const double p = timer.result() * 0.001 / limit_time;
+      const double p = sw.get_ms() * 0.001 / limit_time;
       if(p > 1.0) break;
       temp = std::pow(t0, 1.0-p) * std::pow(t1, p);
     }

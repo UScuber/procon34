@@ -2,12 +2,10 @@
 
 #include <chrono>
 
-struct Timer {
-  std::chrono::high_resolution_clock::time_point st;
-  Timer(){ start(); }
-  void start(){ st = std::chrono::high_resolution_clock::now(); }
-  std::chrono::milliseconds::rep result(){
-    auto end = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(end-st).count();
+struct StopWatch {
+  const std::chrono::system_clock::time_point start_time;
+  StopWatch() : start_time(std::chrono::system_clock::now()){}
+  inline double get_ms() const noexcept{
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_time).count() * 1e-6;
   }
 };

@@ -83,9 +83,9 @@ int main(){
   Game game(field);
   while(!game.field.is_finished()){
     if(game.field.is_my_turn()){
-      Timer timer;
+      StopWatch sw;
       game.run();
-      cerr << "Elapsed Time: " << timer.result() << "[ms]\n";
+      cerr << "Elapsed Time: " << sw.get_ms() << "[ms]\n";
     }else{
       game.load();
     }

@@ -9,14 +9,6 @@
 // 指定された場所に職人全員で壁を立てる
 namespace TSP {
 
-struct StopWatch {
-  const std::chrono::system_clock::time_point start_time;
-  StopWatch() : start_time(std::chrono::system_clock::now()){}
-  inline double get_time() const noexcept{
-    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_time).count() * 1e-6;
-  }
-};
-
 constexpr int inf = 1024;
 
 // 距離: 初手にたどり着くことができる職人を除いたグリッド上での移動距離
@@ -384,8 +376,8 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
   int steps = 0, updated_num = 0;
   for(; ; steps++){
     if(!(steps & 127)){
-      spend_time = sw.get_time();
-      const double p = spend_time / (TL * 0.001);
+      spend_time = sw.get_ms();
+      const double p = spend_time / TL;
       if(p >= 1.0) break;
       temp = (T1 - T0) * p + T0;
     }
