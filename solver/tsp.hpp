@@ -149,7 +149,7 @@ private:
 
 
 // agentが建てるべき壁(walls)の建てる順番を決める
-Walls calc_tsp_route(const Point agent, Walls walls, CostTable &cost_table){
+Walls calc_tsp_route(const Agent agent, Walls walls, CostTable &cost_table){
   const int walls_num = walls.size();
   std::vector<int> used(walls_num);
   Wall last_pos;
@@ -188,7 +188,7 @@ Walls calc_tsp_route(const Point agent, Walls walls, CostTable &cost_table){
 }
 
 // 壁を順に建てる時の最小コストを計算
-int calc_agent_move_cost(const Point agent, const Walls &walls, const Field &field, CostTable &cost_table){
+int calc_agent_move_cost(const Agent agent, const Walls &walls, const Field &field, CostTable &cost_table){
   if(walls.empty()) return 0;
   const int walls_num = walls.size();
   std::vector<int> dp(4, inf);
@@ -220,7 +220,7 @@ int calc_agent_move_cost(const Point agent, const Walls &walls, const Field &fie
 }
 
 // 全体の移動回数のコスト計算
-int calc_all_agent_move_cost(const std::vector<Point> &agents, const std::vector<Walls> &wall_part, const Field &field, CostTable &cost_table){
+int calc_all_agent_move_cost(const Agents &agents, const std::vector<Walls> &wall_part, const Field &field, CostTable &cost_table){
   int max_cost = 0;
   for(int i = 0; i < (int)agents.size(); i++){
     const int cost = calc_agent_move_cost(agents[i], wall_part[i], field, cost_table);
@@ -231,7 +231,7 @@ int calc_all_agent_move_cost(const std::vector<Point> &agents, const std::vector
 
 
 // 初めに建てるべき壁の建てる方向
-int find_agent_build_wall_dir(const Point agent, const Walls &walls, const Field &field, CostTable &cost_table){
+int find_agent_build_wall_dir(const Agent agent, const Walls &walls, const Field &field, CostTable &cost_table){
   assert(!walls.empty());
 
   const int walls_num = walls.size();
@@ -276,7 +276,7 @@ int find_agent_build_wall_dir(const Point agent, const Walls &walls, const Field
 }
 
 // 初めの壁と建てる向きから経路を出す
-Action get_first_action(const Point agent, const Point first_wall, const int dir, const Field &field, const State enemy_wall){
+Action get_first_action(const Agent agent, const Wall first_wall, const int dir, const Field &field, const State enemy_wall){
   const Point target = first_wall + dmove[dir];
   assert(is_valid(target));
   assert(!(field.get_state(target) & State::Pond));

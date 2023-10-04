@@ -27,6 +27,11 @@ struct Action {
   }
 };
 
+struct Agent : Point {
+  inline constexpr Agent(const Pos y=-1, const Pos x=-1) : Point(y, x){}
+  inline constexpr Agent(const Point p) : Point(p){}
+};
+
 struct Wall : Point {
   inline constexpr Wall(const Pos y=-1, const Pos x=-1) : Point(y, x){}
   inline constexpr Wall(const Point p) : Point(p){}
@@ -34,7 +39,7 @@ struct Wall : Point {
 
 
 using Actions = std::vector<Action>;
-using Agents = std::vector<Point>;
+using Agents = std::vector<Agent>;
 using Walls = std::vector<Wall>;
 
 struct Field {
@@ -512,49 +517,6 @@ struct Field {
 };
 
 
-// side: 先攻後攻
-Field create_random_field(const int h, const int w, int agents_num=-1, int castles_num=-1, int final_turn=-1, int side=0){
-  std::vector<std::vector<int>> used(h, std::vector<int>(w));
-  auto gen_rnd_poses = [&](const int num) -> std::vector<Point> {
-    std::vector<Point> res(num);
-    for(int i = 0; i < num; i++){
-      int posy = rnd(h), posx = rnd(w);
-      while(used[posy][posx]){
-        posy = rnd(h);
-        posx = rnd(w);
-      }
-      res[i] = Point(posy, posx);
-      used[posy][posx] = 1;
-    }
-    return res;
-  };
-  const int area = h * w;
-  const int ponds_num = rnd(0, area/40+1);
-  if(castles_num == -1) castles_num = rnd(1, area/125+2);
-  if(agents_num == -1) agents_num = rnd(2, 7);
-  if(final_turn == -1) final_turn = rnd(15, 100) * 2;
-  std::vector<Point> castles(castles_num);
-  for(int i = 0; i < castles_num; i++){
-    int posy = rnd(1, h-1), posx = rnd(1, w-1);
-    while(used[posy][posx]){
-      posy = rnd(1, h-1);
-      posx = rnd(1, w-1);
-    }
-    castles[i] = Point(posy, posx);
-    used[posy][posx] = 1;
-  }
-  return Field(
-    h, w,
-    gen_rnd_poses(ponds_num),
-    castles,
-    gen_rnd_poses(agents_num),
-    gen_rnd_poses(agents_num),
-    side,
-    final_turn,
-    3
-  );
-}
-
 Field read_field(const int h, const int w){
   auto get_points = []() -> std::vector<Point> {
     int num;
@@ -571,8 +533,9 @@ Field read_field(const int h, const int w){
   assert(side == 0 || side == 1);
   const auto ponds = get_points();
   const auto castles = get_points();
-  const auto ally_agents = get_points();
-  const auto enemy_agents = get_points();
+  Agents ally_agents, enemy_agents;
+  for(const Point p : get_points()) ally_agents.emplace_back(p);
+  for(const Point p : get_points()) enemy_agents.emplace_back(p);
   return Field(
     h, w,
     ponds,

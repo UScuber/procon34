@@ -3,7 +3,7 @@
 #include <set>
 #include "field.hpp"
 
-Actions enumerate_next_agent_acts(const Point &agent, const Field &field, const bool use_assert=true){
+Actions enumerate_next_agent_acts(const Agent &agent, const Field &field, const bool use_assert=true){
   const State ally = field.get_state(agent) & State::Human; // agentから見た味方
   const State enemy = ally ^ State::Human; // agentから見た敵
   if(use_assert) assert((ally == State::Enemy) == (field.current_turn & 1));
@@ -33,7 +33,7 @@ Actions enumerate_next_agent_acts(const Point &agent, const Field &field, const 
 
 
 // 適当に選ぶ
-Actions select_random_next_agents_acts(const std::vector<Point> &agents, const Field &field){
+Actions select_random_next_agents_acts(const Agents &agents, const Field &field){
   Actions result;
   std::set<Action> cnt;
   for(const auto &agent : agents){
@@ -71,9 +71,9 @@ namespace Evaluate {
 
 int calc_agent_min_dist(const Field &field, const Agents &ally_agents, const State area){
   int dc = 0;
-  for(const auto &agent : ally_agents){
+  for(const Agent agent : ally_agents){
     int min_dist = 1000;
-    for(const auto &castle : field.castles){
+    for(const auto castle : field.castles){
       if((field.get_state(castle) & State::Area) == area) continue;
       const int d = manche_dist(agent, castle);
       if(min_dist > d) min_dist = d;
@@ -88,7 +88,7 @@ int calc_wall_min_dist(const Field &field, const State wall){
   for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++) if(field.get_state(i, j) & wall){
       int min_dist = 1000;
-      for(const auto &castle : field.castles){
+      for(const auto castle : field.castles){
         const int d = manche_dist(Point(i, j), castle);
         if(min_dist > d) min_dist = d;
       }
@@ -104,7 +104,7 @@ std::vector<std::vector<int>> calc_castle_min_dist(const Field &field, const F &
   for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++){
       int min_dist = 1000;
-      for(const auto &castle : field.castles){
+      for(const auto castle : field.castles){
         const int d = dist(Point(i, j), castle);
         if(min_dist > d) min_dist = d;
       }
@@ -173,7 +173,7 @@ int calc_connected_wall(const Field &field, const State wall){
 
 int calc_wall_by_enemy(const Field &field, const Agents &enemy_agents, const State wall){
   int res = 0;
-  for(const auto &agent : enemy_agents){
+  for(const auto agent : enemy_agents){
     for(int dir = 0; dir < 4; dir++){
       const auto nxt = agent + dmove[dir];
       if(!is_valid(nxt)) continue;
