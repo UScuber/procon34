@@ -149,11 +149,11 @@ private:
 
 
 // agentが建てるべき壁(walls)の建てる順番を決める
-std::vector<Point> calc_tsp_route(const Point agent, std::vector<Point> walls, CostTable &cost_table){
+Walls calc_tsp_route(const Point agent, Walls walls, CostTable &cost_table){
   const int walls_num = walls.size();
   std::vector<int> used(walls_num);
-  Point last_pos;
-  std::vector<Point> result;
+  Wall last_pos;
+  Walls result;
 
   {
     int min_cost = inf, best_idx = -1;
@@ -188,7 +188,7 @@ std::vector<Point> calc_tsp_route(const Point agent, std::vector<Point> walls, C
 }
 
 // 壁を順に建てる時の最小コストを計算
-int calc_agent_move_cost(const Point agent, const std::vector<Point> &walls, const Field &field, CostTable &cost_table){
+int calc_agent_move_cost(const Point agent, const Walls &walls, const Field &field, CostTable &cost_table){
   if(walls.empty()) return 0;
   const int walls_num = walls.size();
   std::vector<int> dp(4, inf);
@@ -220,7 +220,7 @@ int calc_agent_move_cost(const Point agent, const std::vector<Point> &walls, con
 }
 
 // 全体の移動回数のコスト計算
-int calc_all_agent_move_cost(const std::vector<Point> &agents, const std::vector<std::vector<Point>> &wall_part, const Field &field, CostTable &cost_table){
+int calc_all_agent_move_cost(const std::vector<Point> &agents, const std::vector<Walls> &wall_part, const Field &field, CostTable &cost_table){
   int max_cost = 0;
   for(int i = 0; i < (int)agents.size(); i++){
     const int cost = calc_agent_move_cost(agents[i], wall_part[i], field, cost_table);
@@ -231,7 +231,7 @@ int calc_all_agent_move_cost(const std::vector<Point> &agents, const std::vector
 
 
 // 初めに建てるべき壁の建てる方向
-int find_agent_build_wall_dir(const Point agent, const std::vector<Point> &walls, const Field &field, CostTable &cost_table){
+int find_agent_build_wall_dir(const Point agent, const Walls &walls, const Field &field, CostTable &cost_table){
   assert(!walls.empty());
 
   const int walls_num = walls.size();
@@ -307,7 +307,7 @@ Action get_first_action(const Point agent, const Point first_wall, const int dir
 }
 
 
-Actions calculate_build_route(const std::vector<Point> &build_walls, const Field &field){
+Actions calculate_build_route(const Walls &build_walls, const Field &field){
   const int TL = field.TL * 0.67;
   const auto &agents = field.get_now_turn_agents();
   const int agents_num = agents.size();
@@ -324,8 +324,8 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
   CostTable cost_table(field, enemy_wall);
 
   // すでに置いた壁をなくす
-  std::vector<Point> walls;
-  for(const Point p : build_walls){
+  Walls walls;
+  for(const Wall p : build_walls){
     if(!(field.get_state(p) & ally_wall)) walls.emplace_back(p);
   }
   const int walls_num = walls.size();
@@ -338,9 +338,9 @@ Actions calculate_build_route(const std::vector<Point> &build_walls, const Field
     return result;
   }
 
-  std::vector<std::vector<Point>> wall_part(agents_num);
+  std::vector<Walls> wall_part(agents_num);
   const int max_parts_num = (walls_num + agents_num-1) / agents_num;
-  for(const Point wall : walls){
+  for(const Wall wall : walls){
     int min_cost = inf;
     int best_idx = -1;
     for(int i = 0; i < agents_num; i++){

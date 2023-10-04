@@ -6,7 +6,7 @@
 
 struct Game {
   Field field;
-  std::vector<Point> build_walls;
+  Walls build_walls;
   Game(const Field &f) : field(f){}
   void run(){
     assert(field.is_my_turn());

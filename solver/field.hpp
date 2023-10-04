@@ -27,8 +27,15 @@ struct Action {
   }
 };
 
+struct Wall : Point {
+  inline constexpr Wall(const Pos y=-1, const Pos x=-1) : Point(y, x){}
+  inline constexpr Wall(const Point p) : Point(p){}
+};
+
+
 using Actions = std::vector<Action>;
 using Agents = std::vector<Point>;
+using Walls = std::vector<Wall>;
 
 struct Field {
 
