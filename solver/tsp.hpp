@@ -147,6 +147,10 @@ Walls calc_tsp_route(const Agent agent, Walls walls, CostTable &cost_table){
   Wall last_pos;
   Walls result;
 
+  std::sort(walls.begin(), walls.end(), [&](const Point a, const Point b){
+    return manche_dist(agent, a) < manche_dist(agent, b);
+  });
+
   {
     int min_cost = inf, best_idx = -1;
     for(int i = 0; i < walls_num; i++){
