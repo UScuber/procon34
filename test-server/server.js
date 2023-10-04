@@ -18,13 +18,13 @@ const URL = `http://localhost:3000/matches/${match_id}?token=randomagent`;
 const is_windows = process.platform === "win32";
 const is_mac = process.platform === "darwin";
 let is_running = false;
-let isnot_first = true;
+let isnot_first = false;
 let clean_func = undefined;
 
 const execute_randomagent = async(match_data, current_turn) => {
   let str = "";
   const board = match_data.board;
-  str += `${board.height} ${board.width} ${board.mason} ${current_turn} ${isnot_first ? 1 : 0}\n`;
+  str += `${board.height} ${board.width} ${board.mason} ${current_turn}\n`;
   // structures
   for(let i = 0; i < board.height; i++){
     for(let j = 0; j < board.width; j++){
