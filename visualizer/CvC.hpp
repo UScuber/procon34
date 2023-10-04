@@ -84,26 +84,33 @@ ActionPlan CvC::team2actionplan(const TEAM team){
 	return tmp_actionplan;
 }
 
-void CvC::set_craftsman(Array<Craftsman>& tmp_craftsmen, const int turn){
-	for(const MatchStatusLog& log : matchstatus.logs){
+void CvC::set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn){
+	for(const MatchStatusLog &log : matchstatus.logs){
 		if (log.turn != turn) continue;
 		int i = -1;
-		for(Craftsman& craftsman : tmp_craftsmen){
+		for(Craftsman &craftsman : tmp_craftsmen){
 			i++;
 			craftsman.act = (ACT)log.actions[i].type;
 			if(craftsman.act == ACT::NOTHING){
 				continue;
 			}
 			craftsman.direction = to_direction_client(log.actions[i].dir - 1);
-			if(log.actions[i].succeeded and craftsman.act == ACT::MOVE){
-				craftsman.pos += range_move[craftsman.direction];
+		}
+	}
+	const MatchStatusBoard &matchstatusboard = matchstatus.board;
+	for(int h = 0; h < HEIGHT; h++){
+		for(int w = 0; w < WIDTH; w++){
+			const int craftsman_num = matchstatusboard.masons[h][w];
+			if (craftsman_num == 0) {
+				continue;
 			}
+			TEAM team = (craftsman_num > 0) ? TEAM::RED : TEAM::BLUE;
+			craftsmen[team][Abs(craftsman_num) - 1].pos = { w, h };
 		}
 	}
 }
 
 void CvC::execute_match(void){
-	Console << turn_num_now << U" " << (int)now_turn;
 	if(turn_num_now <= turn_num){
 		if(now_turn == TEAM::RED){
 			turn_solver();

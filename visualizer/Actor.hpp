@@ -91,7 +91,7 @@ bool Craftsman::destroy(Field &field, const Point direction_point){
 	if(not is_in_field(target_cell_pos) or direction_point.manhattanLength() != 1){
 		return false;
 	}
-	const char target_cell = field.get_cell(target_cell_pos);
+	const CELL target_cell = field.get_cell(target_cell_pos);
 	// 破壊可能な場所か
 	if(not (target_cell & CELL::WALL)){
 		return false;
@@ -139,6 +139,7 @@ bool Craftsman::move(Field &field, const Point direction_point){
 			break;
 		}
 	}
+	Print << this->pos;
 	return true;
 }
 
@@ -159,7 +160,6 @@ void Craftsman::input_act(ChildProcess &child, Field &field){
 	int direction_num;
 	std::string act_str;
 	child.istream() >> direction_num >> act_str;
-	//Console << direction_num;
 	const Point direction_point = range_move[direction_num];
 	if(act_str == "move"){
 		this->act = ACT::MOVE;
