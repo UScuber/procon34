@@ -139,7 +139,6 @@ bool Craftsman::move(Field &field, const Point direction_point){
 			break;
 		}
 	}
-	Print << this->pos;
 	return true;
 }
 
