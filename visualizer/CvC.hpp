@@ -76,6 +76,7 @@ CvC::CvC(const InitData &init) : IScene(init){
 	give_solver_initialize(is_first, getData());
 }
 
+
 ActionPlan CvC::team2actionplan(const TEAM team){
 	ActionPlan tmp_actionplan(turn_num_now + 1);
 	for(const Craftsman& craftsman : craftsmen[team]){
@@ -111,11 +112,21 @@ void CvC::set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn){
 }
 
 void CvC::execute_match(void){
-	if(turn_num_now <= turn_num){
+	if (turn_num_now <= turn_num){
+		//Console << U"------------------------------------------------------------------------------------";
+		//for (auto& ary : matchstatus.board.masons) {
+		//	Console << ary;
+		//}
+		//Console << U"------------------------------------------------------------------------------------";
 		if(now_turn == TEAM::RED){
 			turn_solver();
+			getData().calc_area();
+			getData().calc_point(TEAM::RED);
+			getData().calc_point(TEAM::BLUE);
 		}else{
 			turn_server();
+			getData().calc_point(TEAM::RED);
+			getData().calc_point(TEAM::BLUE);
 		}
 	}
 }
