@@ -164,7 +164,7 @@ void Game::display_details(Field &field) const {
 void Game::give_solver_initialize(const bool is_first, Field &field){
 	// フィールドの縦横
 	child.ostream() << HEIGHT << std::endl << WIDTH << std::endl;
-	// プログラム側を赤色とする
+	// solver.exeを赤色とする
 	child.ostream() << ((is_first) ? 0 : 1) << std::endl;
 	// ターン数
 	child.ostream() << turn_num << std::endl;
@@ -181,13 +181,13 @@ void Game::give_solver_initialize(const bool is_first, Field &field){
 		child.ostream() << p.y << std::endl << p.x << std::endl;
 	}
 	// REDのチームの職人
-	child.ostream() << field.get_craftsmen(TEAM::RED).size() << std::endl;
-	for(const Point p : field.get_craftsmen(TEAM::RED)){
+	child.ostream() << field.get_craftsmen(is_first ? TEAM::RED : TEAM::BLUE).size() << std::endl;
+	for(const Point p : field.get_craftsmen(is_first ? TEAM::RED : TEAM::BLUE)){
 		child.ostream() << p.y << std::endl << p.x << std::endl;
 	}
 	// BLUEチームの職人
-	child.ostream() << field.get_craftsmen(TEAM::BLUE).size() << std::endl;
-	for(const Point p : field.get_craftsmen(TEAM::BLUE)){
+	child.ostream() << field.get_craftsmen(is_first ? TEAM::BLUE : TEAM::RED).size() << std::endl;
+	for(const Point p : field.get_craftsmen(is_first ? TEAM::BLUE : TEAM::RED)){
 		child.ostream() << p.y << std::endl << p.x << std::endl;
 	}
 }
