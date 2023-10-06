@@ -82,7 +82,7 @@ const launch_random_agent = () => {
       const data = response.data;
       if(data.logs.length !== last_log_length){
         last_log_length = data.logs.length;
-        //console.log("Response data:", response.data);
+        
         // random agent's turn
         if((last_log_length & 1) == isnot_first){
           console.log("last log length:", last_log_length);
@@ -130,7 +130,7 @@ app.get("/start", async(req, res) => {
   });
   res.end("Start Launch Server");
   console.log("first:", match_data.first);
-  // isnot_first = !match_data.first;
+
   launch_random_agent();
   console.log("pid:", cp.pid);
   is_running = true;
