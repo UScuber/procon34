@@ -121,7 +121,7 @@ app.get("/start", async(req, res) => {
     res.end("Error: " + filename + " was not found");
     return;
   }
-  const cp = exec(filename + " -c match.json -start 1s", (err, stdout, stderr) => {
+  const cp = exec(filename + " -c match.json", (err, stdout, stderr) => {
     if(err){
       has_error = true;
       return;
