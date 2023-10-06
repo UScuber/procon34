@@ -207,7 +207,9 @@ void Game::receive_solver(const TEAM team, Field &field){
 void Game::receive_build_plan(Field &field){
 	for(int h = 0; h < HEIGHT; h++){
 		for(int w = 0; w < WIDTH; w++){
-			if(get_grid_rect({ w, h }).rightClicked()){
+			if(get_grid_rect({ w, h }).rightClicked()
+				or get_grid_rect({w,h}).leftClicked()
+				or (get_grid_rect({w,h}).mouseOver() and KeyLControl.down() )) {
 				if(field.get_cell(h, w) & CELL::CASTLE){
 					continue;
 				}
