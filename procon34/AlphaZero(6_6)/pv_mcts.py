@@ -4,6 +4,7 @@ from math import sqrt
 from tensorflow.keras.models import load_model
 from pathlib import Path
 import numpy as np
+import os
 
 # パラメータの準備
 PV_EVALUATE_COUNT = 50 # 1推論当たりのシミュレーション回数(本家は1600)

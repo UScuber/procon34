@@ -6,6 +6,8 @@ from pathlib import Path
 from shutil import copy
 import numpy as np
 import gc
+from game import HEIGHT, WIDTH
+
 
 # パラメータの準備
 EN_GAME_COUNT = 10 # 1評価当たりのゲーム数（本家は400）
@@ -19,7 +21,7 @@ def first_player_point(ended_state):
     return 0.5
 
 # 1ゲームの実行
-def play(next_actions):
+def play(next_actions, f):
     # 状態の生成
     state = State()
 
@@ -32,6 +34,37 @@ def play(next_actions):
         # 行動の取得
         next_action = next_actions[0] if state.is_first_player() else next_actions[1]
         action = next_action(state)
+        # 文字列表示
+        board, area, enemy_area, walls = state.__str__()
+        string_turn = str(state.get_game_count()) + "ターン目"
+        f.write(string_turn)
+        f.write("各職人の位置(A:味方の職人, E:敵の職人)\n")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                f.write(board[i][j])
+            f.write('\n')
+        f.write('\n')
+
+        f.write("味方の領域を表示\n")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                f.write(area[i][j])
+            f.write('\n')
+        f.write('\n')
+        
+        f.write("敵の領域を表示\n")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                f.write(enemy_area[i][j])
+            f.write('\n')
+        f.write('\n')
+        
+        f.write("建てられた壁を表示(=:味方の壁, *:敵の壁)\n")
+        for i in range(HEIGHT):
+            for j in range(WIDTH):
+                f.write(walls[i][j])
+            f.write('\n')
+        f.write('\n')
 
         # 次の状態の取得
         state = state.next(action)
@@ -57,17 +90,20 @@ def evaluate_network():
     next_action1 = pv_mcts_action(model1, EN_TEMPERATURE)
     next_actions = (next_action0, next_action1)
 
+    f = open('result.txt','w',encoding='UTF-8')
+
     # 複数回の対戦を繰り返す
     total_point = 0
     for i in range(EN_GAME_COUNT):
         # 1ゲームの実行
         if i % 2 == 0:
-            total_point += play(next_actions)
+            total_point += play(next_actions,f)
         else:
-            total_point += 1 - play(list(reversed(next_actions)))
+            total_point += 1 - play(list(reversed(next_actions)),f)
         
         # 出力
-        print('\rEvaluate {}/{}'.format(i + 1, EN_GAME_COUNT), end='')
+        string_eva = '\rEvaluate' + str(i+1) + '/' + str(EN_GAME_COUNT)
+        f.write(string_eva)
     print('')
 
     # 平均ポイントの計算

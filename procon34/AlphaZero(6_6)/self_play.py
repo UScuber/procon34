@@ -64,15 +64,8 @@ def play(model):
         value = -value
     return history
 
-# セルフプレイ
-def self_play():
-    # 学習データ
-    history = []
-
-    # ベストプレイヤーのモデルの読み込み
-    model = load_model('./model/best.h5')
-
-    # 複数回のゲームの実行
+# 複数回のゲームの実行
+def running_game(model, history):
     for i in range(SP_GAME_COUNT):
         # 1ゲームの実行
         h = play(model)
@@ -80,6 +73,15 @@ def self_play():
 
         # 出力
         print('\rSelfPlay {}/{}'.format(i+1, SP_GAME_COUNT), end='')
+
+# セルフプレイ
+def self_play():
+    # 学習データ
+    history = []
+
+    # ベストプレイヤーのモデルの読み込み
+    model = load_model('./model/best.h5')
+    running_game(model, history)
     print('')
 
     # 学習データの保存

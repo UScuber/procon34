@@ -2,8 +2,10 @@ from tensorflow.keras.layers import Activation, Add, BatchNormalization, Conv2D,
 from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras import backend as K
+import tensorflow as tf
 import os
 import gc
+
 
 # パラメータの準備
 DN_FILTERS = 128 # 畳み込み層のカーネル数

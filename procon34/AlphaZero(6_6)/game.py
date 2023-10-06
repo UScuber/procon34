@@ -5,9 +5,9 @@ import random
 # フィールド
 WIDTH = 6
 HEIGHT = 6
-GAME_COUNT = 30 # ターン数
+GAME_COUNT = 40 # ターン数
 
-WALL_POINT = 2
+WALL_POINT = 8
 AREA_POINT = 10
 
 NUM_CRAFTSMEN = 1
@@ -59,6 +59,30 @@ class State:
                 board = np.zeros((WIDTH, HEIGHT), dtype=np.uint8)
             self.craftsmen[board == 1] = 1
             self.enemy_craftsmen[board == 2] = 1
+            tmp = (board == 1)
+            for i in range(6):
+                for j in range(6):
+                    if tmp[i][j]:
+                        X = i
+                        Y = j
+            tmp2 = (board == 2)
+            for i in range(6):
+                for j in range(6):
+                    if tmp2[i][j]:
+                        X2 = i
+                        Y2 = j
+            if not (X == 0 or Y == 0):
+                self.walls[X-1,Y] = 1
+            if not Y == 0:
+                self.walls[X,Y-1] = 1
+            if not Y == 5:
+                self.walls[X, Y+1] = 1
+            if not (X2 == 0 or Y2 == 0):
+                self.enemy_walls[X2-1,Y2-1] = 1
+            if not (Y2 == 0):
+                self.enemy_walls[X2,Y2-1] = 1
+            if not (Y2 == 5):
+                self.enemy_walls[X2,Y2+1] = 1
     
     # デュアルネットワークの入力用の二次元配列
     def state_array(self) -> np.ndarray:

@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import gc
 import pickle
+import os
 
 # パラメータの準備
 RN_EPOCHS = 100 # 学習回数
