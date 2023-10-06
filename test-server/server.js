@@ -14,17 +14,18 @@ const read_file = (path) => {
 const match_id = 10;
 const match_data = require("./match.json");
 console.log("match data:", match_data);
-const URL = `http://localhost:3000/matches/${match_id}?token=randomagent`;
+const token = "randomagent";
+const URL = `http://localhost:3000/matches/${match_id}?token=${token}`;
 const is_windows = process.platform === "win32";
 const is_mac = process.platform === "darwin";
 let is_running = false;
-let isnot_first = true;
+const isnot_first = match_data.teams[1].token === token;
 let clean_func = undefined;
 
 const execute_randomagent = async(match_data, current_turn) => {
   let str = "";
   const board = match_data.board;
-  str += `${board.height} ${board.width} ${board.mason} ${current_turn} ${isnot_first ? 1 : 0}\n`;
+  str += `${board.height} ${board.width} ${board.mason} ${current_turn}\n`;
   // structures
   for(let i = 0; i < board.height; i++){
     for(let j = 0; j < board.width; j++){
@@ -81,10 +82,11 @@ const launch_random_agent = () => {
       const data = response.data;
       if(data.logs.length !== last_log_length){
         last_log_length = data.logs.length;
-        //console.log("Response data:", response.data);
+        
         // random agent's turn
         if((last_log_length & 1) == isnot_first){
           console.log("last log length:", last_log_length);
+          console.log("last log:", data.logs[last_log_length-1]);
           console.log("start turn:", last_log_length + 1);
           await execute_randomagent(data, last_log_length + 1);
         }
@@ -119,7 +121,7 @@ app.get("/start", async(req, res) => {
     res.end("Error: " + filename + " was not found");
     return;
   }
-  const cp = exec(filename + " -c match.json -start 1s", (err, stdout, stderr) => {
+  const cp = exec(filename + " -c match.json", (err, stdout, stderr) => {
     if(err){
       has_error = true;
       return;
@@ -128,7 +130,7 @@ app.get("/start", async(req, res) => {
   });
   res.end("Start Launch Server");
   console.log("first:", match_data.first);
-  // isnot_first = !match_data.first;
+
   launch_random_agent();
   console.log("pid:", cp.pid);
   is_running = true;

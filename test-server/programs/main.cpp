@@ -2,8 +2,8 @@
 #include "base.hpp"
 
 
-Field read_field(const int h, const int w, const int agents_num, const int side){
-  Field field(h, w, side);
+Field read_field(const int h, const int w, const int agents_num){
+  Field field(h, w);
   // structures
   for(int i = 0; i < h; i++){
     for(int j = 0; j < w; j++){
@@ -60,9 +60,9 @@ Field read_field(const int h, const int w, const int agents_num, const int side)
 int main(){
   srand(time(NULL));
   // start reading field
-  int agents_num, current_turn, side;
-  std::cin >> height >> width >> agents_num >> current_turn >> side;
-  Field field = read_field(height, width, agents_num, side);
+  int agents_num, current_turn;
+  std::cin >> height >> width >> agents_num >> current_turn;
+  Field field = read_field(height, width, agents_num);
   const auto &current_agents = field.get_now_turn_agents();
   Actions actions = select_random_next_agents_acts(current_agents, field);
   while(!field.is_legal_action(actions)) actions = select_random_next_agents_acts(current_agents, field);

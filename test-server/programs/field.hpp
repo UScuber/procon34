@@ -37,10 +37,10 @@ struct Field {
   std::vector<Point> castles;
   int side, current_turn, final_turn;
 
-  Field(const int h, const int w, const bool s)
+  Field(const int h, const int w)
     : field(h, std::vector<State>(w, State::None)),
       current_turn(0),
-      side(s),
+      side(0),
       final_turn(1){}
   
   inline State get_state(const int y, const int x) const noexcept{

@@ -15,6 +15,8 @@ g++ programs/main.cpp -o programs/randomagent.exe
 
 - 簡易サーバーのプログラム(procon-server_linux)の作成
 
+  - ダウンロードした簡易サーバーの実行ファイルは権限がないため、`chomd +x procon-server_linux` を実行して実行できるようにしてください
+
 
 ## 起動方法
 
