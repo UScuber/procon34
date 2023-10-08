@@ -5,15 +5,18 @@
 
 
 // フィールドの座標を引数に、セルの中心の画面上の座標を返す
-Point get_cell_center(const Point p){
+constexpr Point get_cell_center(const Point p){
 	return Point(p.x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, p.y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2);
 }
 
-Rect get_grid_rect(const Point p){
+constexpr Rect get_grid_rect(const Point p){
 	return Rect{ p.x * CELL_SIZE + BLANK_LEFT, p.y * CELL_SIZE + BLANK_TOP, CELL_SIZE };
 }
+constexpr Rect get_grid_rect(const int y, const int x){
+	return Rect{ x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE };
+}
 
-Circle get_grid_circle(const Point p){
+constexpr Circle get_grid_circle(const Point p){
 	return Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3);
 }
 
@@ -92,17 +95,17 @@ public:
 	// ポイント計算
 	void calc_point(const TEAM team);
 	// ポイント取得
-	int get_point(const TEAM team);
+	int get_point(const TEAM team) const;
 	// 建設物の数取得
-	Array<int> get_building(const TEAM team);
+	Array<int> get_building(const TEAM team) const;
 	// フィールド表示
-	void output_field(void);
+	void output_field(void) const;
 	// フィールド更新
 	void update(const MatchStatus &matchstatus);
 
 private:
 	// 陣地計算のためのBFS
-	void wall_bfs(const Point start, Array<Array<bool>> &visited, const TEAM team);
+	void wall_bfs(const Point start, Array<Array<bool>> &visited, const TEAM team) const;
 	// 各項目のフィールド更新
 	void update_walls(const Array<Array<int>> &walls);
 	void update_territories(const Array<Array<int>> &territores);
@@ -358,7 +361,7 @@ void Field::display_actors(void) const {
 // startからBFSを開始
 const Array<Point> range_area = { {0,-1},{-1,0},{0,1},{1,0} };
 
-void Field::wall_bfs(const Point start, Array<Array<bool>>& visited, const TEAM team){
+void Field::wall_bfs(const Point start, Array<Array<bool>> &visited, const TEAM team) const {
 	std::queue<Point> que;
 	que.push(start);
 	visited[start.y][start.x] = true;
@@ -463,7 +466,7 @@ void Field::calc_point(const TEAM team){
 
 }
 
-int Field::get_point(const TEAM team){
+int Field::get_point(const TEAM team) const {
 	if(team == TEAM::RED){
 		return point_red;
 	}else{
@@ -471,7 +474,7 @@ int Field::get_point(const TEAM team){
 	}
 }
 
-Array<int> Field::get_building(const TEAM team){
+Array<int> Field::get_building(const TEAM team) const {
 	if(team == TEAM::RED){
 		return building_red;
 	}else{
@@ -479,7 +482,7 @@ Array<int> Field::get_building(const TEAM team){
 	}
 }
 
-void Field::output_field(void){
+void Field::output_field(void) const {
 	for(int h = 0; h < HEIGHT; h++){
 		String str = U"";
 		for(int w = 0; w < WIDTH; w++){

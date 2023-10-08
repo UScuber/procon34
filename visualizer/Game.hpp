@@ -20,15 +20,15 @@ protected:
 	// フィールドの表示
 	void display_field(void) const;
 	// 詳細表示
-	void display_details(Field &field) const;
+	void display_details(const Field &field) const;
 	// solverの初期化(引数にはsolverのチーム)
-	void give_solver_initialize(const bool is_first, Field &field);
+	void give_solver_initialize(const bool is_first, const Field &field);
 	// solverに職人の行動を渡す(引数にはsolverのチーム)
 	void give_solver(const TEAM team);
 	// solverから行動を受け取る(引数にはsolverのチーム)
 	void receive_solver(const TEAM team, Field &field);
 	// GUIで建築予定の場所を受け取る
-	void receive_build_plan(Field &field);
+	void receive_build_plan(const Field &field);
 	void give_solver_build_plan(void);
 	// 職人の配列
 	Array<Array<Craftsman>> craftsmen;
@@ -39,7 +39,7 @@ protected:
 	// 建築物の数のフォント
 	const Font small_font = Font(25, U"SourceHanSansJP-Medium.otf");
 	// 職人の番号のフォント
-	const Font craftsman_font = Font((int32)CELL_SIZE,  U"SourceHanSansJP-Medium.otf");
+	const Font craftsman_font = Font(CELL_SIZE,  U"SourceHanSansJP-Medium.otf");
 	// 試合のターン数
 	int turn_num = 200;
 	// 現在のターン数
@@ -69,7 +69,7 @@ void Game::operate_gui(Field &field){
 
 void Game::operate_craftsman(const TEAM team, Field &field){
 	int craftsman_num = 0;
-	for(Craftsman& craftsman : craftsmen[team]){
+	for(Craftsman &craftsman : craftsmen[team]){
 		craftsman_num++;
 		// 行動済みならcontinue
 		if(craftsman.is_acted){
@@ -78,7 +78,7 @@ void Game::operate_craftsman(const TEAM team, Field &field){
 		// 動かす対象の職人を決める
 		if(keyboard_craftsman[craftsman_num].down()){
 			if(not craftsman.is_target){
-				for(Craftsman& craftsman_tmp : craftsmen[team]){
+				for(Craftsman &craftsman_tmp : craftsmen[team]){
 					craftsman_tmp.is_target = false;
 				}
 			}
@@ -96,7 +96,7 @@ void Game::operate_craftsman(const TEAM team, Field &field){
 		Optional<ACT> mode = get_pressed_mode();
 
 		if(direction != none){
-			Line{ get_cell_center(craftsman.pos), get_cell_center(craftsman.pos + direction.value()) }.draw(LineStyle::RoundCap, 5, Palette::Orange);
+			Line(get_cell_center(craftsman.pos), get_cell_center(craftsman.pos + direction.value())).draw(LineStyle::RoundCap, 5, Palette::Orange);
 		}
 
 		if(direction != none and mode != none){
@@ -144,7 +144,7 @@ void Game::display_field(void) const {
 	}
 }
 
-void Game::display_details(Field &field) const {
+void Game::display_details(const Field &field) const {
 	if(now_turn == TEAM::RED){
 		normal_font(U"赤チームの手番").draw(800, 550, Palette::Red);
 	}else{
@@ -161,7 +161,7 @@ void Game::display_details(Field &field) const {
 	normal_font(U"ターン数:{}/{}"_fmt(turn_num_now + 1, turn_num)).draw(800, 450, Palette::Black);
 }
 
-void Game::give_solver_initialize(const bool is_first, Field &field){
+void Game::give_solver_initialize(const bool is_first, const Field &field){
 	// フィールドの縦横
 	child.ostream() << HEIGHT << std::endl << WIDTH << std::endl;
 	// solver.exeを赤色とする
@@ -199,22 +199,22 @@ void Game::give_solver(const TEAM team){
 }
 
 void Game::receive_solver(const TEAM team, Field &field){
-	for(Craftsman& craftsman : craftsmen[team]){
+	for(Craftsman &craftsman : craftsmen[team]){
 		craftsman.input_act(child, field);
 	}
 }
 
-void Game::receive_build_plan(Field &field){
+void Game::receive_build_plan(const Field &field){
 	for(int h = 0; h < HEIGHT; h++){
 		for(int w = 0; w < WIDTH; w++){
-			if(get_grid_rect({ w, h }).rightClicked()
-				or get_grid_rect({w,h}).leftClicked()
-				or (get_grid_rect({w,h}).mouseOver() and KeyLControl.down() )) {
+			if(get_grid_rect(h, w).rightClicked()
+				or get_grid_rect(h, w).leftClicked()
+				or (get_grid_rect(h, w).mouseOver() and KeyLControl.down())){
 				if(field.get_cell(h, w) & CELL::CASTLE){
 					continue;
 				}
 				bool is_around_wall = true;
-				for(auto& dydx : range_wall){
+				for(const auto &dydx : range_wall){
 					if(not is_in_field(h + dydx.y, w + dydx.x)){
 						continue;
 					}

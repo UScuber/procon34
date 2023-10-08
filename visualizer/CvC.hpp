@@ -180,14 +180,14 @@ bool CvC::turn_server(void){
 void CvC::display_field(void) const {
 	for(const Array<Craftsman> &ary : craftsmen){
 		int craftsman_num = 1;
-		for(const Craftsman& craftsman : ary){
+		for(const Craftsman &craftsman : ary){
 			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos), Palette::Black);
 		}
 	}
 	for(int h = 0; h < HEIGHT; h++){
 		for(int w = 0; w < WIDTH; w++){
 			if(is_build_plan[h][w]){
-				get_grid_rect({ w,h }).drawFrame(3, 0, Palette::Orange);
+				get_grid_rect(h, w).drawFrame(3, 0, Palette::Orange);
 			}
 		}
 	}

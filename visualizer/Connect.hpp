@@ -17,7 +17,7 @@ int to_direction_client(const int direction_num_server){
 	return direction_client[direction_num_server];
 }
 
-Array<Array<int>> get_2d_array(const JSON& json){
+Array<Array<int>> get_2d_array(const JSON &json){
 	Array<Array<int>> res;
 	for(const auto &object : json.arrayView()){
 		Array<int> ary;
@@ -34,8 +34,8 @@ struct MatchDataBoard {
 	int width = 0;
 	int height = 0;
 	int mason = 0;
-	Array<Array<int>> structures = Array<Array<int>>(0);
-	Array<Array<int>> masons = Array<Array<int>>(0);
+	Array<Array<int>> structures;
+	Array<Array<int>> masons;
 
 	MatchDataBoard(){}
 
@@ -52,7 +52,7 @@ struct MatchDataMatch {
 	int id = 0;
 	int turns = 0;
 	int turnSeconds = 0;
-	MatchDataBoard board = MatchDataBoard();
+	MatchDataBoard board;
 	String opponent = U"";
 	bool first = false;
 
@@ -69,7 +69,7 @@ struct MatchDataMatch {
 };
 
 struct MatchData {
-	Array<MatchDataMatch> matches = Array<MatchDataMatch>(0);
+	Array<MatchDataMatch> matches;
 
 	MatchData(){}
 
@@ -84,10 +84,10 @@ struct MatchStatusBoard {
 	int width = 0;
 	int height = 0;
 	int mason = 0;
-	Array<Array<int>> walls = Array<Array<int>>(0);
-	Array<Array<int>> territories = Array<Array<int>>(0);
-	Array<Array<int>> structures = Array<Array<int>>(0);
-	Array<Array<int>> masons = Array<Array<int>>(0);
+	Array<Array<int>> walls;
+	Array<Array<int>> territories;
+	Array<Array<int>> structures;
+	Array<Array<int>> masons;
 
 	MatchStatusBoard(){}
 
@@ -133,8 +133,8 @@ struct MatchStatusLog {
 struct MatchStatus {
 	int id = 0;
 	int turn = 0;
-	MatchStatusBoard board = MatchStatusBoard();
-	Array<MatchStatusLog> logs = Array<MatchStatusLog>();
+	MatchStatusBoard board;
+	Array<MatchStatusLog> logs;
 
 	MatchStatus(){}
 
@@ -154,10 +154,7 @@ struct ActionPlanAction {
 
 	ActionPlanAction(){}
 
-	ActionPlanAction(const int type, const int dir){
-		this->type = type;
-		this->dir = dir;
-	}
+	ActionPlanAction(const int type, const int dir) : type(type), dir(dir){}
 
 	JSON output_json(void) const {
 		JSON json;
@@ -171,15 +168,13 @@ struct ActionPlanAction {
 };
 struct  ActionPlan {
 	int turn = 0;
-	Array<ActionPlanAction> actions = Array<ActionPlanAction>(0);
+	Array<ActionPlanAction> actions;
 
 	ActionPlan(){}
 
-	ActionPlan(const int turn){
-		this->turn = turn;
-	}
+	ActionPlan(const int turn) : turn(turn){}
 
-	void push_back_action(const int& type, const int& dir){
+	void push_back_action(const int type, const int dir){
 		actions << ActionPlanAction(type, dir);
 	}
 
@@ -204,9 +199,9 @@ private:
 public:
 	Connect(void);
 	// 試合一覧取得
-	Optional<MatchDataMatch> get_matches_list(void);
+	Optional<MatchDataMatch> get_matches_list(void) const;
 	// 試合状況取得
-	Optional<MatchStatus> get_match_status(void);
+	Optional<MatchStatus> get_match_status(void) const;
 	// 行動計画更新
 	Optional<int> post_action_plan(const ActionPlan &action);
 };
@@ -245,7 +240,7 @@ Connect::Connect(void){
 	match_id = Parse<int>(tmp_id);
 }
 
-Optional<MatchDataMatch> Connect::get_matches_list(void){
+Optional<MatchDataMatch> Connect::get_matches_list(void) const {
 	const URL url = url_base + U"matches" + U"?token=" + token;
 	const FilePath saveFilePath = U"./mathes_list.json";
 	if(const auto response = SimpleHTTP::Get(url, headers, saveFilePath)){
@@ -266,7 +261,7 @@ Optional<MatchDataMatch> Connect::get_matches_list(void){
 	return none;
 }
 
-Optional<MatchStatus> Connect::get_match_status(void){
+Optional<MatchStatus> Connect::get_match_status(void) const {
 	const URL url = url_base + U"matches/" + Format(match_id) + U"?token=" + token;
 	const FilePath saveFilePath = U"./match_status.json";
 	if(const auto response = SimpleHTTP::Get(url, headers, saveFilePath)){
