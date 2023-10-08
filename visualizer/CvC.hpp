@@ -13,10 +13,6 @@ public:
 private:
 	// 通信を行うクラス
 	Connect connect;
-	// 通信を行う際に使用する構造体
-	MatchDataMatch matchdatamatch;
-	MatchStatus matchstatus;
-	ActionPlan actionplan;
 	// 試合のid
 	int match_id = 0;
 	// solver.exeが先手か
@@ -28,7 +24,7 @@ private:
 	// 職人の行動をActionPlanに変換
 	ActionPlan team2actionplan(const TEAM team);
 	//  MatchStatusから職人情報を上塗り
-	void set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn);
+	void set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn, const MatchStatus &matchstatus);
 	// server.exe, serverのターンの処理
 	bool turn_solver(void);
 	bool turn_server(void);
@@ -41,9 +37,8 @@ CvC::CvC(const InitData &init) : IScene(init){
 	Optional<MatchDataMatch> tmp_matchdatamatch = connect.get_matches_list();
 	if(tmp_matchdatamatch == none){
 		throw Error{ U"Failed to get matches list" };
-	}else{
-		this->matchdatamatch = tmp_matchdatamatch.value();
 	}
+	const MatchDataMatch matchdatamatch = tmp_matchdatamatch.value();
 	craftsmen.resize(2, Array<Craftsman>(matchdatamatch.board.mason));
 	// フィールド情報をセット
 	getData().initialize(matchdatamatch);
@@ -85,7 +80,7 @@ ActionPlan CvC::team2actionplan(const TEAM team){
 	return tmp_actionplan;
 }
 
-void CvC::set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn){
+void CvC::set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn, const MatchStatus &matchstatus){
 	for(const MatchStatusLog &log : matchstatus.logs){
 		if(log.turn != turn) continue;
 		int i = -1;
@@ -163,13 +158,13 @@ bool CvC::turn_server(void){
 		Console << U"this turn is server's";
 		return false;
 	}
-	matchstatus = tmp_matchstatus.value();
+	const MatchStatus matchstatus = tmp_matchstatus.value();
 	turn_num_now++;
 	now_turn = TEAM::RED;
 	// フィールド更新
 	getData().update(matchstatus);
 	// 職人情報更新
-	set_craftsman(craftsmen[TEAM::BLUE], turn_num_now);
+	set_craftsman(craftsmen[TEAM::BLUE], turn_num_now, matchstatus);
 	// solver.exeに行動情報を渡す
 	give_solver(TEAM::RED);
 	// solver.exeに建築予定の壁を渡す
