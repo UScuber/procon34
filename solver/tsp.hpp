@@ -365,14 +365,13 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
   const double T1 = 1;
   double temp = T0;
   double spend_time = 0;
-  auto best_wall_part = wall_part;
   std::vector<int> costs(agents_num);
   int best_score = 0;
   for(int i = 0; i < agents_num; i++){
-    costs[i] = calc_agent_move_cost(agents[i], best_wall_part[i], field, cost_table);
+    costs[i] = calc_agent_move_cost(agents[i], wall_part[i], field, cost_table);
     chmax(best_score, costs[i]);
   }
-  auto awesome_wall_part = best_wall_part;
+  auto awesome_wall_part = wall_part;
   int awesome_score = best_score;
 
   cerr << "Start SA(TSP)\n";
@@ -386,8 +385,9 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
       temp = (T1 - T0) * p + T0;
     }
 
-    auto wp = wall_part;
-    int a = -1, b = -1;
+    auto &wp = wall_part;
+    int a = -1, b = -1, ai = -1, bi = -1;
+    bool is_swap = false;
     // swap
     if(rnd(10) < 8 && (int)walls.size() >= 2){
       a = rnd(agents_num), b = rnd(agents_num);
@@ -399,8 +399,8 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
         steps--;
         continue;
       }
-      int ai = rnd(wp[a].size());
-      int bi = rnd(wp[b].size());
+      ai = rnd(wp[a].size());
+      bi = rnd(wp[b].size());
       if(a == b){
         while(ai == bi){
           ai = rnd(wp[a].size());
@@ -408,6 +408,7 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
         }
       }
       std::swap(wp[a][ai], wp[b][bi]);
+      is_swap = true;
     }
     // move a <- b
     else{
@@ -416,8 +417,8 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
         a = rnd(agents_num);
         b = rnd(agents_num);
       }
-      const int ai = rnd(wp[a].size()+1);
-      const int bi = rnd(wp[b].size());
+      ai = rnd(wp[a].size()+1);
+      bi = rnd(wp[b].size());
       wp[a].insert(wp[a].begin() + ai, wp[b][bi]);
       wp[b].erase(wp[b].begin() + bi);
     }
@@ -436,18 +437,21 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
       awesome_score = score;
       best_score = score;
       awesome_wall_part = wp;
-      best_wall_part = wp;
-      wall_part = wp;
       costs[a] = calc_agent_move_cost(agents[a], wp[a], field, cost_table);
-      costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
+      if(a != b) costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
       updated_num++;
     }else if(exp((double)(best_score - score) / temp) > rnd(2048)/2048.0){
       best_score = score;
-      best_wall_part = wp;
-      wall_part = wp;
       costs[a] = calc_agent_move_cost(agents[a], wp[a], field, cost_table);
-      costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
+      if(a != b) costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
       updated_num++;
+    }else{
+      if(is_swap){
+        std::swap(wp[a][ai], wp[b][bi]);
+      }else{
+        wp[b].insert(wp[b].begin() + bi, wp[a][ai]);
+        wp[a].erase(wp[a].begin() + ai);
+      }
     }
   }
   cerr << "Steps: " << steps << "\n";
