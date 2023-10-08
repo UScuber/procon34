@@ -169,5 +169,7 @@ void Craftsman::input_act(ChildProcess &child, Field &field){
 	}else if(act_str == "break"){
 		this->act = ACT::DESTROY;
 		destroy(field, direction_point);
+	}else{
+		this->act = ACT::NOTHING;
 	}
 }
