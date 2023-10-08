@@ -41,7 +41,7 @@ CvC::CvC(const InitData &init) : IScene(init){
 	Optional<MatchDataMatch> tmp_matchdatamatch = connect.get_matches_list();
 	if(tmp_matchdatamatch == none){
 		throw Error{ U"Failed to get matches list" };
-	}else {
+	}else{
 		this->matchdatamatch = tmp_matchdatamatch.value();
 	}
 	craftsmen.resize(2, Array<Craftsman>(matchdatamatch.board.mason));
@@ -79,7 +79,7 @@ CvC::CvC(const InitData &init) : IScene(init){
 
 ActionPlan CvC::team2actionplan(const TEAM team){
 	ActionPlan tmp_actionplan(turn_num_now + 1);
-	for(const Craftsman& craftsman : craftsmen[team]){
+	for(const Craftsman &craftsman : craftsmen[team]){
 		tmp_actionplan.push_back_action((int)craftsman.act, to_direction_server(craftsman.direction) + 1);
 	}
 	return tmp_actionplan;
@@ -87,7 +87,7 @@ ActionPlan CvC::team2actionplan(const TEAM team){
 
 void CvC::set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn){
 	for(const MatchStatusLog &log : matchstatus.logs){
-		if (log.turn != turn) continue;
+		if(log.turn != turn) continue;
 		int i = -1;
 		for(Craftsman &craftsman : tmp_craftsmen){
 			i++;
@@ -102,30 +102,30 @@ void CvC::set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn){
 	for(int h = 0; h < HEIGHT; h++){
 		for(int w = 0; w < WIDTH; w++){
 			const int craftsman_num = matchstatusboard.masons[h][w];
-			if (craftsman_num == 0) {
+			if(craftsman_num == 0){
 				continue;
 			}
-			TEAM team = (craftsman_num > 0) ? TEAM::RED : TEAM::BLUE;
-			craftsmen[team][Abs(craftsman_num) - 1].pos = { w, h };
+			const TEAM team = (craftsman_num > 0) ? TEAM::RED : TEAM::BLUE;
+			craftsmen[team][Abs(craftsman_num) - 1].pos = Point(w, h);
 		}
 	}
 }
 
 void CvC::execute_match(void){
-	if (turn_num_now <= turn_num){
+	if(turn_num_now < turn_num){
 		//Console << U"------------------------------------------------------------------------------------";
 		//for (auto& ary : matchstatus.board.masons) {
 		//	Console << ary;
 		//}
 		//Console << U"------------------------------------------------------------------------------------";
 		if(now_turn == TEAM::RED){
-			if (turn_solver()) {
+			if(turn_solver()){
 				getData().calc_area();
 				getData().calc_point(TEAM::RED);
 				getData().calc_point(TEAM::BLUE);
 			}
 		}else{
-			if (turn_server()) {
+			if(turn_server()){
 				getData().calc_point(TEAM::RED);
 				getData().calc_point(TEAM::BLUE);
 			}
@@ -178,7 +178,7 @@ bool CvC::turn_server(void){
 }
 
 void CvC::display_field(void) const {
-	for(const Array<Craftsman>& ary : craftsmen){
+	for(const Array<Craftsman> &ary : craftsmen){
 		int craftsman_num = 1;
 		for(const Craftsman& craftsman : ary){
 			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos), Palette::Black);
