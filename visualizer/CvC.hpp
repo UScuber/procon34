@@ -39,27 +39,27 @@ CvC::CvC(const InitData &init) : IScene(init){
 		throw Error{ U"Failed to get matches list" };
 	}
 	const MatchDataMatch matchdatamatch = tmp_matchdatamatch.value();
-	craftsmen.resize(2, Array<Craftsman>(matchdatamatch.board.mason));
+	craftsmen.resize(2, Array<Craftsman>(matchdatamatch.get_mason_num()));
 	// フィールド情報をセット
 	getData().initialize(matchdatamatch);
 	// 基本情報をセット
 	is_build_plan.clear();
 	is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
-	is_first = matchdatamatch.first;
+	is_first = matchdatamatch.get_first();
 	if(is_first){
 		now_turn = TEAM::RED;
 	}else{
 		now_turn = TEAM::BLUE;
 	}
-	time = matchdatamatch.turnSeconds * 1000;
-	turn_num = matchdatamatch.turns;
+	time = matchdatamatch.get_turnSeconds() * 1000;
+	turn_num = matchdatamatch.get_turn();
 
 	for(Array<Craftsman> &craftsmen_ary : craftsmen){
-		craftsmen_ary.resize(matchdatamatch.board.mason, Craftsman());
+		craftsmen_ary.resize(matchdatamatch.get_mason_num(), Craftsman());
 	}
 	for(int h = 0; h < HEIGHT; h++){
 		for(int w = 0; w < WIDTH; w++){
-			const int mason_num = matchdatamatch.board.masons[h][w];
+			const int mason_num = matchdatamatch.get_masons()[h][w];
 			if(mason_num == 0){
 				continue;
 			}
@@ -81,22 +81,20 @@ ActionPlan CvC::team2actionplan(const TEAM team){
 }
 
 void CvC::set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn, const MatchStatus &matchstatus){
-	for(const MatchStatusLog &log : matchstatus.logs){
-		if(log.turn != turn) continue;
-		int i = -1;
-		for(Craftsman &craftsman : tmp_craftsmen){
-			i++;
-			craftsman.act = (ACT)log.actions[i].type;
-			if(craftsman.act == ACT::NOTHING){
-				continue;
-			}
-			craftsman.direction = to_direction_client(log.actions[i].dir - 1);
+	const MatchStatusLog &log = matchstatus.get_log(turn);
+	int i = -1;
+	for(Craftsman &craftsman : tmp_craftsmen){
+		i++;
+		craftsman.act = (ACT)log.get_action(i).type;
+		if(craftsman.act == ACT::NOTHING){
+			continue;
 		}
+		craftsman.direction = to_direction_client(log.get_action(i).dir - 1);
 	}
-	const MatchStatusBoard &matchstatusboard = matchstatus.board;
+
 	for(int h = 0; h < HEIGHT; h++){
 		for(int w = 0; w < WIDTH; w++){
-			const int craftsman_num = matchstatusboard.masons[h][w];
+			const int craftsman_num = matchstatus.get_masons()[h][w];
 			if(craftsman_num == 0){
 				continue;
 			}
@@ -154,7 +152,7 @@ bool CvC::turn_server(void){
 	if(tmp_matchstatus == none){
 		Console << U"Cannot get match status! \t get again now ...";
 		return false;
-	}else if(tmp_matchstatus.value().turn != turn_num_now + 1){
+	}else if(tmp_matchstatus.value().get_turn() != turn_num_now + 1){
 		Console << U"this turn is server's";
 		return false;
 	}

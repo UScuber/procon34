@@ -188,20 +188,20 @@ Field::Field(void){
 
 // jsonから読み取ったフィールド情報に置き換える
 void Field::initialize(const MatchDataMatch &matchdatamatch){
-	HEIGHT = matchdatamatch.board.height;
-	WIDTH = matchdatamatch.board.width;
+	HEIGHT = matchdatamatch.get_height();
+	WIDTH = matchdatamatch.get_width();
 	this->grid.clear();
 	this->grid.resize(HEIGHT, Array<CELL>(WIDTH, CELL::NONE));
-	update_structures(matchdatamatch.board.structures);
-	update_masons(matchdatamatch.board.masons);
+	update_structures(matchdatamatch.get_structures());
+	update_masons(matchdatamatch.get_masons());
 }
 
 
 void Field::update(const MatchStatus &matchstatus){
-	update_walls(matchstatus.board.walls);
-	update_territories(matchstatus.board.territories);
-	update_structures(matchstatus.board.structures);
-	update_masons(matchstatus.board.masons);
+	update_walls(matchstatus.get_walls());
+	update_territories(matchstatus.get_territories());
+	update_structures(matchstatus.get_structures());
+	update_masons(matchstatus.get_masons());
 }
 
 void Field::update_walls(const Array<Array<int>> &walls){

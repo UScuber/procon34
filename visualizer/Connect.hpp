@@ -17,6 +17,15 @@ int to_direction_client(const int direction_num_server){
 	return direction_client[direction_num_server];
 }
 
+template <class T>
+Array<T> get_1d_array(const JSON &json){
+	Array<T> res;
+	for(const auto &num : json.arrayView()){
+		res << num;
+	}
+	return res;
+}
+
 Array<Array<int>> get_2d_array(const JSON &json){
 	Array<Array<int>> res;
 	for(const auto &object : json.arrayView()){
@@ -31,48 +40,72 @@ Array<Array<int>> get_2d_array(const JSON &json){
 
 
 struct MatchDataBoard {
+private:
 	int width;
 	int height;
 	int mason;
 	Array<Array<int>> structures;
 	Array<Array<int>> masons;
 
+public:
 	MatchDataBoard(const JSON &board) :
 		width(board[U"width"].get<int>()),
 		height(board[U"height"].get<int>()),
 		mason(board[U"mason"].get<int>()),
 		structures(get_2d_array(board[U"structures"])),
 		masons(get_2d_array(board[U"masons"])){}
+
+	int get_height() const {
+		return height;
+	}
+	int get_width() const {
+		return width;
+	}
+	int get_mason_num() const {
+		return mason;
+	}
+	const Array<Array<int>> &get_structures() const {
+		return structures;
+	}
+	const Array<Array<int>> &get_masons() const {
+		return masons;
+	}
 };
 
-struct MatchDataMatch {
+struct MatchDataMatch : MatchDataBoard {
+private:
 	int id;
 	int turns;
 	int turnSeconds;
-	MatchDataBoard board;
 	String opponent;
 	bool first;
 
+public:
 	MatchDataMatch(const JSON &matches) :
 		id(matches[U"id"].get<int>()),
 		turns(matches[U"turns"].get<int>()),
 		turnSeconds(matches[U"turnSeconds"].get<int>()),
-		board(MatchDataBoard(matches[U"board"])),
+		MatchDataBoard(matches[U"board"]),
 		opponent(matches[U"opponent"].get<String>()),
 		first(matches[U"first"].get<bool>()){}
-};
 
-struct MatchData {
-	Array<MatchDataMatch> matches;
-
-	MatchData(const JSON &json){
-		for(const MatchDataMatch &matchdatamatch : json[U"matches"].arrayView()){
-			matches << matchdatamatch;
-		}
+	int get_id() const {
+		return id;
+	}
+	int get_turn() const {
+		return turns;
+	}
+	int get_turnSeconds() const {
+		return turnSeconds;
+	}
+	bool get_first() const {
+		return first;
 	}
 };
 
+
 struct MatchStatusBoard {
+private:
 	int width;
 	int height;
 	int mason;
@@ -81,6 +114,7 @@ struct MatchStatusBoard {
 	Array<Array<int>> structures;
 	Array<Array<int>> masons;
 
+public:
 	MatchStatusBoard(const JSON &board) :
 		width(board[U"width"].get<int>()),
 		height(board[U"height"].get<int>()),
@@ -89,6 +123,19 @@ struct MatchStatusBoard {
 		territories(get_2d_array(board[U"territories"])),
 		structures(get_2d_array(board[U"structures"])),
 		masons(get_2d_array(board[U"masons"])){}
+
+	const Array<Array<int>> &get_walls() const {
+		return walls;
+	}
+	const Array<Array<int>> &get_territories() const {
+		return territories;
+	}
+	const Array<Array<int>> &get_structures() const {
+		return structures;
+	}
+	const Array<Array<int>> &get_masons() const {
+		return masons;
+	}
 };
 
 struct MatchStatusLogAction {
@@ -103,38 +150,67 @@ struct MatchStatusLogAction {
 };
 
 struct MatchStatusLog {
+private:
 	int turn;
 	Array<MatchStatusLogAction> actions;
 
-	MatchStatusLog(const JSON &log){
-		this->turn = log[U"turn"].get<int>();
-		for(const JSON &matchstatuslogaction : log[U"actions"].arrayView()){
-			this->actions << MatchStatusLogAction(matchstatuslogaction);
-		}
+public:
+	MatchStatusLog(const JSON &log) :
+		turn(log[U"turn"].get<int>()),
+		actions(get_1d_array<MatchStatusLogAction>(log[U"actions"])){}
+
+	const MatchStatusLogAction &get_action(const int i) const {
+		assert(0 <= i && i < (int)actions.size());
+		return actions[i];
+	}
+	int get_turn() const {
+		return turn;
 	}
 };
 
 struct MatchStatus {
+private:
 	int id;
 	int turn;
 	MatchStatusBoard board;
 	Array<MatchStatusLog> logs;
 
+public:
 	MatchStatus(const JSON &json) :
 		id(json[U"id"].get<int>()),
 		turn(json[U"turn"].get<int>()),
-		board(MatchStatusBoard(json[U"board"]))
-	{
-		for(const MatchStatusLog &matchstatuslog : json[U"logs"].arrayView()){
-			logs << matchstatuslog;
+		board(MatchStatusBoard(json[U"board"])),
+		logs(get_1d_array<MatchStatusLog>(json[U"logs"])){}
+
+	const Array<Array<int>> &get_walls() const {
+		return board.get_walls();
+	}
+	const Array<Array<int>> &get_territories() const {
+		return board.get_territories();
+	}
+	const Array<Array<int>> &get_structures() const {
+		return board.get_structures();
+	}
+	const Array<Array<int>> &get_masons() const {
+		return board.get_masons();
+	}
+	const MatchStatusLog &get_log(const int t) const {
+		for(const MatchStatusLog &log : logs){
+			if(log.get_turn() == t) return log;
 		}
+		return logs.back();
+	}
+	int get_turn() const {
+		return turn;
 	}
 };
 
 struct ActionPlanAction {
+private:
 	int type;
 	int dir;
 
+public:
 	ActionPlanAction(const int type, const int dir) : type(type), dir(dir){}
 
 	JSON output_json(void) const {
@@ -147,10 +223,13 @@ struct ActionPlanAction {
 		return json;
 	}
 };
-struct  ActionPlan {
+
+struct ActionPlan {
+private:
 	int turn;
 	Array<ActionPlanAction> actions;
 
+public:
 	ActionPlan(const int turn) : turn(turn){}
 
 	void push_back_action(const int type, const int dir){
@@ -172,8 +251,8 @@ class Connect {
 private:
 	const URL url_base = U"http://localhost:3000/";
 	const HashTable<String, String> headers{ { U"Content-Type", U"application/json" } };
-	int match_id = 0;
-	String token = U"";
+	int match_id;
+	String token;
 
 public:
 	Connect(void);
@@ -182,7 +261,7 @@ public:
 	// 試合状況取得
 	Optional<MatchStatus> get_match_status(void) const;
 	// 行動計画更新
-	Optional<int> post_action_plan(const ActionPlan &action);
+	Optional<int> post_action_plan(const ActionPlan &action) const;
 };
 
 
@@ -214,7 +293,7 @@ Connect::Connect(void){
 	if(not reader_id){
 		throw Error{ U"Failed to open 'id.env'" };
 	}
-	String tmp_id = U"";
+	String tmp_id;
 	reader_id.readLine(tmp_id);
 	match_id = Parse<int>(tmp_id);
 }
@@ -225,10 +304,11 @@ Optional<MatchDataMatch> Connect::get_matches_list(void) const {
 	if(const auto response = SimpleHTTP::Get(url, headers, saveFilePath)){
 		output_console_response(response);
 		if(response.isOK()){
-			output_console_json(JSON::Load(saveFilePath));
-			const MatchData matchdata = MatchData(JSON::Load(saveFilePath));
-			for(const MatchDataMatch &matchdatamatch : matchdata.matches){
-				if(matchdatamatch.id == this->match_id){
+			const JSON json = JSON::Load(saveFilePath);
+			output_console_json(json);
+			const Array<MatchDataMatch> matchdata = get_1d_array<MatchDataMatch>(json[U"matches"]);
+			for(const MatchDataMatch &matchdatamatch : matchdata){
+				if(matchdatamatch.get_id() == this->match_id){
 					return matchdatamatch;
 				}
 			}
@@ -255,7 +335,7 @@ Optional<MatchStatus> Connect::get_match_status(void) const {
 	return none;
 }
 
-Optional<int> Connect::post_action_plan(const ActionPlan &actionplan){
+Optional<int> Connect::post_action_plan(const ActionPlan &actionplan) const {
 	const URL url = url_base + U"matches/" + Format(match_id) + U"?token=" + token;
 	const FilePath saveFilePath = U"./tmp.json";
 	const std::string data = actionplan.output_json().formatUTF8();
