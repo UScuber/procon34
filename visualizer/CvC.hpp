@@ -184,6 +184,12 @@ void CvC::display_field(void) const {
 			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos), Palette::Black);
 		}
 	}
+	int craftsman_num = 0;
+	for(const Craftsman &craftsman : craftsmen[TEAM::RED]){
+		craftsman_num++;
+		if(craftsman.act != ACT::NOTHING) continue;
+		craftsman_font(craftsman_num).drawAt(get_cell_center(craftsman.pos), Palette::Gray);
+	}
 	for(int h = 0; h < HEIGHT; h++){
 		for(int w = 0; w < WIDTH; w++){
 			if(is_build_plan[h][w]){
