@@ -149,7 +149,7 @@ struct CostTable {
     std::sort(points.begin(), points.end());
     points.erase(std::unique(points.begin(), points.end()), points.end());
     const int points_num = points.size();
-    
+
     #pragma omp parallel for
     for(int i = 0; i < points_num; i++){
       std::vector<int> prev;
@@ -500,7 +500,7 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
     }
   }
   for(int i = 0; i < agents_num; i++){
-    result[i].agent_idx = i;
+    result[i].set_idx(i);
   }
   return result;
 }

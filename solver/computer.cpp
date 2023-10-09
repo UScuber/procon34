@@ -22,9 +22,9 @@ struct Game {
     std::vector<int> dirs(m);
     std::vector<std::string> cmd(m, "none");
     for(int i = 0; i < m; i++){
-      assert(i == res[i].agent_idx);
+      assert(i == res[i].get_idx());
       for(int d = 0; d < 8; d++){
-        if(current_agents[i] + dmove[d] == res[i].pos){
+        if(current_agents[i] + dmove[d] == res[i].get_pos()){
           dirs[i] = d;
           break;
         }
@@ -32,9 +32,9 @@ struct Game {
     }
     field.update_turn_and_fix_actions(res);
     for(int i = 0; i < m; i++){
-      if(res[i].command == Action::Move) cmd[i] = "move";
-      if(res[i].command == Action::Build) cmd[i] = "build";
-      if(res[i].command == Action::Break) cmd[i] = "break";
+      if(res[i].get_cmd() == Action::Move) cmd[i] = "move";
+      if(res[i].get_cmd() == Action::Build) cmd[i] = "build";
+      if(res[i].get_cmd() == Action::Break) cmd[i] = "break";
     }
     field.debug();
     cerr << "my turn\n";
