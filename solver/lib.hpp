@@ -150,7 +150,8 @@ constexpr State State::Area = State::AreaAlly | State::AreaEnemy;
 
 struct Point {
   Pos y,x;
-  inline constexpr Point(const Pos _y=-1, const Pos _x=-1) : y(_y), x(_x){}
+  inline constexpr Point() : y(-1), x(-1){}
+  inline constexpr Point(const Pos _y, const Pos _x) : y(_y), x(_x){}
   inline constexpr Point &operator+=(const Point &p) noexcept{
     y += p.y; x += p.x; return *this;
   }
