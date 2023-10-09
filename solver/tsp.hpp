@@ -3,6 +3,7 @@
 #include <tuple>
 #include <map>
 #include <cmath>
+#include <omp.h>
 #include "base.hpp"
 #include "timer.hpp"
 
@@ -13,9 +14,9 @@ constexpr int inf = 1024;
 
 // 距離: 初手にたどり着くことができる職人を除いたグリッド上での移動距離
 // 敵の壁がある場合は+1される
-// 池がには入れない
+// 池には入れない
 void calc_move_min_cost(const Point start, const Field &field, const State enemy_wall, std::vector<int> &dist, std::vector<int> &prev){
-  static std::priority_queue<std::pair<int,Point>> que;
+  std::priority_queue<std::pair<int,Point>> que;
 
   dist.assign(height*width, inf);
   prev.assign(height*width, -1);
@@ -74,7 +75,7 @@ void calc_move_min_cost(const Point start, const Field &field, const State enemy
 // 敵の壁がある場合は+1される
 // 池が目的地の場合、その時だけ上下左右から入れるとする
 void calc_move_min_cost_except_human(const Point start, const Field &field, const State enemy_wall, std::vector<int> &dist, std::vector<int> &prev){
-  static std::priority_queue<std::pair<int,Point>> que;
+  std::priority_queue<std::pair<int,Point>> que;
 
   dist.assign(height*width, inf);
   prev.assign(height*width, -1);
@@ -130,6 +131,31 @@ struct CostTable {
         calc_move_min_cost_except_human(from, field, enemy_wall, data2[idx], prev);
       }
       return data2[idx][to_idx(to)];
+    }
+  }
+
+  void pre_calc_around_walls(const Walls &walls, const Agents &agents){
+    std::vector<Point> points;
+    for(const Wall wall : walls){
+      for(int i = 0; i < 4; i++){
+        const Point p = wall + dmove[i];
+        if(!is_valid(p)) continue;
+        points.emplace_back(p);
+      }
+    }
+    for(const Agent agent : agents){
+      points.emplace_back(agent);
+    }
+    std::sort(points.begin(), points.end());
+    points.erase(std::unique(points.begin(), points.end()), points.end());
+    const int points_num = points.size();
+    
+    #pragma omp parallel for
+    for(int i = 0; i < points_num; i++){
+      std::vector<int> prev;
+      const int idx = to_idx(points[i]);
+      calc_move_min_cost(points[i], field, enemy_wall, data[idx], prev);
+      calc_move_min_cost_except_human(points[i], field, enemy_wall, data2[idx], prev);
     }
   }
 
@@ -333,6 +359,10 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
     }
     return result;
   }
+
+  StopWatch timer;
+  cost_table.pre_calc_around_walls(walls, agents);
+  cerr << "Calc Time: " << timer.get_ms() << "[ms]\n";
 
   std::vector<Walls> wall_part(agents_num);
   const int max_parts_num = (walls_num + agents_num-1) / agents_num;
