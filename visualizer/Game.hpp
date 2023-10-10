@@ -27,9 +27,6 @@ protected:
 	void give_solver(const TEAM team);
 	// solverから行動を受け取る(引数にはsolverのチーム)
 	void receive_solver(const TEAM team, Field &field);
-	// GUIで建築予定の場所を受け取る
-	void receive_build_plan(const Field &field);
-	void give_solver_build_plan(void);
 	// 職人の配列
 	Array<Array<Craftsman>> craftsmen;
 	// solverプログラム
@@ -131,16 +128,18 @@ void Game::operate_craftsman(const TEAM team, Field &field){
 }
 
 void Game::display_field(void) const {
-	for(const Array<Craftsman> &ary : craftsmen){
-		int craftsman_num = 0;
-		for(const Craftsman &craftsman : ary){
-			if(craftsman.is_acted){
-				get_grid_circle(craftsman.pos).draw(Palette::Darkgray);
-			}else if(craftsman.is_target){
-				get_grid_rect(craftsman.pos).drawFrame(2, 2, Palette::Yellow);
-			}
-			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos));
+	for (const Array<Craftsman>& ary : craftsmen) {
+		int craftsman_num = 1;
+		for (const Craftsman& craftsman : ary) {
+			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos), Palette::Black);
 		}
+	}
+	int craftsman_num = 0;
+	for (const Craftsman& craftsman : craftsmen[TEAM::RED]) {
+		Console << craftsman_num;
+		craftsman_num++;
+		if (craftsman.act != ACT::NOTHING) continue;
+		craftsman_font(craftsman_num).drawAt(get_cell_center(craftsman.pos), Palette::Gray);
 	}
 }
 
@@ -204,50 +203,5 @@ void Game::receive_solver(const TEAM team, Field &field){
 	}
 }
 
-void Game::receive_build_plan(const Field &field){
-	for(int h = 0; h < HEIGHT; h++){
-		for(int w = 0; w < WIDTH; w++){
-			if(get_grid_rect(h, w).rightClicked()
-				or get_grid_rect(h, w).leftClicked()
-				or (get_grid_rect(h, w).mouseOver() and KeyLControl.down())){
-				if(field.get_cell(h, w) & CELL::CASTLE){
-					continue;
-				}
-				bool is_around_wall = true;
-				for(const auto &dydx : range_wall){
-					if(not is_in_field(h + dydx.y, w + dydx.x)){
-						continue;
-					}
-					if(not (field.get_cell(h + dydx.y, w + dydx.x) & CELL::POND)){
-						is_around_wall = false;
-						break;
-					}
-				}
-				if(is_around_wall){
-					continue;
-				}
-				is_build_plan[h][w] ^= true;
-			}
-		}
-	}
-}
 
-void Game::give_solver_build_plan(void){
-	int n = 0;
-	for(const auto &ary : is_build_plan){
-		for(const auto &cell : ary){
-			if(cell){
-				n++;
-			}
-		}
-	}
-	child.ostream() << n << std::endl;
-	for(int h = 0; h < HEIGHT; h++){
-		for(int w = 0; w < WIDTH; w++){
-			if(is_build_plan[h][w]){
-				child.ostream() << h << std::endl;
-				child.ostream() << w << std::endl;
-			}
-		}
-	}
-}
+

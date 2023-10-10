@@ -28,8 +28,6 @@ private:
 	// server.exe, serverのターンの処理
 	bool turn_solver(void);
 	bool turn_server(void);
-	// 盤面描画
-	void display_field(void) const;
 };
 
 CvC::CvC(const InitData &init) : IScene(init){
@@ -41,7 +39,7 @@ CvC::CvC(const InitData &init) : IScene(init){
 	const MatchDataMatch matchdatamatch = tmp_matchdatamatch.value();
 	craftsmen.resize(2, Array<Craftsman>(matchdatamatch.get_mason_num()));
 	// フィールド情報をセット
-	getData().initialize(matchdatamatch);
+	//getData().initialize(matchdatamatch);
 	// 基本情報をセット
 	is_build_plan.clear();
 	is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
@@ -106,11 +104,6 @@ void CvC::set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn, const M
 
 void CvC::execute_match(void){
 	if(turn_num_now < turn_num){
-		//Console << U"------------------------------------------------------------------------------------";
-		//for (auto& ary : matchstatus.board.masons) {
-		//	Console << ary;
-		//}
-		//Console << U"------------------------------------------------------------------------------------";
 		if(now_turn == TEAM::RED){
 			if(turn_solver()){
 				getData().calc_area();
@@ -166,40 +159,19 @@ bool CvC::turn_server(void){
 	// solver.exeに行動情報を渡す
 	give_solver(TEAM::RED);
 	// solver.exeに建築予定の壁を渡す
-	give_solver_build_plan();
+	getData().give_solver_build_plan(child);
 	return true;
-}
-
-void CvC::display_field(void) const {
-	for(const Array<Craftsman> &ary : craftsmen){
-		int craftsman_num = 1;
-		for(const Craftsman &craftsman : ary){
-			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos), Palette::Black);
-		}
-	}
-	int craftsman_num = 0;
-	for(const Craftsman &craftsman : craftsmen[TEAM::RED]){
-		craftsman_num++;
-		if(craftsman.act != ACT::NOTHING) continue;
-		craftsman_font(craftsman_num).drawAt(get_cell_center(craftsman.pos), Palette::Gray);
-	}
-	for(int h = 0; h < HEIGHT; h++){
-		for(int w = 0; w < WIDTH; w++){
-			if(is_build_plan[h][w]){
-				get_grid_rect(h, w).drawFrame(3, 0, Palette::Orange);
-			}
-		}
-	}
 }
 
 void CvC::update(){
 	execute_match();
-	receive_build_plan(getData());
+	getData().receive_build_plan();
 }
 
 void CvC::draw() const {
 	getData().display_actors();
 	display_field();
 	getData().display_grid();
+	getData().display_build_plan();
 	display_details(getData());
 }

@@ -102,7 +102,10 @@ public:
 	void output_field(void) const;
 	// フィールド更新
 	void update(const MatchStatus &matchstatus);
-
+	// GUIで建築予定の場所を受け取る
+	void receive_build_plan(void);
+	void display_build_plan(void);
+	void give_solver_build_plan(ChildProcess& child);
 private:
 	// 陣地計算のためのBFS
 	void wall_bfs(const Point start, Array<Array<bool>> &visited, const TEAM team) const;
@@ -114,6 +117,8 @@ private:
 
 	// 盤面情報
 	Array<Array<CELL>> grid;
+	// 建築予定場所
+	Array<Array<bool>> is_build_plan;
 	// 池、城、職人の座標配列
 	Array<Point> ponds;
 	Array<Point> castles;
@@ -192,6 +197,8 @@ void Field::initialize(const MatchDataMatch &matchdatamatch){
 	WIDTH = matchdatamatch.get_width();
 	this->grid.clear();
 	this->grid.resize(HEIGHT, Array<CELL>(WIDTH, CELL::NONE));
+	this->is_build_plan.clear();
+	this->is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
 	update_structures(matchdatamatch.get_structures());
 	update_masons(matchdatamatch.get_masons());
 }
@@ -492,3 +499,65 @@ void Field::output_field(void) const {
 	}
 	Console << '\n';
 }
+
+void Field::display_build_plan(void) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if (is_build_plan[h][w]) {
+				get_grid_rect(h, w).drawFrame(3, 0, Palette::Orange);
+			}
+		}
+	}
+}
+
+void Field::receive_build_plan(void) {
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if (get_grid_rect(h, w).rightClicked()
+				or get_grid_rect(h, w).leftClicked()
+				or (get_grid_rect(h, w).mouseOver() and KeyLControl.down())) {
+				if (get_cell(h, w) & CELL::CASTLE) {
+					continue;
+				}
+				bool is_around_wall = true;
+				// 職人の建設・破壊範囲
+				const Array<Point> range_wall = { {0,-1},{-1,0},{0,1},{1,0} };
+				for (const auto& dydx : range_wall) {
+					if (not is_in_field(h + dydx.y, w + dydx.x)) {
+						continue;
+					}
+					if (not (get_cell(h + dydx.y, w + dydx.x) & CELL::POND)) {
+						is_around_wall = false;
+						break;
+					}
+				}
+				if (is_around_wall) {
+					continue;
+				}
+				is_build_plan[h][w] ^= true;
+			}
+		}
+	}
+}
+
+void Field::give_solver_build_plan(ChildProcess& child) {
+	int n = 0;
+	for (const auto& ary : is_build_plan) {
+		for (const auto& cell : ary) {
+			if (cell) {
+				n++;
+			}
+		}
+	}
+	child.ostream() << n << std::endl;
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
+			if (is_build_plan[h][w]) {
+				child.ostream() << h << std::endl;
+				child.ostream() << w << std::endl;
+			}
+		}
+	}
+}
+
+

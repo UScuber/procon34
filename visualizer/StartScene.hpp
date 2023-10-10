@@ -11,7 +11,7 @@ public:
 			const URL url = U"localhost:5000/start";
 			const HashTable<String, String> headers{ { U"Content-Type", U"application/json" } };
 			SimpleHTTP::Get(url, headers, U"./tmp");
-			changeScene(U"CvC", 0s);
+			changeScene(U"ReceiveBuildPlanScene", 0s);
 		}
 	}
 };

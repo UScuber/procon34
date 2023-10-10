@@ -4,6 +4,7 @@
 # include "PvP.hpp"
 # include "PvC.hpp"
 # include "StartScene.hpp"
+# include "ReceiveBuildPlanScene.hpp"
 
 
 // +--------------------+
@@ -21,6 +22,7 @@ void Main(){
 	manager.add<PvP>(U"PvP");
 	manager.add<PvC>(U"PvC");
 	manager.add<CvC>(U"CvC");
+	manager.add<ReceiveBuildPlanScene>(U"ReceiveBuildPlanScene");
 	manager.add<Start>(U"Start");
 
 	manager.init(U"Start");
