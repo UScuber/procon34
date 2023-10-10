@@ -2,6 +2,7 @@ const fs = require("fs");
 const express = require("express");
 const { exec, execSync } = require("child_process");
 const axios = require("axios");
+const { parse } = require("csv-parse/sync");
 
 const PORT = process.env.PORT || 5000;
 const app = express();
@@ -147,9 +148,57 @@ app.get("/stop", (req, res) => {
   is_running = false;
   console.log("Stop Server");
   res.end("Stop Server");
-  clean_func();
+  process.on('SIGINT', clean_func);
+  process.on('SIGTERM', clean_func);
+  process.on('SIGQUIT', clean_func);
 });
 
+
+app.get("/setmatch", (req, res) => {
+  res.writeHead(200, { "Content-Type": "text/html" });
+  if(!fs.existsSync("base.json")){
+    console.log("base.json was not found");
+    res.end("base.json was not found");
+    return;
+  }
+  const field_name = req.query.field;
+  console.log("field name:", field_name);
+  if(!fs.existsSync(`field/${field_name}.csv`)){
+    console.log(`field/${field_name}.csv was not found`);
+    res.end(`field/${field_name}.csv was not found`);
+    return;
+  }
+  let csv = parse(read_file(`field/${field_name}.csv`));
+  let json = JSON.parse(read_file("base.json"));
+  console.log("csv:", csv);
+
+  let mason_num_a = 0, mason_num_b = 0;
+
+  json.match.board.height = csv.length;
+  json.match.board.width = csv[0].length;
+  for(let i = 0; i < csv.length; i++){
+    let arr = [];
+    for(let j = 0; j < csv[0].length; j++){
+      arr.push(0);
+    }
+    json.match.board.masons.push(arr);
+  }
+
+  for(let i = 0; i < csv.length; i++){
+    let arr = [];
+    for(let j = 0; j < csv[0].length; j++){
+      if(csv[i][j] == "a") json.match.board.masons[i][j] = ++mason_num_a;
+      else if(csv[i][j] == "b") json.match.board.masons[i][j] = --mason_num_b;
+      else arr.push(Number(csv[i][j]));
+    }
+    json.match.board.structures.push(arr);
+  }
+  json.match.board.mason = mason_num_a;
+
+  fs.writeFileSync("match.json", JSON.stringify(json, null, "  "))
+
+  res.end("OK");
+});
 
 app.listen(PORT);
 console.log(`Server running at ${PORT}`);
