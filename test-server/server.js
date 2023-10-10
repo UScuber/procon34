@@ -183,9 +183,13 @@ const set_field = (field_name) => {
   for(let i = 0; i < csv.length; i++){
     let arr = [];
     for(let j = 0; j < csv[0].length; j++){
-      if(csv[i][j] == "a") json.match.board.masons[i][j] = ++mason_num_a;
-      else if(csv[i][j] == "b") json.match.board.masons[i][j] = --mason_num_b;
-      else arr.push(Number(csv[i][j]));
+      if(csv[i][j] == "a"){
+        json.match.board.masons[i][j] = ++mason_num_a;
+        arr.push(0);
+      }else if(csv[i][j] == "b"){
+        json.match.board.masons[i][j] = --mason_num_b;
+        arr.push(0);
+      }else arr.push(Number(csv[i][j]));
     }
     json.match.board.structures.push(arr);
   }
