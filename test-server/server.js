@@ -2,10 +2,12 @@ const fs = require("fs");
 const express = require("express");
 const { exec, execSync } = require("child_process");
 const axios = require("axios");
+const bodyParser = require("body-parser");
 const { parse } = require("csv-parse/sync");
 
 const PORT = process.env.PORT || 5000;
 const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
 
 const read_file = (path) => {
   if(fs.existsSync(path)) return fs.readFileSync(path).toString();
@@ -154,14 +156,8 @@ app.get("/stop", (req, res) => {
 });
 
 
-app.get("/setmatch", (req, res) => {
-  res.writeHead(200, { "Content-Type": "text/html" });
-  if(!fs.existsSync("base.json")){
-    console.log("base.json was not found");
-    res.end("base.json was not found");
-    return;
-  }
-  const field_name = req.query.field;
+// csvファイルからmatch.jsonを更新する
+const set_field = (field_name) => {
   console.log("field name:", field_name);
   if(!fs.existsSync(`field/${field_name}.csv`)){
     console.log(`field/${field_name}.csv was not found`);
@@ -196,9 +192,34 @@ app.get("/setmatch", (req, res) => {
   json.match.board.mason = mason_num_a;
 
   fs.writeFileSync("match.json", JSON.stringify(json, null, "  "))
+};
 
-  res.end("OK");
+
+
+app.get("/setdata", (req, res) => {
+  res.writeHead(200, { "Content-Type": "text/html" });
+  res.end(read_file("./setdata.html"));
 });
+
+app.post("/setdata", (req, res) => {
+  res.writeHead(200, { "Content-Type": "text/html" });
+  if(!fs.existsSync("base.json")){
+    console.log("base.json was not found");
+    res.end("base.json was not found");
+    return;
+  }
+  const field = req.body.field;
+  const turn = req.body.turn;
+  const seconds = req.body.seconds;
+  set_field(field);
+  let json = JSON.parse(read_file("match.json"));
+  json.match.turns = Number(turn);
+  json.match.turnSeconds = Number(seconds);
+  fs.writeFileSync("match.json", JSON.stringify(json, null, "  "));
+
+  res.end(read_file("./setdata.html"));
+});
+
 
 app.listen(PORT);
 console.log(`Server running at ${PORT}`);
