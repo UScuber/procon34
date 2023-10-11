@@ -21,8 +21,9 @@ const token = "randomagent";
 const URL = `http://localhost:3000/matches/${match_id}?token=${token}`;
 const is_windows = process.platform === "win32";
 const is_mac = process.platform === "darwin";
-let is_running = false;
 const isnot_first = match_data.teams[1].token === token;
+let is_running = false;
+const use_randomagent = true;
 let clean_func = undefined;
 
 const execute_randomagent = async(match_data, current_turn) => {
@@ -134,25 +135,10 @@ app.get("/start", async(req, res) => {
   res.end("Start Launch Server");
   console.log("first:", match_data.first);
 
-  launch_random_agent();
+  if(use_randomagent) launch_random_agent();
   console.log("pid:", cp.pid);
   is_running = true;
-  clean_func = () => { process.kill(cp.pid); };
-});
-
-app.get("/stop", (req, res) => {
-  res.writeHead(200, { "Content-Type": "text/html" });
-  if(!is_running){
-    console.log("Server is already stopped");
-    res.end("Server is already stopped");
-    return;
-  }
-  is_running = false;
-  console.log("Stop Server");
-  res.end("Stop Server");
-  process.on('SIGINT', clean_func);
-  process.on('SIGTERM', clean_func);
-  process.on('SIGQUIT', clean_func);
+  clean_func = () => { spawnSync("taskkill", ["/pid", cp.pid, "/f", "/t"]); };
 });
 
 
@@ -166,7 +152,6 @@ const set_field = (field_name) => {
   }
   let csv = parse(read_file(`field/${field_name}.csv`));
   let json = JSON.parse(read_file("base.json"));
-  console.log("csv:", csv);
 
   let mason_num_a = 0, mason_num_b = 0;
 
