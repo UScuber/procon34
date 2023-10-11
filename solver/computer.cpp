@@ -1,7 +1,5 @@
 #include <time.h>
 #include "base.hpp"
-//#include "thunder.hpp"
-//#include "simulated_annealing.hpp"
 #include "tsp.hpp"
 
 struct Game {
@@ -10,11 +8,15 @@ struct Game {
   Game(const Field &f) : field(f){}
   void run(){
     assert(field.is_my_turn());
+    build_walls.clear();
+    int walls_num;
+    std::cin >> walls_num;
+    for(int i = 0; i < walls_num; i++){
+      Point p;
+      std::cin >> p;
+      build_walls.push_back(p);
+    }
     const auto &current_agents = field.get_now_turn_agents();
-    //Thunder::is_searching_ally = !(field.current_turn & 1);
-    //const auto res = thunder_search(field, 1 << 9);
-    //SimulatedAnnealing::is_searching_ally = !(field.current_turn & 1);
-    //const auto res = SA(field);
     cerr << "run\n";
 
     Actions res = calculate_build_route(build_walls, field);
@@ -58,14 +60,6 @@ struct Game {
       if(str == "build") cmd = Action::Build;
       if(str == "break") cmd = Action::Break;
       res.emplace_back(Action(current_agents[i] + dmove[dir], cmd, i));
-    }
-    build_walls.clear();
-    int walls_num;
-    std::cin >> walls_num;
-    for(int i = 0; i < walls_num; i++){
-      Point p;
-      std::cin >> p;
-      build_walls.push_back(p);
     }
     field.update_turn(res);
     field.debug();
