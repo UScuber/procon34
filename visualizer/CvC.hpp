@@ -121,6 +121,8 @@ void CvC::execute_match(void){
 
 bool CvC::turn_solver(void){
 	if(not stopwatch.isStarted()){
+		// solver.exeに建築予定の壁を渡す
+		getData().give_solver_build_plan(child);
 		stopwatch.start();
 		return false;
 	}else{
@@ -158,8 +160,6 @@ bool CvC::turn_server(void){
 	set_craftsman(craftsmen[TEAM::BLUE], turn_num_now, matchstatus);
 	// solver.exeに行動情報を渡す
 	give_solver(TEAM::RED);
-	// solver.exeに建築予定の壁を渡す
-	getData().give_solver_build_plan(child);
 	return true;
 }
 
