@@ -5,7 +5,7 @@
 int HEIGHT;
 int WIDTH;
 // 一つのセルの大きさ(正方形)
-constexpr int CELL_SIZE = 25;
+constexpr int CELL_SIZE = 20;
 // フィールドの左上に開ける余白
 constexpr int BLANK_LEFT = 50;
 constexpr int BLANK_TOP = 50;

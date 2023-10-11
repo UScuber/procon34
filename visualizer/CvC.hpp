@@ -55,16 +55,17 @@ CvC::CvC(const InitData &init) : IScene(init){
 	for(Array<Craftsman> &craftsmen_ary : craftsmen){
 		craftsmen_ary.resize(matchdatamatch.get_mason_num(), Craftsman());
 	}
-	for(int h = 0; h < HEIGHT; h++){
-		for(int w = 0; w < WIDTH; w++){
+	for (int h = 0; h < HEIGHT; h++) {
+		for (int w = 0; w < WIDTH; w++) {
 			const int mason_num = matchdatamatch.get_masons()[h][w];
-			if(mason_num == 0){
+			if (mason_num == 0) {
 				continue;
 			}
 			const TEAM team = (mason_num > 0) ? TEAM::RED : TEAM::BLUE;
 			craftsmen[team][Abs(mason_num) - 1] = Craftsman(h, w, team);
 		}
 	}
+	stopwatch.reset();
 	// solver.exeの初期化
 	give_solver_initialize(is_first, getData());
 }
@@ -127,6 +128,7 @@ bool CvC::turn_solver(void){
 		return false;
 	}else{
 		if(stopwatch.ms() < time * 0.9){
+			Console << U"this turn is solver's";
 			return false;
 		}else{
 			stopwatch.reset();
@@ -141,16 +143,27 @@ bool CvC::turn_solver(void){
 }
 
 bool CvC::turn_server(void){
-	// 次のターンが来るまで待機
 	Optional<MatchStatus> tmp_matchstatus;
-	tmp_matchstatus = connect.get_match_status();
-	if(tmp_matchstatus == none){
-		Console << U"Cannot get match status! \t get again now ...";
+	if (not stopwatch.isStarted()) {
+		stopwatch.start();
 		return false;
-	}else if(tmp_matchstatus.value().get_turn() != turn_num_now + 1){
-		Console << U"this turn is server's";
-		return false;
+	}else {
+		if (stopwatch.ms() <= 100) {
+			return false;
+		}else {
+			stopwatch.restart();
+			// 次のターンが来るまで待機
+			tmp_matchstatus = connect.get_match_status();
+			if (tmp_matchstatus == none) {
+				Console << U"Cannot get match status! \t get again now ...";
+				return false;
+			}else if (tmp_matchstatus.value().get_turn() != turn_num_now + 1) {
+				Console << U"this turn is server's";
+				return false;
+			}
+		}
 	}
+	stopwatch.reset();
 	const MatchStatus matchstatus = tmp_matchstatus.value();
 	turn_num_now++;
 	now_turn = TEAM::RED;

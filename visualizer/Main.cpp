@@ -17,6 +17,7 @@ void Main(){
 	// ウィンドウ設定
 	Scene::SetBackground(Palette::Lightgreen);
 	Window::Resize(1280, 720);
+	//Window::SetFullscreen(true);
 
 	App manager;
 	manager.add<PvP>(U"PvP");

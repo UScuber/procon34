@@ -136,7 +136,6 @@ void Game::display_field(void) const {
 	}
 	int craftsman_num = 0;
 	for (const Craftsman& craftsman : craftsmen[TEAM::RED]) {
-		Console << craftsman_num;
 		craftsman_num++;
 		if (craftsman.act != ACT::NOTHING) continue;
 		craftsman_font(craftsman_num).drawAt(get_cell_center(craftsman.pos), Palette::Gray);
