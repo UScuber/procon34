@@ -249,7 +249,7 @@ public:
 
 class Connect {
 private:
-	const URL url_base = U"http://localhost:3000/";
+	URL url_base;
 	const HashTable<String, String> headers{ { U"Content-Type", U"application/json" } };
 	int match_id;
 	String token;
@@ -282,6 +282,12 @@ void output_console_fail(const String &str){
 }
 
 Connect::Connect(void){
+	// 接続先のURLをローカルファイルから取得
+	TextReader reader_url{ U"./url.env" };
+	if (not reader_url) {
+		throw Error{ U"Failed to open 'url.env'" };
+	}
+	reader_url.readLine(url_base);
 	// solver.exeのチームトークンをローカルファイルから取得
 	TextReader reader_token{ U"./token.env" };
 	if(not reader_token){
