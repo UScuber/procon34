@@ -284,7 +284,7 @@ void output_console_fail(const String &str){
 Connect::Connect(void){
 	// 接続先のURLをローカルファイルから取得
 	TextReader reader_url{ U"./url.env" };
-	if (not reader_url) {
+	if(not reader_url){
 		throw Error{ U"Failed to open 'url.env'" };
 	}
 	reader_url.readLine(url_base);

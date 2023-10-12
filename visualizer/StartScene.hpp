@@ -4,7 +4,7 @@
 
 class Start : public App::Scene {
 public:
-	Start(const InitData &init) : IScene(init){};
+	Start(const InitData &init) : IScene(init){}
 	void update() override {
 		if(SimpleGUI::Button(U"Start", { 100, 100 })){
 			 //const URL url = U"localhost:5000/start";
