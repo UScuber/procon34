@@ -325,7 +325,11 @@ Action get_first_action(const Agent agent, const Wall first_wall, const int dir,
   }
   const Point nxt = to_point(nxt_pos);
   assert(is_around(agent, nxt));
-  return Action(nxt, Action::Move);
+  if(field.get_state(nxt) & enemy_wall){
+    return Action(nxt, Action::Break);
+  }else{
+    return Action(nxt, Action::Move);
+  }
 }
 
 
