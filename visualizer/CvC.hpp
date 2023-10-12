@@ -1,7 +1,7 @@
 ﻿# pragma once
 # include <Siv3D.hpp> // OpenSiv3D v0.6.10
 # include "Game.hpp"
-
+# include "ProgressBar.hpp"
 
 // solver.exe対サーバー
 class CvC : public App::Scene, public Game {
@@ -19,6 +19,7 @@ private:
 	bool is_first = false;
 	// ストップウォッチ
 	Stopwatch stopwatch;
+	double time_limit_rate = 0.7;
 	// 試合を開始する
 	void execute_match(void);
 	// 職人の行動をActionPlanに変換
@@ -28,6 +29,8 @@ private:
 	// server.exe, serverのターンの処理
 	bool turn_solver(void);
 	bool turn_server(void);
+	// 詳細情報の描画
+	void display_details(const Field &field) const;
 };
 
 CvC::CvC(const InitData &init) : IScene(init){
@@ -127,8 +130,8 @@ bool CvC::turn_solver(void){
 		stopwatch.start();
 		return false;
 	}else{
-		if(stopwatch.ms() < time * 0.9){
-			Console << U"this turn is solver's";
+		if(stopwatch.ms() < time * time_limit_rate){
+			Console << U"this turn is solver's";	
 			return false;
 		}else{
 			stopwatch.reset();
@@ -174,6 +177,22 @@ bool CvC::turn_server(void){
 	// solver.exeに行動情報を渡す
 	give_solver(TEAM::RED);
 	return true;
+}
+
+void CvC::display_details(const Field& field) const {
+	const Array<int> building_red = field.get_building(TEAM::RED);
+	const Array<int> building_blue = field.get_building(TEAM::BLUE);
+	normal_font(U"赤ポイント:{}"_fmt(field.get_point(TEAM::RED))).draw(800, 50, ((now_turn == TEAM::RED) ? Palette::Red : Palette::Black));
+	small_font(U"城壁:{}  陣地:{}  城:{}"_fmt(building_red[0], building_red[1], building_red[2])).draw(850, 125, ((now_turn == TEAM::RED) ? Palette::Red : Palette::Black));
+	normal_font(U"青ポイント:{}"_fmt(field.get_point(TEAM::BLUE))).draw(800, 200, ((now_turn == TEAM::BLUE) ? Palette::Blue : Palette::Black));
+	small_font(U"城壁:{}  陣地:{}  城:{}"_fmt(building_blue[0], building_blue[1], building_blue[2])).draw(850, 275, ((now_turn == TEAM::BLUE) ? Palette::Blue : Palette::Black));
+	const int point_diff = field.get_point(TEAM::RED) - field.get_point(TEAM::BLUE);
+	normal_font(U"点差:{}"_fmt(point_diff)).draw(800, 350, (point_diff >= 0) ? ((point_diff == 0) ? Palette::Black : Palette::Red) : Palette::Blue);
+	normal_font(U"ターン数:{}/{}"_fmt(turn_num_now + 1, turn_num)).draw(800, 450, Palette::Black);
+	if (now_turn == TEAM::RED) {
+		ProgressBar(Point{ 0, 0 }, 40, 1280).draw(this->time*time_limit_rate - stopwatch.ms(), this->time*time_limit_rate);
+		small_font(U"{} / {}"_fmt(this->time*time_limit_rate - stopwatch.ms(), this->time * time_limit_rate)).draw(Arg::center(1280 / 2, 40 / 2), Palette::Black);
+	}
 }
 
 void CvC::update(){

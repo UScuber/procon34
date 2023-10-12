@@ -4,7 +4,7 @@
 # include "Field.hpp"
 # include "Actor.hpp"
 # include "Connect.hpp"
-
+//# include "ProgressBar.hpp"
 
 using App = SceneManager<String, Field>;
 
@@ -143,11 +143,6 @@ void Game::display_field(void) const {
 }
 
 void Game::display_details(const Field &field) const {
-	if(now_turn == TEAM::RED){
-		normal_font(U"赤チームの手番").draw(800, 550, Palette::Red);
-	}else{
-		normal_font(U"青チームの手番").draw(800, 550, Palette::Blue);
-	}
 	const Array<int> building_red = field.get_building(TEAM::RED);
 	const Array<int> building_blue = field.get_building(TEAM::BLUE);
 	normal_font(U"赤ポイント:{}"_fmt(field.get_point(TEAM::RED))).draw(800, 50, ((now_turn == TEAM::RED) ? Palette::Red : Palette::Black));
