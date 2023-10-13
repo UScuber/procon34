@@ -528,14 +528,14 @@ void Field::receive_build_plan(void){
 			// 左右クリック or マウスオーバー&左コントロールで建築予定の切り替え
 			if(get_grid_rect(h, w).rightClicked() or
 				get_grid_rect(h, w).leftClicked() or
-				(get_grid_rect(h, w).mouseOver() and KeyTab.down())){
+				(get_grid_rect(h, w).mouseOver() and KeyLControl.down())){
 				if(get_cell(h, w) & CELL::CASTLE or is_surrounded_ponds(h, w)){
 					continue;
 				}
 				is_build_plan[h][w] ^= true;
 				// ミドルクリック or マウスオーバー&左シフトで四方の建築予定の切り替え
 			}else if(get_grid_rect(h, w).mouseOver() and MouseM.down() or
-				get_grid_rect(h, w).mouseOver() and KeyLShift.down()){
+				get_grid_rect(h, w).mouseOver() and KeyTab.down()){
 				bool is_on = false;
 				for(const auto &dydx : range_wall){
 					if(not is_in_field(h + dydx.y, w + dydx.x) or is_surrounded_ponds(h + dydx.y, w + dydx.x) or get_cell(h + dydx.y, w + dydx.x) & CELL::CASTLE){
