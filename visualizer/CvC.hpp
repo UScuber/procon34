@@ -88,6 +88,9 @@ void CvC::set_craftsman(Array<Craftsman> &tmp_craftsmen, const int turn, const M
 	for(Craftsman &craftsman : tmp_craftsmen){
 		i++;
 		craftsman.act = (ACT)log.get_action(i).type;
+		if (not log.get_action(i).succeeded) {
+			craftsman.act = ACT::NOTHING;
+		}
 		if(craftsman.act == ACT::NOTHING){
 			continue;
 		}
