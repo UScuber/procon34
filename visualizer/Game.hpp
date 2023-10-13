@@ -152,6 +152,7 @@ void Game::display_details(const Field &field) const {
 	const int point_diff = field.get_point(TEAM::RED) - field.get_point(TEAM::BLUE);
 	normal_font(U"点差:{}"_fmt(point_diff)).draw(800, 350, (point_diff >= 0) ? ((point_diff == 0) ? Palette::Black : Palette::Red) : Palette::Blue);
 	normal_font(U"ターン数:{}/{}"_fmt(turn_num_now + 1, turn_num)).draw(800, 450, Palette::Black);
+	normal_font(U"持ち時間:{}ms"_fmt(time)).draw(800, 550, Palette::Black);
 }
 
 void Game::give_solver_initialize(const bool is_first, const Field &field){

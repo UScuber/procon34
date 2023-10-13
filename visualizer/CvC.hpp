@@ -180,6 +180,10 @@ bool CvC::turn_server(void){
 }
 
 void CvC::display_details(const Field &field) const {
+	if (now_turn == TEAM::RED) {
+		ProgressBar(Point(0, 0), 40, 1280).draw(this->time * time_limit_rate - stopwatch.ms(), this->time * time_limit_rate);
+		small_font(U"{} / {}"_fmt(this->time * time_limit_rate - stopwatch.ms(), this->time * time_limit_rate)).draw(Arg::center(1280 / 2, 40 / 2), Palette::Black);
+	}
 	const Array<int> building_red = field.get_building(TEAM::RED);
 	const Array<int> building_blue = field.get_building(TEAM::BLUE);
 	normal_font(U"赤ポイント:{}"_fmt(field.get_point(TEAM::RED))).draw(800, 50, ((now_turn == TEAM::RED) ? Palette::Red : Palette::Black));
@@ -189,10 +193,7 @@ void CvC::display_details(const Field &field) const {
 	const int point_diff = field.get_point(TEAM::RED) - field.get_point(TEAM::BLUE);
 	normal_font(U"点差:{}"_fmt(point_diff)).draw(800, 350, (point_diff >= 0) ? ((point_diff == 0) ? Palette::Black : Palette::Red) : Palette::Blue);
 	normal_font(U"ターン数:{}/{}"_fmt(turn_num_now + 1, turn_num)).draw(800, 450, Palette::Black);
-	if(now_turn == TEAM::RED){
-		ProgressBar(Point(0, 0), 40, 1280).draw(this->time * time_limit_rate - stopwatch.ms(), this->time * time_limit_rate);
-		small_font(U"{} / {}"_fmt(this->time*time_limit_rate - stopwatch.ms(), this->time * time_limit_rate)).draw(Arg::center(1280 / 2, 40 / 2), Palette::Black);
-	}
+	normal_font(U"持ち時間:{}ms"_fmt(time)).draw(800, 550, Palette::Black);
 }
 
 void CvC::update(){

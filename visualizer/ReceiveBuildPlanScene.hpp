@@ -25,6 +25,9 @@ public:
 				// リクエストが受理されたら盤面を初期化
 				getData().initialize(tmp_matchdatamatch.value());
 				is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
+				this->now_turn = ((tmp_matchdatamatch.value().get_first()) ? TEAM::RED : TEAM::BLUE);
+				this->turn_num = tmp_matchdatamatch.value().get_turn();
+				this->time = tmp_matchdatamatch.value().get_turnSeconds() * 1000;
 				can_draw = true;
 			}
 		}
