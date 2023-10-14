@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>試合情報の更新</title>
+  <meta charset="UTF-8">
+</head>
+<body>
+  <form method="post" action="setdata">
+    <p>更新するところの情報を入力してください</p>
+    <div>
+      <label for="field">フィールド名:</label><br>
+      <select id="field" name="field" style="font-size:16px" required>
+        <option value=""></option>
+        <option value="A11">A11</option>
+        <option value="A13">A13</option>
+        <option value="A15">A15</option>
+        <option value="A17">A17</option>
+        <option value="A21">A21</option>
+        <option value="A25">A25</option>
+        <option value="B11">B11</option>
+        <option value="B13">B13</option>
+        <option value="B15">B15</option>
+        <option value="B17">B17</option>
+        <option value="B21">B21</option>
+        <option value="B25">B25</option>
+        <option value="C11">C11</option>
+        <option value="C13">C13</option>
+        <option value="C15">C15</option>
+        <option value="C17">C17</option>
+        <option value="C21">C21</option>
+        <option value="C25">C25</option>
+      </select>
+    </div>
+    <div>
+      <label for="turn">ターン数:</label><br>
+      <input type="number" id="turn" name="turn" min="30" max="200" required>
+    </div>
+    <div>
+      <label for="seconds">1ターンの時間:</label><br>
+      <input type="number" id="seconds" name="seconds" min="3" max="15" required>
+    </div>
+    <button type="submit">更新</button>
+  </form>
+</body>
+</html>
+
+<style>
+div {
+  margin-bottom: 20px;
+}
+</style>

@@ -4,6 +4,7 @@ programs/randomagent.exe
 procon-server_linux
 procon-server_win.exe
 procon-server_darwin_arm
+base.json
 match.json
 *.txt
 procon.db

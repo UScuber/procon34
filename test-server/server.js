@@ -2,9 +2,12 @@ const fs = require("fs");
 const express = require("express");
 const { exec, execSync } = require("child_process");
 const axios = require("axios");
+const bodyParser = require("body-parser");
+const { parse } = require("csv-parse/sync");
 
 const PORT = process.env.PORT || 5000;
 const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
 
 const read_file = (path) => {
   if(fs.existsSync(path)) return fs.readFileSync(path).toString();
@@ -18,8 +21,9 @@ const token = "randomagent";
 const URL = `http://localhost:3000/matches/${match_id}?token=${token}`;
 const is_windows = process.platform === "win32";
 const is_mac = process.platform === "darwin";
-let is_running = false;
 const isnot_first = match_data.teams[1].token === token;
+let is_running = false;
+const use_randomagent = true;
 let clean_func = undefined;
 
 const execute_randomagent = async(match_data, current_turn) => {
@@ -131,23 +135,78 @@ app.get("/start", async(req, res) => {
   res.end("Start Launch Server");
   console.log("first:", match_data.first);
 
-  launch_random_agent();
+  if(use_randomagent) launch_random_agent();
   console.log("pid:", cp.pid);
   is_running = true;
-  clean_func = () => { process.kill(cp.pid); };
+  clean_func = () => { spawnSync("taskkill", ["/pid", cp.pid, "/f", "/t"]); };
 });
 
-app.get("/stop", (req, res) => {
-  res.writeHead(200, { "Content-Type": "text/html" });
-  if(!is_running){
-    console.log("Server is already stopped");
-    res.end("Server is already stopped");
+
+// csvファイルからmatch.jsonを更新する
+const set_field = (field_name) => {
+  console.log("field name:", field_name);
+  if(!fs.existsSync(`field/${field_name}.csv`)){
+    console.log(`field/${field_name}.csv was not found`);
+    res.end(`field/${field_name}.csv was not found`);
     return;
   }
-  is_running = false;
-  console.log("Stop Server");
-  res.end("Stop Server");
-  clean_func();
+  let csv = parse(read_file(`field/${field_name}.csv`));
+  let json = JSON.parse(read_file("base.json"));
+
+  let mason_num_a = 0, mason_num_b = 0;
+
+  json.match.board.height = csv.length;
+  json.match.board.width = csv[0].length;
+  for(let i = 0; i < csv.length; i++){
+    let arr = [];
+    for(let j = 0; j < csv[0].length; j++){
+      arr.push(0);
+    }
+    json.match.board.masons.push(arr);
+  }
+
+  for(let i = 0; i < csv.length; i++){
+    let arr = [];
+    for(let j = 0; j < csv[0].length; j++){
+      if(csv[i][j] == "a"){
+        json.match.board.masons[i][j] = ++mason_num_a;
+        arr.push(0);
+      }else if(csv[i][j] == "b"){
+        json.match.board.masons[i][j] = --mason_num_b;
+        arr.push(0);
+      }else arr.push(Number(csv[i][j]));
+    }
+    json.match.board.structures.push(arr);
+  }
+  json.match.board.mason = mason_num_a;
+
+  fs.writeFileSync("match.json", JSON.stringify(json, null, "  "))
+};
+
+
+
+app.get("/setdata", (req, res) => {
+  res.writeHead(200, { "Content-Type": "text/html" });
+  res.end(read_file("./setdata.html"));
+});
+
+app.post("/setdata", (req, res) => {
+  res.writeHead(200, { "Content-Type": "text/html" });
+  if(!fs.existsSync("base.json")){
+    console.log("base.json was not found");
+    res.end("base.json was not found");
+    return;
+  }
+  const field = req.body.field;
+  const turn = req.body.turn;
+  const seconds = req.body.seconds;
+  set_field(field);
+  let json = JSON.parse(read_file("match.json"));
+  json.match.turns = Number(turn);
+  json.match.turnSeconds = Number(seconds);
+  fs.writeFileSync("match.json", JSON.stringify(json, null, "  "));
+
+  res.end(read_file("./setdata.html"));
 });
 
 
