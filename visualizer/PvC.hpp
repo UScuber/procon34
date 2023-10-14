@@ -92,7 +92,7 @@ void PvC::display_field(void) const {
 void PvC::update(){
 	operate_gui(getData());
 	operate_craftsman(now_turn, getData());
-	receive_build_plan(getData());
+	getData().receive_build_plan();
 }
 
 void PvC::draw() const {

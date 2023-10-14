@@ -4,7 +4,7 @@
 # include "Field.hpp"
 # include "Actor.hpp"
 # include "Connect.hpp"
-
+//# include "ProgressBar.hpp"
 
 using App = SceneManager<String, Field>;
 
@@ -20,16 +20,13 @@ protected:
 	// フィールドの表示
 	void display_field(void) const;
 	// 詳細表示
-	void display_details(Field &field) const;
+	void display_details(const Field &field) const;
 	// solverの初期化(引数にはsolverのチーム)
-	void give_solver_initialize(const bool is_first, Field &field);
+	void give_solver_initialize(const bool is_first, const Field &field);
 	// solverに職人の行動を渡す(引数にはsolverのチーム)
 	void give_solver(const TEAM team);
 	// solverから行動を受け取る(引数にはsolverのチーム)
 	void receive_solver(const TEAM team, Field &field);
-	// GUIで建築予定の場所を受け取る
-	void receive_build_plan(Field &field);
-	void give_solver_build_plan(void);
 	// 職人の配列
 	Array<Array<Craftsman>> craftsmen;
 	// solverプログラム
@@ -39,7 +36,7 @@ protected:
 	// 建築物の数のフォント
 	const Font small_font = Font(25, U"SourceHanSansJP-Medium.otf");
 	// 職人の番号のフォント
-	const Font craftsman_font = Font((int32)CELL_SIZE,  U"SourceHanSansJP-Medium.otf");
+	const Font craftsman_font = Font(CELL_SIZE,  U"SourceHanSansJP-Medium.otf");
 	// 試合のターン数
 	int turn_num = 200;
 	// 現在のターン数
@@ -69,7 +66,7 @@ void Game::operate_gui(Field &field){
 
 void Game::operate_craftsman(const TEAM team, Field &field){
 	int craftsman_num = 0;
-	for(Craftsman& craftsman : craftsmen[team]){
+	for(Craftsman &craftsman : craftsmen[team]){
 		craftsman_num++;
 		// 行動済みならcontinue
 		if(craftsman.is_acted){
@@ -78,7 +75,7 @@ void Game::operate_craftsman(const TEAM team, Field &field){
 		// 動かす対象の職人を決める
 		if(keyboard_craftsman[craftsman_num].down()){
 			if(not craftsman.is_target){
-				for(Craftsman& craftsman_tmp : craftsmen[team]){
+				for(Craftsman &craftsman_tmp : craftsmen[team]){
 					craftsman_tmp.is_target = false;
 				}
 			}
@@ -96,7 +93,7 @@ void Game::operate_craftsman(const TEAM team, Field &field){
 		Optional<ACT> mode = get_pressed_mode();
 
 		if(direction != none){
-			Line{ get_cell_center(craftsman.pos), get_cell_center(craftsman.pos + direction.value()) }.draw(LineStyle::RoundCap, 5, Palette::Orange);
+			Line(get_cell_center(craftsman.pos), get_cell_center(craftsman.pos + direction.value())).draw(LineStyle::RoundCap, 5, Palette::Orange);
 		}
 
 		if(direction != none and mode != none){
@@ -131,25 +128,21 @@ void Game::operate_craftsman(const TEAM team, Field &field){
 }
 
 void Game::display_field(void) const {
-	for(const Array<Craftsman> &ary : craftsmen){
-		int craftsman_num = 0;
-		for(const Craftsman &craftsman : ary){
-			if(craftsman.is_acted){
-				get_grid_circle(craftsman.pos).draw(Palette::Darkgray);
-			}else if(craftsman.is_target){
-				get_grid_rect(craftsman.pos).drawFrame(2, 2, Palette::Yellow);
-			}
-			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos));
+	for (const Array<Craftsman>& ary : craftsmen) {
+		int craftsman_num = 1;
+		for (const Craftsman& craftsman : ary) {
+			craftsman_font(craftsman_num++).drawAt(get_cell_center(craftsman.pos), Palette::Black);
 		}
+	}
+	int craftsman_num = 0;
+	for (const Craftsman& craftsman : craftsmen[TEAM::RED]) {
+		craftsman_num++;
+		if (craftsman.act != ACT::NOTHING) continue;
+		craftsman_font(craftsman_num).drawAt(get_cell_center(craftsman.pos), Palette::Gray);
 	}
 }
 
-void Game::display_details(Field &field) const {
-	if(now_turn == TEAM::RED){
-		normal_font(U"赤チームの手番").draw(800, 550, Palette::Red);
-	}else{
-		normal_font(U"青チームの手番").draw(800, 550, Palette::Blue);
-	}
+void Game::display_details(const Field &field) const {
 	const Array<int> building_red = field.get_building(TEAM::RED);
 	const Array<int> building_blue = field.get_building(TEAM::BLUE);
 	normal_font(U"赤ポイント:{}"_fmt(field.get_point(TEAM::RED))).draw(800, 50, ((now_turn == TEAM::RED) ? Palette::Red : Palette::Black));
@@ -159,12 +152,13 @@ void Game::display_details(Field &field) const {
 	const int point_diff = field.get_point(TEAM::RED) - field.get_point(TEAM::BLUE);
 	normal_font(U"点差:{}"_fmt(point_diff)).draw(800, 350, (point_diff >= 0) ? ((point_diff == 0) ? Palette::Black : Palette::Red) : Palette::Blue);
 	normal_font(U"ターン数:{}/{}"_fmt(turn_num_now + 1, turn_num)).draw(800, 450, Palette::Black);
+	normal_font(U"持ち時間:{}ms"_fmt(time)).draw(800, 550, Palette::Black);
 }
 
-void Game::give_solver_initialize(const bool is_first, Field &field){
+void Game::give_solver_initialize(const bool is_first, const Field &field){
 	// フィールドの縦横
 	child.ostream() << HEIGHT << std::endl << WIDTH << std::endl;
-	// プログラム側を赤色とする
+	// solver.exeを赤色とする
 	child.ostream() << ((is_first) ? 0 : 1) << std::endl;
 	// ターン数
 	child.ostream() << turn_num << std::endl;
@@ -199,53 +193,10 @@ void Game::give_solver(const TEAM team){
 }
 
 void Game::receive_solver(const TEAM team, Field &field){
-	for(Craftsman& craftsman : craftsmen[team]){
+	for(Craftsman &craftsman : craftsmen[team]){
 		craftsman.input_act(child, field);
 	}
 }
 
-void Game::receive_build_plan(Field &field){
-	for(int h = 0; h < HEIGHT; h++){
-		for(int w = 0; w < WIDTH; w++){
-			if(get_grid_rect({ w, h }).rightClicked()){
-				if(field.get_cell(h, w) & CELL::CASTLE){
-					continue;
-				}
-				bool is_around_wall = true;
-				for(auto& dydx : range_wall){
-					if(not is_in_field(h + dydx.y, w + dydx.x)){
-						continue;
-					}
-					if(not (field.get_cell(h + dydx.y, w + dydx.x) & CELL::POND)){
-						is_around_wall = false;
-						break;
-					}
-				}
-				if(is_around_wall){
-					continue;
-				}
-				is_build_plan[h][w] ^= true;
-			}
-		}
-	}
-}
 
-void Game::give_solver_build_plan(void){
-	int n = 0;
-	for(const auto &ary : is_build_plan){
-		for(const auto &cell : ary){
-			if(cell){
-				n++;
-			}
-		}
-	}
-	child.ostream() << n << std::endl;
-	for(int h = 0; h < HEIGHT; h++){
-		for(int w = 0; w < WIDTH; w++){
-			if(is_build_plan[h][w]){
-				child.ostream() << h << std::endl;
-				child.ostream() << w << std::endl;
-			}
-		}
-	}
-}
+

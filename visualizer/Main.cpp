@@ -4,11 +4,12 @@
 # include "PvP.hpp"
 # include "PvC.hpp"
 # include "StartScene.hpp"
+# include "ReceiveBuildPlanScene.hpp"
 
 
 // +--------------------+
 //  |  solver.exe : 赤  |
-//  |  server     : 青     |
+//  |  server     : 青  |
 // +--------------------+
 
 
@@ -16,11 +17,13 @@ void Main(){
 	// ウィンドウ設定
 	Scene::SetBackground(Palette::Lightgreen);
 	Window::Resize(1280, 720);
+	//Window::SetFullscreen(true);
 
 	App manager;
 	manager.add<PvP>(U"PvP");
 	manager.add<PvC>(U"PvC");
 	manager.add<CvC>(U"CvC");
+	manager.add<ReceiveBuildPlanScene>(U"ReceiveBuildPlanScene");
 	manager.add<Start>(U"Start");
 
 	manager.init(U"Start");

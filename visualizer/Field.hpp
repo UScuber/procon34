@@ -5,15 +5,18 @@
 
 
 // フィールドの座標を引数に、セルの中心の画面上の座標を返す
-Point get_cell_center(const Point p){
+constexpr Point get_cell_center(const Point p){
 	return Point(p.x * CELL_SIZE + BLANK_LEFT + CELL_SIZE / 2, p.y * CELL_SIZE + BLANK_TOP + CELL_SIZE / 2);
 }
 
-Rect get_grid_rect(const Point p){
+constexpr Rect get_grid_rect(const Point p){
 	return Rect{ p.x * CELL_SIZE + BLANK_LEFT, p.y * CELL_SIZE + BLANK_TOP, CELL_SIZE };
 }
+constexpr Rect get_grid_rect(const int y, const int x){
+	return Rect{ x * CELL_SIZE + BLANK_LEFT, y * CELL_SIZE + BLANK_TOP, CELL_SIZE };
+}
 
-Circle get_grid_circle(const Point p){
+constexpr Circle get_grid_circle(const Point p){
 	return Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3);
 }
 
@@ -30,22 +33,29 @@ Optional<Point> get_pressed_pos(void){
 	Point direction = { 100, 100 };
 	if(KeyUp.pressed() and KeyLeft.pressed()){
 		direction = { -1, -1 };
-	}else if(KeyLeft.pressed() and KeyDown.pressed()){
+	}
+	else if(KeyLeft.pressed() and KeyDown.pressed()){
 		direction = { -1, 1 };
-	}else if(KeyDown.pressed() and KeyRight.pressed()){
+	}
+	else if(KeyDown.pressed() and KeyRight.pressed()){
 		direction = { 1, 1 };
-	}else if(KeyRight.pressed() and KeyUp.pressed()){
+	}
+	else if(KeyRight.pressed() and KeyUp.pressed()){
 		direction = { 1, -1 };
-	}else if(KeyUp.pressed()){
+	}
+	else if(KeyUp.pressed()){
 		direction = { 0, -1 };
-	}else if(KeyLeft.pressed()){
+	}
+	else if(KeyLeft.pressed()){
 		direction = { -1, 0 };
-	}else if(KeyDown.pressed()){
+	}
+	else if(KeyDown.pressed()){
 		direction = { 0, 1 };
-	}else if(KeyRight.pressed()){
+	}
+	else if(KeyRight.pressed()){
 		direction = { 1, 0 };
 	}
-	if(direction == Point(100,100)){
+	if(direction == Point(100, 100)){
 		return none;
 	}
 	return direction;
@@ -92,25 +102,32 @@ public:
 	// ポイント計算
 	void calc_point(const TEAM team);
 	// ポイント取得
-	int get_point(const TEAM team);
+	int get_point(const TEAM team) const;
 	// 建設物の数取得
-	Array<int> get_building(const TEAM team);
+	Array<int> get_building(const TEAM team) const;
 	// フィールド表示
-	void output_field(void);
+	void output_field(void) const;
 	// フィールド更新
 	void update(const MatchStatus &matchstatus);
-
+	// GUIで建築予定の場所を受け取る
+	void receive_build_plan(void);
+	void display_build_plan(void);
+	void give_solver_build_plan(ChildProcess &child);
 private:
 	// 陣地計算のためのBFS
-	void wall_bfs(const Point start, Array<Array<bool>> &visited, const TEAM team);
+	void wall_bfs(const Point start, Array<Array<bool>> &visited, const TEAM team) const;
 	// 各項目のフィールド更新
 	void update_walls(const Array<Array<int>> &walls);
 	void update_territories(const Array<Array<int>> &territores);
 	void update_structures(const Array<Array<int>> &structures);
 	void update_masons(const Array<Array<int>> &masons);
-
+	// 四方が池に囲われているか
+	bool is_surrounded_ponds(const int &y, const int &x) const;
+	bool is_surrounded_ponds(const Point &p) const;
 	// 盤面情報
 	Array<Array<CELL>> grid;
+	// 建築予定場所
+	Array<Array<bool>> is_build_plan;
 	// 池、城、職人の座標配列
 	Array<Point> ponds;
 	Array<Point> castles;
@@ -147,7 +164,7 @@ Field::Field(const String &path){
 			}else if(csv[row][col] == U"a"){
 				set_bit(row, col, CELL::CRAFTSMAN_RED);
 				craftsmen[(int)TEAM::RED].push_back({ col, row });
-			}else if(csv[row][col] == U"b"){
+			}else if (csv[row][col] == U"b"){
 				set_bit(row, col, CELL::CRAFTSMAN_BLUE);
 				craftsmen[(int)TEAM::BLUE].push_back({ col, row });
 			}
@@ -172,7 +189,7 @@ Field::Field(void){
 			}else if(csv[row][col] == U"2"){
 				set_bit(row, col, CELL::CASTLE);
 				castles.push_back({ col, row });
-			}else if(csv[row][col] == U"a"){
+			}else if (csv[row][col] == U"a"){
 				set_bit(row, col, CELL::CRAFTSMAN_RED);
 				craftsmen[(int)TEAM::RED].push_back({ col, row });
 			}else if(csv[row][col] == U"b"){
@@ -185,20 +202,22 @@ Field::Field(void){
 
 // jsonから読み取ったフィールド情報に置き換える
 void Field::initialize(const MatchDataMatch &matchdatamatch){
-	HEIGHT = matchdatamatch.board.height;
-	WIDTH = matchdatamatch.board.width;
+	HEIGHT = matchdatamatch.get_height();
+	WIDTH = matchdatamatch.get_width();
 	this->grid.clear();
 	this->grid.resize(HEIGHT, Array<CELL>(WIDTH, CELL::NONE));
-	update_structures(matchdatamatch.board.structures);
-	update_masons(matchdatamatch.board.masons);
+	this->is_build_plan.clear();
+	this->is_build_plan.resize(HEIGHT, Array<bool>(WIDTH, false));
+	update_structures(matchdatamatch.get_structures());
+	update_masons(matchdatamatch.get_masons());
 }
 
 
 void Field::update(const MatchStatus &matchstatus){
-	update_walls(matchstatus.board.walls);
-	update_territories(matchstatus.board.territories);
-	update_structures(matchstatus.board.structures);
-	update_masons(matchstatus.board.masons);
+	update_walls(matchstatus.get_walls());
+	update_territories(matchstatus.get_territories());
+	update_structures(matchstatus.get_structures());
+	update_masons(matchstatus.get_masons());
 }
 
 void Field::update_walls(const Array<Array<int>> &walls){
@@ -206,7 +225,7 @@ void Field::update_walls(const Array<Array<int>> &walls){
 		for(int w = 0; w < WIDTH; w++){
 			const int num = walls[h][w];
 			delete_bit(h, w, CELL::WALL);
-			if(num == 0);
+			if (num == 0);
 			else if(num == 1){
 				set_bit(h, w, CELL::WALL_RED);
 			}else if(num == 2){
@@ -221,10 +240,10 @@ void Field::update_territories(const Array<Array<int>> &territories){
 		for(int w = 0; w < WIDTH; w++){
 			const int num = territories[h][w];
 			delete_bit(h, w, CELL::AREA);
-			if(num == 0);
+			if (num == 0);
 			else if(num == 1){
 				set_bit(h, w, CELL::AREA_RED);
-			}else if(num == 2){
+			}else if (num == 2){
 				set_bit(h, w, CELL::AREA_BLUE);
 			}else if(num == 3){
 				set_bit(h, w, CELL::AREA);
@@ -267,10 +286,10 @@ void Field::update_masons(const Array<Array<int>> &masons){
 			delete_bit(h, w, CELL::CRAFTSMAN);
 			if(num > 0){
 				set_bit(h, w, CELL::CRAFTSMAN_RED);
-				craftsmen[(int)TEAM::RED][num-1] = Point(w, h);
+				craftsmen[(int)TEAM::RED][num - 1] = Point(w, h);
 			}else if(num < 0){
 				set_bit(h, w, CELL::CRAFTSMAN_BLUE);
-				craftsmen[(int)TEAM::BLUE][-num-1] = Point(w, h);
+				craftsmen[(int)TEAM::BLUE][-num - 1] = Point(w, h);
 			}
 		}
 	}
@@ -333,20 +352,21 @@ void Field::display_actors(void) const {
 		}
 		if(target_cell & CELL::AREA_RED and target_cell & CELL::AREA_BLUE){
 			get_grid_rect(p).draw(ColorF(1.0, 0.0, 1.0, 0.5));
-		}else 	if(target_cell & CELL::AREA_RED){
+		}
+		else if(target_cell & CELL::AREA_RED){
 			get_grid_rect(p).draw(ColorF(1.0, 0.0, 0.0, 0.25));
-		}else 	if(target_cell & CELL::AREA_BLUE){
+		}else if(target_cell & CELL::AREA_BLUE){
 			get_grid_rect(p).draw(ColorF(0.0, 0.0, 1.0, 0.25));
 		}
 		if(target_cell & CELL::WALL_RED){
-			Rect(Arg::center(get_cell_center(p)), (int)(CELL_SIZE*0.7)).draw(Palette::Red);
+			Rect(Arg::center(get_cell_center(p)), (int)(CELL_SIZE * 0.7)).draw(Palette::Red);
 		}
 		if(target_cell & CELL::WALL_BLUE){
 			Rect(Arg::center(get_cell_center(p)), (int)(CELL_SIZE * 0.7)).draw(Palette::Blue);
 		}
 		if(target_cell & CELL::CRAFTSMAN_RED){
 			Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3).draw(ColorF(1.0, 0.5, 0.5));
-			Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3).drawFrame(1,1,Palette::White);
+			Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3).drawFrame(1, 1, Palette::White);
 		}
 		if(target_cell & CELL::CRAFTSMAN_BLUE){
 			Circle(Arg::center(get_cell_center(p)), CELL_SIZE * 0.3).draw(ColorF(0.5, 0.5, 1.0));
@@ -358,7 +378,7 @@ void Field::display_actors(void) const {
 // startからBFSを開始
 const Array<Point> range_area = { {0,-1},{-1,0},{0,1},{1,0} };
 
-void Field::wall_bfs(const Point start, Array<Array<bool>>& visited, const TEAM team){
+void Field::wall_bfs(const Point start, Array<Array<bool>> &visited, const TEAM team) const {
 	std::queue<Point> que;
 	que.push(start);
 	visited[start.y][start.x] = true;
@@ -395,7 +415,7 @@ void Field::calc_area(void){
 				continue;
 			}
 			wall_bfs({ h,w }, red_visited, TEAM::RED);
-			wall_bfs({ h, w }, blue_visited, TEAM::BLUE);
+			wall_bfs({ h,w }, blue_visited, TEAM::BLUE);
 		}
 	}
 
@@ -463,7 +483,7 @@ void Field::calc_point(const TEAM team){
 
 }
 
-int Field::get_point(const TEAM team){
+int Field::get_point(const TEAM team) const {
 	if(team == TEAM::RED){
 		return point_red;
 	}else{
@@ -471,7 +491,7 @@ int Field::get_point(const TEAM team){
 	}
 }
 
-Array<int> Field::get_building(const TEAM team){
+Array<int> Field::get_building(const TEAM team) const {
 	if(team == TEAM::RED){
 		return building_red;
 	}else{
@@ -479,7 +499,7 @@ Array<int> Field::get_building(const TEAM team){
 	}
 }
 
-void Field::output_field(void){
+void Field::output_field(void) const {
 	for(int h = 0; h < HEIGHT; h++){
 		String str = U"";
 		for(int w = 0; w < WIDTH; w++){
@@ -489,3 +509,91 @@ void Field::output_field(void){
 	}
 	Console << '\n';
 }
+
+void Field::display_build_plan(void){
+	for(int h = 0; h < HEIGHT; h++){
+		for(int w = 0; w < WIDTH; w++){
+			if(is_build_plan[h][w]){
+				get_grid_rect(h, w).drawFrame(3, 0, Palette::Orange);
+			}
+		}
+	}
+}
+
+void Field::receive_build_plan(void){
+	// 職人の建設・破壊範囲
+	const Array<Point> range_wall = { {0,-1},{-1,0},{0,1},{1,0} };
+	for(int h = 0; h < HEIGHT; h++){
+		for(int w = 0; w < WIDTH; w++){
+			// 左右クリック or マウスオーバー&左コントロールで建築予定の切り替え
+			if(get_grid_rect(h, w).rightClicked() or
+				get_grid_rect(h, w).leftClicked() or
+				(get_grid_rect(h, w).mouseOver() and KeyLControl.down())){
+				if(get_cell(h, w) & CELL::CASTLE or is_surrounded_ponds(h, w)){
+					continue;
+				}
+				is_build_plan[h][w] ^= true;
+				// ミドルクリック or マウスオーバー&左シフトで四方の建築予定の切り替え
+			}else if(get_grid_rect(h, w).mouseOver() and MouseM.down() or
+				get_grid_rect(h, w).mouseOver() and KeyTab.down()){
+				bool is_on = false;
+				for(const auto &dydx : range_wall){
+					if(not is_in_field(h + dydx.y, w + dydx.x) or is_surrounded_ponds(h + dydx.y, w + dydx.x) or get_cell(h + dydx.y, w + dydx.x) & CELL::CASTLE){
+						continue;
+					}
+					if(not is_build_plan[h + dydx.y][w + dydx.x]){
+						is_on = true;
+					}
+				}
+				for(const auto &dydx : range_wall){
+					if(not is_in_field(h + dydx.y, w + dydx.x) or is_surrounded_ponds(h + dydx.y, w + dydx.x) or get_cell(h + dydx.y, w + dydx.x) & CELL::CASTLE){
+						continue;
+					}
+					is_build_plan[h + dydx.y][w + dydx.x] = is_on;
+				}
+			}
+		}
+	}
+}
+
+bool Field::is_surrounded_ponds(const int &y, const int &x) const {
+	// 職人の建設・破壊範囲
+	const Array<Point> range_wall = { {0,-1},{-1,0},{0,1},{1,0} };
+	bool flg = true;
+	for(const auto &dydx : range_wall){
+		if(not is_in_field(y + dydx.y, x + dydx.x)){
+			continue;
+		}
+		if(not (get_cell(y + dydx.y, x + dydx.x) & CELL::POND)){
+			flg = false;
+			break;
+		}
+	}
+	return flg;
+}
+
+bool Field::is_surrounded_ponds(const Point& p) const {
+	return is_surrounded_ponds(p.y, p.x);
+}
+
+void Field::give_solver_build_plan(ChildProcess &child){
+	int n = 0;
+	for(const auto &ary : is_build_plan){
+		for(const auto &cell : ary){
+			if(cell){
+				n++;
+			}
+		}
+	}
+	child.ostream() << n << std::endl;
+	for(int h = 0; h < HEIGHT; h++){
+		for(int w = 0; w < WIDTH; w++){
+			if(is_build_plan[h][w]){
+				child.ostream() << h << std::endl;
+				child.ostream() << w << std::endl;
+			}
+		}
+	}
+}
+
+

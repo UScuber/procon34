@@ -17,3 +17,4 @@ App/solver.exe
 Intermediate
 .vs
 App/token.env
+App/url.env
