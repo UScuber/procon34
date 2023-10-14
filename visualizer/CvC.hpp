@@ -19,7 +19,8 @@ private:
 	bool is_first = false;
 	// ストップウォッチ
 	Stopwatch stopwatch;
-	double time_limit_rate = 0.7;
+	int last_remain_time = 1000;
+	int first_limit_time = 2000; // [ms]
 	// 試合を開始する
 	void execute_match(void);
 	// 職人の行動をActionPlanに変換
@@ -127,13 +128,21 @@ void CvC::execute_match(void){
 }
 
 bool CvC::turn_solver(void){
+	static Stopwatch wait_sw;
 	if(not stopwatch.isStarted()){
-		// solver.exeに建築予定の壁を渡す
-		getData().give_solver_build_plan(child);
 		stopwatch.start();
+		wait_sw.restart();
 		return false;
 	}else{
-		if(stopwatch.ms() < time * time_limit_rate){
+		if(wait_sw.ms() < first_limit_time){
+			Console << U"this turn is solver's. waiting user...";
+			return false;
+		}else if(wait_sw.isRunning()){
+			wait_sw.pause();
+			// solver.exeに建築予定の壁を渡す
+			getData().give_solver_build_plan(child);
+			return false;
+		}else if(stopwatch.ms() < time - last_remain_time){
 			Console << U"this turn is solver's";	
 			return false;
 		}else{
@@ -183,9 +192,9 @@ bool CvC::turn_server(void){
 }
 
 void CvC::display_details(const Field &field) const {
-	if (now_turn == TEAM::RED) {
-		ProgressBar(Point(0, 0), 40, 1280).draw(this->time * time_limit_rate - stopwatch.ms(), this->time * time_limit_rate);
-		small_font(U"{} / {}"_fmt(this->time * time_limit_rate - stopwatch.ms(), this->time * time_limit_rate)).draw(Arg::center(1280 / 2, 40 / 2), Palette::Black);
+	if(now_turn == TEAM::RED){
+		ProgressBar(Point(0, 0), 40, 1280).draw(this->time - last_remain_time - stopwatch.ms(), this->time - last_remain_time);
+		small_font(U"{} / {}"_fmt(this->time - last_remain_time - stopwatch.ms(), this->time - last_remain_time)).draw(Arg::center(1280 / 2, 40 / 2), Palette::Black);
 	}
 	const Array<int> building_red = field.get_building(TEAM::RED);
 	const Array<int> building_blue = field.get_building(TEAM::BLUE);
