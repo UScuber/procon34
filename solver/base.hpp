@@ -49,7 +49,7 @@ Actions select_random_next_agents_acts(const Agents &agents, const Field &field)
     }
     cnt.insert(acts[idx]);
     result.emplace_back(acts[idx]);
-    result.back().agent_idx = (int)result.size() - 1;
+    result.back().set_idx((int)result.size() - 1);
   }
   return result;
 }

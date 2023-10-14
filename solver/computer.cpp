@@ -1,7 +1,5 @@
 #include <time.h>
 #include "base.hpp"
-//#include "thunder.hpp"
-//#include "simulated_annealing.hpp"
 #include "tsp.hpp"
 
 struct Game {
@@ -10,11 +8,15 @@ struct Game {
   Game(const Field &f) : field(f){}
   void run(){
     assert(field.is_my_turn());
+    build_walls.clear();
+    int walls_num;
+    std::cin >> walls_num;
+    for(int i = 0; i < walls_num; i++){
+      Point p;
+      std::cin >> p;
+      build_walls.push_back(p);
+    }
     const auto &current_agents = field.get_now_turn_agents();
-    //Thunder::is_searching_ally = !(field.current_turn & 1);
-    //const auto res = thunder_search(field, 1 << 9);
-    //SimulatedAnnealing::is_searching_ally = !(field.current_turn & 1);
-    //const auto res = SA(field);
     cerr << "run\n";
 
     Actions res = calculate_build_route(build_walls, field);
@@ -22,9 +24,9 @@ struct Game {
     std::vector<int> dirs(m);
     std::vector<std::string> cmd(m, "none");
     for(int i = 0; i < m; i++){
-      assert(i == res[i].agent_idx);
+      assert(i == res[i].get_idx());
       for(int d = 0; d < 8; d++){
-        if(current_agents[i] + dmove[d] == res[i].pos){
+        if(current_agents[i] + dmove[d] == res[i].get_pos()){
           dirs[i] = d;
           break;
         }
@@ -32,9 +34,9 @@ struct Game {
     }
     field.update_turn_and_fix_actions(res);
     for(int i = 0; i < m; i++){
-      if(res[i].command == Action::Move) cmd[i] = "move";
-      if(res[i].command == Action::Build) cmd[i] = "build";
-      if(res[i].command == Action::Break) cmd[i] = "break";
+      if(res[i].get_cmd() == Action::Move) cmd[i] = "move";
+      if(res[i].get_cmd() == Action::Build) cmd[i] = "build";
+      if(res[i].get_cmd() == Action::Break) cmd[i] = "break";
     }
     field.debug();
     cerr << "my turn\n";
@@ -58,14 +60,6 @@ struct Game {
       if(str == "build") cmd = Action::Build;
       if(str == "break") cmd = Action::Break;
       res.emplace_back(Action(current_agents[i] + dmove[dir], cmd, i));
-    }
-    build_walls.clear();
-    int walls_num;
-    std::cin >> walls_num;
-    for(int i = 0; i < walls_num; i++){
-      Point p;
-      std::cin >> p;
-      build_walls.push_back(p);
     }
     field.update_turn(res);
     field.debug();

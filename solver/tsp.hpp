@@ -3,6 +3,7 @@
 #include <tuple>
 #include <map>
 #include <cmath>
+#include <omp.h>
 #include "base.hpp"
 #include "timer.hpp"
 
@@ -13,9 +14,9 @@ constexpr int inf = 1024;
 
 // 距離: 初手にたどり着くことができる職人を除いたグリッド上での移動距離
 // 敵の壁がある場合は+1される
-// 池がには入れない
+// 池には入れない
 void calc_move_min_cost(const Point start, const Field &field, const State enemy_wall, std::vector<int> &dist, std::vector<int> &prev){
-  static std::priority_queue<std::pair<int,Point>> que;
+  std::priority_queue<std::pair<int,Point>> que;
 
   dist.assign(height*width, inf);
   prev.assign(height*width, -1);
@@ -74,7 +75,7 @@ void calc_move_min_cost(const Point start, const Field &field, const State enemy
 // 敵の壁がある場合は+1される
 // 池が目的地の場合、その時だけ上下左右から入れるとする
 void calc_move_min_cost_except_human(const Point start, const Field &field, const State enemy_wall, std::vector<int> &dist, std::vector<int> &prev){
-  static std::priority_queue<std::pair<int,Point>> que;
+  std::priority_queue<std::pair<int,Point>> que;
 
   dist.assign(height*width, inf);
   prev.assign(height*width, -1);
@@ -130,6 +131,31 @@ struct CostTable {
         calc_move_min_cost_except_human(from, field, enemy_wall, data2[idx], prev);
       }
       return data2[idx][to_idx(to)];
+    }
+  }
+
+  void pre_calc_around_walls(const Walls &walls, const Agents &agents){
+    std::vector<Point> points;
+    for(const Wall wall : walls){
+      for(int i = 0; i < 4; i++){
+        const Point p = wall + dmove[i];
+        if(!is_valid(p)) continue;
+        points.emplace_back(p);
+      }
+    }
+    for(const Agent agent : agents){
+      points.emplace_back(agent);
+    }
+    std::sort(points.begin(), points.end());
+    points.erase(std::unique(points.begin(), points.end()), points.end());
+    const int points_num = points.size();
+
+    #pragma omp parallel for
+    for(int i = 0; i < points_num; i++){
+      std::vector<int> prev;
+      const int idx = to_idx(points[i]);
+      calc_move_min_cost(points[i], field, enemy_wall, data[idx], prev);
+      calc_move_min_cost_except_human(points[i], field, enemy_wall, data2[idx], prev);
     }
   }
 
@@ -299,7 +325,11 @@ Action get_first_action(const Agent agent, const Wall first_wall, const int dir,
   }
   const Point nxt = to_point(nxt_pos);
   assert(is_around(agent, nxt));
-  return Action(nxt, Action::Move);
+  if(field.get_state(nxt) & enemy_wall){
+    return Action(nxt, Action::Break);
+  }else{
+    return Action(nxt, Action::Move);
+  }
 }
 
 
@@ -309,7 +339,7 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
   const int agents_num = agents.size();
   const State ally = field.get_state(agents[0]) & State::Human; // agentから見た味方
   const State enemy = ally ^ State::Human; // agentから見た敵
-  assert((ally == State::Enemy) == (field.current_turn & 1));
+  assert((ally == State::Enemy) == ((field.current_turn & 1) ^ field.side));
   assert(ally == State::Ally || ally == State::Enemy);
 
   const State ally_wall = ally == State::Ally ? State::WallAlly : State::WallEnemy; // agentから見た味方のwall
@@ -333,6 +363,10 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
     }
     return result;
   }
+
+  StopWatch timer;
+  cost_table.pre_calc_around_walls(walls, agents);
+  cerr << "Calc Time: " << timer.get_ms() << "[ms]\n";
 
   std::vector<Walls> wall_part(agents_num);
   const int max_parts_num = (walls_num + agents_num-1) / agents_num;
@@ -365,14 +399,13 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
   const double T1 = 1;
   double temp = T0;
   double spend_time = 0;
-  auto best_wall_part = wall_part;
   std::vector<int> costs(agents_num);
   int best_score = 0;
   for(int i = 0; i < agents_num; i++){
-    costs[i] = calc_agent_move_cost(agents[i], best_wall_part[i], field, cost_table);
+    costs[i] = calc_agent_move_cost(agents[i], wall_part[i], field, cost_table);
     chmax(best_score, costs[i]);
   }
-  auto awesome_wall_part = best_wall_part;
+  auto awesome_wall_part = wall_part;
   int awesome_score = best_score;
 
   cerr << "Start SA(TSP)\n";
@@ -386,8 +419,9 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
       temp = (T1 - T0) * p + T0;
     }
 
-    auto wp = wall_part;
-    int a = -1, b = -1;
+    auto &wp = wall_part;
+    int a = -1, b = -1, ai = -1, bi = -1;
+    bool is_swap = false;
     // swap
     if(rnd(10) < 8 && (int)walls.size() >= 2){
       a = rnd(agents_num), b = rnd(agents_num);
@@ -399,8 +433,8 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
         steps--;
         continue;
       }
-      int ai = rnd(wp[a].size());
-      int bi = rnd(wp[b].size());
+      ai = rnd(wp[a].size());
+      bi = rnd(wp[b].size());
       if(a == b){
         while(ai == bi){
           ai = rnd(wp[a].size());
@@ -408,6 +442,7 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
         }
       }
       std::swap(wp[a][ai], wp[b][bi]);
+      is_swap = true;
     }
     // move a <- b
     else{
@@ -416,8 +451,8 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
         a = rnd(agents_num);
         b = rnd(agents_num);
       }
-      const int ai = rnd(wp[a].size()+1);
-      const int bi = rnd(wp[b].size());
+      ai = rnd(wp[a].size()+1);
+      bi = rnd(wp[b].size());
       wp[a].insert(wp[a].begin() + ai, wp[b][bi]);
       wp[b].erase(wp[b].begin() + bi);
     }
@@ -436,18 +471,21 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
       awesome_score = score;
       best_score = score;
       awesome_wall_part = wp;
-      best_wall_part = wp;
-      wall_part = wp;
       costs[a] = calc_agent_move_cost(agents[a], wp[a], field, cost_table);
-      costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
+      if(a != b) costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
       updated_num++;
     }else if(exp((double)(best_score - score) / temp) > rnd(2048)/2048.0){
       best_score = score;
-      best_wall_part = wp;
-      wall_part = wp;
       costs[a] = calc_agent_move_cost(agents[a], wp[a], field, cost_table);
-      costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
+      if(a != b) costs[b] = calc_agent_move_cost(agents[b], wp[b], field, cost_table);
       updated_num++;
+    }else{
+      if(is_swap){
+        std::swap(wp[a][ai], wp[b][bi]);
+      }else{
+        wp[b].insert(wp[b].begin() + bi, wp[a][ai]);
+        wp[a].erase(wp[a].begin() + ai);
+      }
     }
   }
   cerr << "Steps: " << steps << "\n";
@@ -466,7 +504,7 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
     }
   }
   for(int i = 0; i < agents_num; i++){
-    result[i].agent_idx = i;
+    result[i].set_idx(i);
   }
   return result;
 }
