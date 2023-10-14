@@ -333,8 +333,54 @@ Action get_first_action(const Agent agent, const Wall first_wall, const int dir,
 }
 
 
+void find_none_act_agents(Actions actions, int pos, const Agents &agents, const State enemy_wall, const State enemy, std::vector<Actions> &actions_list, const Field &field){
+  while(pos < (int)actions.size() && !actions[pos].is_none()) pos++;
+  if(pos >= (int)actions.size()){
+    actions_list.emplace_back(actions);
+    return;
+  }
+  for(int i = 0; i < 4; i++){
+    const Point p = agents[pos] + dmove[i];
+    if(!is_valid(p)) continue;
+    const State st = field.get_state(p);
+    if(st & (State::Castle | enemy)) continue;
+    if(st & enemy_wall){
+      actions[pos] = Action(p, Action::Break, pos);
+    }else if(!(st & State::Wall)){
+      actions[pos] = Action(p, Action::Build, pos);
+    }else continue;
+    find_none_act_agents(actions, pos+1, agents, enemy_wall, enemy, actions_list, field);
+  }
+  // none
+  find_none_act_agents(actions, pos+1, agents, enemy_wall, enemy, actions_list, field);
+}
+
+// actがnoneだったら何か行動する
+Actions act_none_act_agents(const Actions &actions, const Agents &agents, const State enemy_wall, const State enemy, const Field &field){
+  std::vector<Actions> actions_list;
+  find_none_act_agents(actions, 0, agents, enemy_wall, enemy, actions_list, field);
+
+  const int size = actions_list.size();
+  std::vector<int> scores(size);
+  #pragma omp parallel for
+  for(int i = 0; i < size; i++){
+    Field f = field;
+    f.update_field(actions_list[i]);
+    scores[i] = f.calc_final_score();
+  }
+
+  int max_val = -1, max_idx = -1;
+  for(int i = 0; i < size; i++){
+    if(chmax(max_val, scores[i])) max_idx = i;
+  }
+  assert(max_idx != -1);
+
+  return actions_list[max_idx];
+}
+
 Actions calculate_build_route(const Walls &build_walls, const Field &field){
-  const int TL = field.TL * 0.67;
+  //const int TL = field.TL;
+  const int TL = 2200;
   const auto &agents = field.get_now_turn_agents();
   const int agents_num = agents.size();
   const State ally = field.get_state(agents[0]) & State::Human; // agentから見た味方
@@ -355,14 +401,6 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
     if(!(field.get_state(p) & ally_wall)) walls.emplace_back(p);
   }
   const int walls_num = walls.size();
-  if(!walls_num){
-    cerr << "Wall is none\n";
-    Actions result;
-    for(int i = 0; i < agents_num; i++){
-      result.emplace_back(Action(Point(), Action::None, i));
-    }
-    return result;
-  }
 
   StopWatch timer;
   cost_table.pre_calc_around_walls(walls, agents);
@@ -395,7 +433,7 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
     }
   }
 
-  const double T0 = walls_num / 10.0;
+  const double T0 = 5;
   const double T1 = 1;
   double temp = T0;
   double spend_time = 0;
@@ -411,7 +449,7 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
   cerr << "Start SA(TSP)\n";
   cerr << "First Score: " << awesome_score << "\n";
   int steps = 0, updated_num = 0;
-  for(; ; steps++){
+  if(walls_num) for(; ; steps++){
     if(!(steps & 127)){
       spend_time = sw.get_ms();
       const double p = spend_time / TL;
@@ -506,7 +544,38 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
   for(int i = 0; i < agents_num; i++){
     result[i].set_idx(i);
   }
-  return result;
+
+  StopWatch timer2;
+  // conflictしてる職人の数を減らす
+  Actions pre_result = result;
+  field.fix_actions(result);
+
+  std::vector<int> cant_move_idx;
+  for(int i = 0; i < agents_num; i++){
+    if(!pre_result[i].is_none() && result[i].is_none()){
+      cant_move_idx.emplace_back(i);
+    }
+  }
+  const int cant_move_num = cant_move_idx.size();
+  Actions best_act = result;
+  int max_num = 0;
+  for(int i = 0; i < (1 << cant_move_num); i++){
+    Actions acts = result;
+    int num = 0;
+    for(int j = 0; j < cant_move_num; j++) if(i >> j & 1){
+      acts[cant_move_idx[j]] = pre_result[cant_move_idx[j]];
+      num++;
+    }
+    if(field.is_legal_action(acts)){
+      if(chmax(max_num, num)) best_act = acts;
+    }
+  }
+  assert(field.is_legal_action(best_act));
+
+  best_act = act_none_act_agents(best_act, agents, enemy_wall, enemy, field);
+  cerr << "None Time: " << timer2.get_ms() << "[ms]\n";
+
+  return best_act;
 }
 
 };
