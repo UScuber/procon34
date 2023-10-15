@@ -333,7 +333,7 @@ Action get_first_action(const Agent agent, const Wall first_wall, const int dir,
 }
 
 
-void find_none_act_agents(Actions actions, int pos, const Agents &agents, const State enemy_wall, const State enemy, std::vector<Actions> &actions_list, const Field &field){
+void find_none_act_agents(Actions actions, int pos, const Agents &agents, const State enemy_wall, const State enemy, const State ally_area, std::vector<Actions> &actions_list, const Field &field){
   while(pos < (int)actions.size() && !actions[pos].is_none()) pos++;
   if(pos >= (int)actions.size()){
     actions_list.emplace_back(actions);
@@ -343,35 +343,43 @@ void find_none_act_agents(Actions actions, int pos, const Agents &agents, const 
     const Point p = agents[pos] + dmove[i];
     if(!is_valid(p)) continue;
     const State st = field.get_state(p);
-    if(st & (State::Castle | enemy)) continue;
+    if(st & (State::Castle | enemy | ally_area)) continue;
     if(st & enemy_wall){
       actions[pos] = Action(p, Action::Break, pos);
     }else if(!(st & State::Wall)){
       actions[pos] = Action(p, Action::Build, pos);
     }else continue;
-    find_none_act_agents(actions, pos+1, agents, enemy_wall, enemy, actions_list, field);
+    find_none_act_agents(actions, pos+1, agents, enemy_wall, enemy, ally_area, actions_list, field);
   }
   // none
-  find_none_act_agents(actions, pos+1, agents, enemy_wall, enemy, actions_list, field);
+  find_none_act_agents(actions, pos+1, agents, enemy_wall, enemy, ally_area, actions_list, field);
 }
 
 // actがnoneだったら何か行動する
-Actions act_none_act_agents(const Actions &actions, const Agents &agents, const State enemy_wall, const State enemy, const Field &field){
+Actions act_none_act_agents(const Actions &actions, const Agents &agents, const State enemy_wall, const State enemy, const State ally_area, const Field &field){
   std::vector<Actions> actions_list;
-  find_none_act_agents(actions, 0, agents, enemy_wall, enemy, actions_list, field);
+  find_none_act_agents(actions, 0, agents, enemy_wall, enemy, ally_area, actions_list, field);
 
   const int size = actions_list.size();
   std::vector<int> scores(size);
+  std::vector<double> eval_scores(size);
   #pragma omp parallel for
   for(int i = 0; i < size; i++){
     Field f = field;
     f.update_field(actions_list[i]);
     scores[i] = f.calc_final_score();
+    eval_scores[i] = Evaluate::evaluate_field2(f);
   }
 
-  int max_val = -1, max_idx = -1;
+  int max_val = -1; double max_eval = -1;
+  int max_idx = -1;
   for(int i = 0; i < size; i++){
-    if(chmax(max_val, scores[i])) max_idx = i;
+    if(chmax(max_val, scores[i])){
+      max_idx = i;
+      max_eval = eval_scores[i];
+    }else if(max_val == scores[i] && chmax(max_eval, eval_scores[i])){
+      max_idx = i;
+    }
   }
   assert(max_idx != -1);
 
@@ -390,6 +398,7 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
 
   const State ally_wall = ally == State::Ally ? State::WallAlly : State::WallEnemy; // agentから見た味方のwall
   const State enemy_wall = ally_wall ^ State::Wall; // agentから見た敵のwall
+  const State ally_area = ally == State::Ally ? State::AreaAlly : State::AreaEnemy;
 
   StopWatch sw;
 
@@ -572,7 +581,7 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
   }
   assert(field.is_legal_action(best_act));
 
-  best_act = act_none_act_agents(best_act, agents, enemy_wall, enemy, field);
+  best_act = act_none_act_agents(best_act, agents, enemy_wall, enemy, ally_area, field);
   cerr << "None Time: " << timer2.get_ms() << "[ms]\n";
 
   return best_act;
