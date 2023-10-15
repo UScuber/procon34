@@ -575,6 +575,7 @@ Field read_field(const int h, const int w){
   int side; // 先行:0,後攻:1
   int final_turn, TL;
   std::cin >> side >> final_turn >> TL;
+  TL = 2200;
   assert(side == 0 || side == 1);
   const auto ponds = get_points();
   const auto castles = get_points();

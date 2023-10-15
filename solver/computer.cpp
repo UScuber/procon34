@@ -16,6 +16,7 @@ struct Game {
       std::cin >> p;
       build_walls.push_back(p);
     }
+    StopWatch sw;
     const auto &current_agents = field.get_now_turn_agents();
     cerr << "run\n";
 
@@ -44,6 +45,7 @@ struct Game {
       std::cout << dirs[i] << " " << cmd[i] << "\n";
       cerr << dirs[i] << " " << cmd[i] << "\n";
     }
+    cerr << "Elapsed Time: " << sw.get_ms() << "[ms]\n";
   }
 
   void load(){
@@ -77,9 +79,7 @@ int main(){
   Game game(field);
   while(!game.field.is_finished()){
     if(game.field.is_my_turn()){
-      StopWatch sw;
       game.run();
-      cerr << "Elapsed Time: " << sw.get_ms() << "[ms]\n";
     }else{
       game.load();
     }

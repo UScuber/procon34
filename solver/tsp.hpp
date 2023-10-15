@@ -371,7 +371,7 @@ Actions act_none_act_agents(const Actions &actions, const Agents &agents, const 
     eval_scores[i] = Evaluate::evaluate_field2(f);
   }
 
-  int max_val = -1; double max_eval = -1;
+  int max_val = -10000000; double max_eval = -1e9;
   int max_idx = -1;
   for(int i = 0; i < size; i++){
     if(chmax(max_val, scores[i])){
@@ -381,7 +381,10 @@ Actions act_none_act_agents(const Actions &actions, const Agents &agents, const 
       max_idx = i;
     }
   }
-  assert(max_idx != -1);
+  
+  if(max_idx == -1){
+    return actions;
+  }
 
   return actions_list[max_idx];
 }
@@ -541,6 +544,8 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
 
   wall_part = awesome_wall_part;
 
+  StopWatch timer2;
+
   Actions result;
   for(int i = 0; i < agents_num; i++){
     if(!wall_part[i].empty()){
@@ -554,7 +559,6 @@ Actions calculate_build_route(const Walls &build_walls, const Field &field){
     result[i].set_idx(i);
   }
 
-  StopWatch timer2;
   // conflictしてる職人の数を減らす
   Actions pre_result = result;
   field.fix_actions(result);
