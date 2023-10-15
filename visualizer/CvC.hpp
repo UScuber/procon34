@@ -19,7 +19,7 @@ private:
 	bool is_first = false;
 	// ストップウォッチ
 	Stopwatch stopwatch;
-	int last_remain_time = 1000;
+	int last_remain_time = 600;
 	int first_limit_time = 2000; // [ms]
 	// 試合を開始する
 	void execute_match(void);
