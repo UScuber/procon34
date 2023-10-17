@@ -24,6 +24,9 @@ struct Action {
   inline constexpr Point get_pos() const{
     return pos;
   }
+  inline constexpr bool is_none() const{
+    return get_cmd() == Action::None;
+  }
   inline constexpr void disable(){
     command = Action::None;
   }
@@ -134,7 +137,7 @@ struct Field {
     static constexpr uchar Area = 1;
     static constexpr uchar Neutral = 2;
 
-    static std::queue<Point> que;
+    std::queue<Point> que;
 
     auto calc_region = [&](const State my_wall) -> std::vector<std::vector<uchar>> {
       std::vector<std::vector<uchar>> used(height, std::vector<uchar>(width, NotSeen));
@@ -313,6 +316,12 @@ struct Field {
       }
     }
     update_region();
+  }
+
+  // side: 味方:0, 敵:1
+  void fix_actions(Actions &acts) const{
+    Field field = *this;
+    field.update_field_and_fix_actions(acts);
   }
 
   // side: 味方:0, 敵:1
@@ -566,6 +575,7 @@ Field read_field(const int h, const int w){
   int side; // 先行:0,後攻:1
   int final_turn, TL;
   std::cin >> side >> final_turn >> TL;
+  TL = 2200;
   assert(side == 0 || side == 1);
   const auto ponds = get_points();
   const auto castles = get_points();

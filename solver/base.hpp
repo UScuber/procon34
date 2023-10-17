@@ -116,7 +116,7 @@ std::vector<std::vector<int>> calc_castle_min_dist(const Field &field, const F &
 
 double calc_around_wall(const Field &field, const State wall){
   static constexpr int C = 4;
-  static std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field, manche_dist);
+  static const std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field, manche_dist);
   int wall_num = 0, mass = 0;
   for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++) if(dist_table[i][j] <= C){
@@ -128,7 +128,7 @@ double calc_around_wall(const Field &field, const State wall){
 }
 
 double calc_nearest_wall(const Field &field, const State wall){
-  static std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field, manche_dist);
+  static const std::vector<std::vector<int>> dist_table = calc_castle_min_dist(field, manche_dist);
   double res = 0;
   for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++) if(field.get_state(i, j) & wall){
@@ -139,15 +139,14 @@ double calc_nearest_wall(const Field &field, const State wall){
 }
 
 int calc_connected_wall(const Field &field, const State wall){
-  static std::queue<Point> que;
-  static std::vector<std::vector<int>> used(height, std::vector<int>(width));
-  static int unused = 0;
+  std::queue<Point> que;
+  std::vector<std::vector<int>> used(height, std::vector<int>(width));
   int res = 0;
   for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++){
-      if((field.get_state(i, j) & wall) && used[i][j] <= unused){
+      if((field.get_state(i, j) & wall) && !used[i][j]){
         int num = 0;
-        used[i][j] = unused + 1;
+        used[i][j] = 1;
         que.push(Point(i, j));
         while(!que.empty()){
           const auto pos = que.front();
@@ -156,8 +155,8 @@ int calc_connected_wall(const Field &field, const State wall){
           for(int dir = 0; dir < 8; dir++){
             const auto nxt = pos + dmove[dir];
             if(!is_valid(nxt) || !(field.get_state(nxt) & wall)) continue;
-            if(used[nxt.y][nxt.x] <= unused){
-              used[nxt.y][nxt.x] = unused + 1;
+            if(!used[nxt.y][nxt.x]){
+              used[nxt.y][nxt.x] = 1;
               que.push(nxt);
             }
           }
@@ -167,7 +166,6 @@ int calc_connected_wall(const Field &field, const State wall){
       }
     }
   }
-  unused++;
   return res;
 }
 
