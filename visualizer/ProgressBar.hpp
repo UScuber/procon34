@@ -25,7 +25,7 @@ private:
 	Color color_background = Palette::Gray;
 	// thresholdsの閾値で表示する色
 	Array<Color> colors = { Palette::Green, Palette::Yellow, Palette::Red };
-	Array<double> thresholds = { 1.0, 0.5, 0.2, 0.0 };
+	Array<double> thresholds = { 1.0, 0.70, 0.57, 0.0 };
 };
 
 ProgressBar::ProgressBar(const Point p, const int height, const int length){
